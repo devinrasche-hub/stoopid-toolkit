@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STOOPID FLIP FINDER</title>
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 — orange = the Flip landing */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:24px;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  h1{font-size:22px; letter-spacing:3px;} h1 span{color:var(--teal);}
+  .sub{color:#666; font-size:12px; margin:4px 0 18px; letter-spacing:1px;}
+  .cols{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;}
+  .left{flex:1; min-width:340px;}
+  .right{flex:1.2; min-width:380px;}
+  label{display:block; font-size:10px; color:#777; letter-spacing:2px; margin:10px 0 4px;}
+  textarea{width:100%; height:340px; background:#0d0d0d; color:#fff; border:1px solid #2a2a2a;
+    font-family:inherit; font-size:12px; padding:10px; resize:vertical;}
+  textarea:focus{outline:1px solid var(--teal);}
+  input{width:100%; background:#0d0d0d; color:#fff; border:1px solid #2a2a2a; font-family:inherit; font-size:13px; padding:7px;}
+  .row{display:flex; gap:10px;} .row>div{flex:1;}
+  button{margin-top:14px; width:100%; padding:12px; background:#000; border:1px solid var(--teal);
+    color:var(--teal); font-family:inherit; font-size:14px; letter-spacing:3px; cursor:pointer;}
+  button:hover{background:var(--teal); color:#000;}
+  .beat{border:1px solid #333; padding:12px; margin-bottom:12px; position:relative;}
+  .beat h3{font-size:12px; letter-spacing:3px; margin-bottom:6px;}
+  .beat .pct{float:right; color:#666; font-weight:normal;}
+  .beat p{font-size:12px; color:#bbb; white-space:pre-wrap; line-height:1.5;}
+  .beat.hook h3{color:var(--teal);} .beat.esc h3{color:var(--red);}
+  .beat.flip{border-color:var(--orange);} .beat.flip h3{color:var(--orange);}
+  .beat.rel h3{color:#888;}
+  .verdicts{border:1px solid #333; padding:14px; margin-bottom:14px;}
+  .verdicts div{font-size:12px; margin:5px 0; letter-spacing:1px;}
+  .ok{color:var(--teal);} .warn{color:var(--orange);} .bad{color:var(--red);}
+  .candidate{background:rgba(204,85,0,.22); outline:1px dashed var(--orange);}
+  .rehook-map{display:flex; gap:3px; margin:8px 0 2px; height:26px; align-items:flex-end;}
+  .seg{flex:1; background:#222; position:relative;}
+  .seg.hot{background:var(--teal);}
+  .legend{font-size:10px; color:#666; letter-spacing:1px;}
+  .footer{margin-top:26px; font-size:11px; color:#555; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>FLIP FINDER <span>[ HOOK → ESCALATION → FLIP → RELEASE ]</span></h1>
+<div class="sub">PASTE A TRANSCRIPT OR DRAFT SCRIPT. THE MACHINE LOOKS FOR THE SPINE. (HEURISTIC — YOUR RADAR IS THE FINAL AUTHORITY.)</div>
+
+<div class="cols">
+  <div class="left">
+    <label>TRANSCRIPT / DRAFT</label>
+    <textarea id="txt" placeholder="Paste the whole thing here…"></textarea>
+    <div class="row">
+      <div><label>TARGET RUNTIME (MINUTES)</label><input id="mins" type="number" value="2" min="0.5" step="0.5"></div>
+      <div><label>WORDS PER MINUTE (DELIVERY)</label><input id="wpm" type="number" value="150" min="80"></div>
+    </div>
+    <button onclick="analyze()">RUN THE SPINE CHECK</button>
+  </div>
+
+  <div class="right" id="out" style="display:none">
+    <div class="verdicts" id="verdicts"></div>
+    <label>REHOOK MAP — EACH BLOCK ≈ 30s. TEAL = REHOOK SIGNAL DETECTED.</label>
+    <div class="rehook-map" id="rehookmap"></div>
+    <div class="legend" id="rehooklegend"></div>
+    <div style="height:14px"></div>
+    <div class="beat hook"><h3>HOOK <span class="pct" id="p-hook"></span></h3><p id="t-hook"></p></div>
+    <div class="beat esc"><h3>ESCALATION <span class="pct" id="p-esc"></span></h3><p id="t-esc"></p></div>
+    <div class="beat flip"><h3>FLIP — BEST CANDIDATE(S) <span class="pct" id="p-flip"></span></h3><p id="t-flip"></p></div>
+    <div class="beat rel"><h3>RELEASE <span class="pct" id="p-rel"></span></h3><p id="t-rel"></p></div>
+  </div>
+</div>
+
+<div class="footer">ENTERTAIN FIRST. TRUTH UNDERNEATH. NEVER THE REVERSE. — SIGNAL RECEIVED</div>
+
+<script>
+// Signal words that often mark a flip: pivot from absurd to true.
+const FLIP_MARKERS=[/\bbut here'?s the thing\b/i,/\bhere'?s what'?s real\b/i,/\bmaybe\b/i,/\bthe truth is\b/i,
+  /\bactually\b/i,/\bturns out\b/i,/\breal(ly)? though\b/i,/\bthat'?s when\b/i,/\bI realized\b/i,/\brealiz/i,
+  /\bbecause\b.*\breal\b/i,/\bisn'?t about\b/i,/\bwas never about\b/i,/\bthe whole time\b/i,/\bso maybe\b/i,
+  /\bprotect your peace\b/i,/\bas is\b/i,/\bSTOOPID but TRUE\b/i];
+const REHOOK_MARKERS=[/\bwait\b/i,/\bhold on\b/i,/\bokay so\b/i,/\bby the way\b/i,/\banyway\b/i,/\bspeaking of\b/i,
+  /\blook\b/i,/\blisten\b/i,/\bquick\b/i,/\bbreaking news\b/i,/\bplot twist\b/i,/\bmeanwhile\b/i,/\?\s*$/,
+  /\bnew (rule|segment|idea)\b/i,/\bcut to\b/i,/\bback to\b/i,/\byou know what\b/i,/\bfun fact\b/i];
+
+function sentences(t){
+  return t.replace(/\r/g,"").split(/(?<=[.!?])\s+|\n{2,}/).map(s=>s.trim()).filter(s=>s.length>1);
+}
+function analyze(){
+  const t=document.getElementById("txt").value.trim();
+  if(!t){alert("Insufficient nonsense. Paste a transcript.");return;}
+  const sents=sentences(t);
+  const words=t.split(/\s+/).length;
+  const wpm=+document.getElementById("wpm").value||150;
+  const target=+document.getElementById("mins").value||2;
+  const estMin=words/wpm;
+
+  // flip candidates: marker hits, weighted toward 50–85% position
+  const cands=[];
+  sents.forEach((s,i)=>{
+    let hits=FLIP_MARKERS.reduce((n,re)=>n+(re.test(s)?1:0),0);
+    if(hits){
+      const pos=i/sents.length;
+      const posW=(pos>=.45&&pos<=.88)?1.5:(pos>.88?0.8:0.5);
+      cands.push({i,s,score:hits*posW,pos});
+    }
+  });
+  cands.sort((a,b)=>b.score-a.score);
+  const top=cands.slice(0,3).sort((a,b)=>a.i-b.i);
+  const flipIdx = top.length? top[Math.floor(top.length/2)].i : Math.floor(sents.length*0.7);
+
+  // beats by position, flip anchored at flipIdx
+  const hookEnd=Math.max(1,Math.round(sents.length*0.12));
+  const relStart=Math.min(sents.length-1,flipIdx+Math.max(1,Math.round(sents.length*0.08)));
+  const seg=(a,b)=>sents.slice(a,b).join(" ");
+  const pct=(a,b)=>Math.round(a/sents.length*100)+"–"+Math.round(b/sents.length*100)+"%";
+
+  document.getElementById("t-hook").textContent=seg(0,hookEnd)||"—";
+  document.getElementById("p-hook").textContent=pct(0,hookEnd);
+  document.getElementById("t-esc").textContent=seg(hookEnd,flipIdx)||"—";
+  document.getElementById("p-esc").textContent=pct(hookEnd,flipIdx);
+  const flipEl=document.getElementById("t-flip");
+  flipEl.innerHTML = top.length
+    ? top.map(c=>`<span class="candidate">${escapeHtml(c.s)}</span> <span style="color:#666">(${Math.round(c.pos*100)}% in)</span>`).join("<br><br>")
+    : `<span class="bad">NO FLIP DETECTED. The episode reads as commentary, not a show. Name the moment absurdity becomes true — or it ships in the 60s.</span>`;
+  document.getElementById("p-flip").textContent=top.length?Math.round(flipIdx/sents.length*100)+"% in":"—";
+  document.getElementById("t-rel").textContent=seg(relStart,sents.length)||"—";
+  document.getElementById("p-rel").textContent=pct(relStart,sents.length);
+
+  // rehook map: 30s blocks
+  const blocks=Math.max(1,Math.ceil(estMin*2));
+  const perBlock=Math.ceil(sents.length/blocks);
+  const map=document.getElementById("rehookmap"); map.innerHTML="";
+  let coldStreak=0, maxCold=0, hotCount=0;
+  for(let b=0;b<blocks;b++){
+    const chunk=sents.slice(b*perBlock,(b+1)*perBlock).join(" ");
+    const hot=REHOOK_MARKERS.some(re=>re.test(chunk));
+    if(hot){hotCount++;coldStreak=0;}else{coldStreak++;maxCold=Math.max(maxCold,coldStreak);}
+    const d=document.createElement("div");
+    d.className="seg"+(hot?" hot":"");
+    d.style.height=hot?"100%":"45%";
+    map.appendChild(d);
+  }
+  document.getElementById("rehooklegend").textContent=
+    `${blocks} blocks (~${estMin.toFixed(1)} min @ ${wpm} wpm) — ${hotCount} with rehook signals — longest cold stretch: ${maxCold*0.5} min`;
+
+  // verdicts panel
+  const v=[];
+  v.push(top.length
+    ? `<div class="ok">[✓] FLIP LAW — candidate found ${Math.round(flipIdx/sents.length*100)}% in. Check it's EARNED, not announced.</div>`
+    : `<div class="bad">[✗] FLIP LAW — no flip detected. This is the 68-to-81 gap. Fix before shooting.</div>`);
+  const famRe=/\b(my (son|sons|boy|boys|kid|kids|wife|family|dad|baby)|the baby|newborn|errand|magic errands|my house|my roof)\b/i;
+  v.push(famRe.test(t)
+    ? `<div class="ok">[✓] FAMILY LAW — real-life anchor language detected. Make sure it's woven in, not name-dropped.</div>`
+    : `<div class="warn">[!] FAMILY LAW — no family/real-life language found. The multiplier is off. Worth +5–8 points.</div>`);
+  v.push(maxCold<=2
+    ? `<div class="ok">[✓] REHOOK CADENCE — no cold stretch over 60s.</div>`
+    : `<div class="warn">[!] REHOOK CADENCE — ${maxCold*0.5} min stretch with no reset. Drop a meta-interruption or visual reset in there.</div>`);
+  v.push(Math.abs(estMin-target)<=target*0.25
+    ? `<div class="ok">[✓] RUNTIME — ~${estMin.toFixed(1)} min vs ${target} min target.</div>`
+    : `<div class="warn">[!] RUNTIME — ~${estMin.toFixed(1)} min vs ${target} min target. ${estMin>target?"Cut — protect the one idea.":"Room to breathe — don't pad, deepen."}</div>`);
+  document.getElementById("verdicts").innerHTML=v.join("");
+  document.getElementById("out").style.display="block";
+}
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+</script>
+</body>
+</html>

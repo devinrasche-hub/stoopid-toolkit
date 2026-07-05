@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID TOOLKIT</title>
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:32px 24px; min-height:100vh;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  h1{font-size:28px; letter-spacing:4px;}
+  h1 span{color:var(--teal);}
+  .sub{color:#666; font-size:12px; letter-spacing:2px; margin:6px 0 32px;}
+  .tools{display:flex; flex-wrap:wrap; gap:24px; max-width:900px;}
+  a.tool{display:block; width:300px; border:1px solid #333; padding:20px 16px; position:relative;
+    color:#fff; text-decoration:none;}
+  a.tool:hover{border-color:var(--teal);}
+  .corner{position:absolute; width:12px; height:12px; border:2px solid var(--teal);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  .tool h2{font-size:15px; letter-spacing:2px; margin-bottom:8px; color:var(--teal);}
+  .tool.flip h2{color:var(--orange);}
+  .tool p{font-size:12px; color:#888; line-height:1.5;}
+  .footer{margin-top:48px; font-size:11px; color:#555; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>STOOPID <span>[ TOOLKIT ]</span></h1>
+<div class="sub">BRAND TOOLS FOR THE STOOPID SHOW — @stoopidshow — STOOPID BUT TRUE</div>
+
+<div class="tools">
+  <a class="tool" href="stoopid_verdict_cards.html">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <h2>VERDICT CARD GENERATOR</h2>
+    <p>STOOPID vs STUPID. Type the behavior on trial, pick the verdict, download the card. The verdict moment IS the flip.</p>
+  </a>
+  <a class="tool flip" href="stoopid_flip_finder.html">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <h2>FLIP FINDER</h2>
+    <p>Paste a script. Find the beat where the absurdity turns true. Hook &rarr; Escalation &rarr; Flip &rarr; Release.</p>
+  </a>
+</div>
+
+<div class="footer">SIGNAL RECEIVED.</div>
+</body>
+</html>

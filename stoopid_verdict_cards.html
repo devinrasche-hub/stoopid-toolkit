@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STOOPID VERDICT CARD GENERATOR</title>
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 — orange = earned sincerity / the Flip landing */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:24px;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  h1{font-size:22px; letter-spacing:3px; margin-bottom:4px;}
+  h1 span{color:var(--teal);}
+  .sub{color:#666; font-size:12px; margin-bottom:20px; letter-spacing:1px;}
+  .wrap{display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start;}
+  .panel{width:360px; border:1px solid #333; padding:16px; position:relative;}
+  .corner{position:absolute; width:14px; height:14px; border:2px solid var(--teal);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  label{display:block; font-size:10px; color:#777; letter-spacing:2px; margin:12px 0 4px;}
+  input,textarea{width:100%; background:#0d0d0d; color:#fff; border:1px solid #2a2a2a;
+    font-family:inherit; font-size:13px; padding:7px;}
+  input:focus,textarea:focus{outline:1px solid var(--teal);}
+  .verdict-btns{display:flex; gap:10px; margin-top:4px;}
+  .vbtn{flex:1; padding:12px; font-family:inherit; font-size:15px; letter-spacing:3px;
+    background:#000; cursor:pointer; border:1px solid #333; color:#555;}
+  .vbtn.stoopid.active{border-color:var(--teal); color:var(--teal); box-shadow:0 0 14px rgba(0,255,198,.4);}
+  .vbtn.stupid.active{border-color:var(--red); color:var(--red); box-shadow:0 0 14px rgba(255,45,45,.4);}
+  .dl{margin-top:20px; width:100%; padding:12px; background:#000; border:1px solid var(--teal);
+    color:var(--teal); font-family:inherit; font-size:14px; letter-spacing:3px; cursor:pointer;}
+  .dl:hover{background:var(--teal); color:#000;}
+  .ratio-btns{display:flex; gap:8px;}
+  .rbtn{flex:1; padding:7px; font-family:inherit; font-size:11px; letter-spacing:1px;
+    background:#000; border:1px solid #333; color:#555; cursor:pointer;}
+  .rbtn.active{border-color:var(--purple); color:var(--purple);}
+  #preview{border:1px solid #222; max-width:min(560px,90vw); height:auto;}
+  .footer{margin-top:26px; font-size:11px; color:#555; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>STOOPID vs STUPID <span>[ VERDICT CARD GENERATOR ]</span></h1>
+<div class="sub">TYPE THE TRIAL. PICK THE VERDICT. DOWNLOAD THE CARD. SIGNAL RECEIVED.</div>
+
+<div class="wrap">
+  <div class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+    <label>ON TRIAL (THE BEHAVIOR)</label>
+    <input id="trial" maxlength="60" placeholder="e.g. ARGUING WITH STRANGERS AT 2AM" value="ARGUING WITH STRANGERS AT 2AM">
+
+    <label>THE VERDICT</label>
+    <div class="verdict-btns">
+      <button class="vbtn stoopid active" id="b-stoopid" onclick="setVerdict('STOOPID')">STOOPID</button>
+      <button class="vbtn stupid" id="b-stupid" onclick="setVerdict('STUPID')">STUPID</button>
+    </div>
+
+    <label>RULING (ONE LINE, OPTIONAL)</label>
+    <input id="ruling" maxlength="90" placeholder="e.g. absurd but human. keep it." value="absurd but human. keep it.">
+
+    <label>EPISODE TAG (OPTIONAL)</label>
+    <input id="ep" maxlength="20" placeholder="S2E03">
+
+    <label>SEASON TALLY (OPTIONAL)</label>
+    <input id="tally" maxlength="30" placeholder="STOOPID 7 — STUPID 4">
+
+    <label>FORMAT</label>
+    <div class="ratio-btns">
+      <button class="rbtn active" id="r-sq" onclick="setRatio(1080,1080,this)">1:1 SQUARE</button>
+      <button class="rbtn" id="r-vt" onclick="setRatio(1080,1920,this)">9:16 VERTICAL</button>
+      <button class="rbtn" id="r-wd" onclick="setRatio(1920,1080,this)">16:9 WIDE</button>
+    </div>
+
+    <button class="dl" onclick="download()">DOWNLOAD PNG</button>
+  </div>
+
+  <canvas id="preview" width="1080" height="1080"></canvas>
+</div>
+
+<div class="footer">PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET — WHATEVER DEVICE WAS CHARGED</div>
+
+<script>
+const TEAL="#00FFC6", PURPLE="#8A2BE2", RED="#FF2D2D", ORANGE="#CC5500"; // ORANGE = the Flip landing — the ruling line
+let verdict="STOOPID", W=1080, H=1080;
+const cv=document.getElementById("preview"), ctx=cv.getContext("2d");
+
+function setVerdict(v){
+  verdict=v;
+  document.getElementById("b-stoopid").classList.toggle("active",v==="STOOPID");
+  document.getElementById("b-stupid").classList.toggle("active",v==="STUPID");
+  draw();
+}
+function setRatio(w,h,btn){
+  W=w; H=h; cv.width=w; cv.height=h;
+  document.querySelectorAll(".rbtn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  draw();
+}
+["trial","ruling","ep","tally"].forEach(id=>document.getElementById(id).addEventListener("input",draw));
+
+function rngSeeded(seed){ let s=seed; return ()=>{ s=(s*16807)%2147483647; return s/2147483647; }; }
+
+function fitText(text, maxW, base, font){
+  let size=base;
+  do{ ctx.font="bold "+size+"px "+font; size-=4; } while(ctx.measureText(text).width>maxW && size>20);
+  return size+4;
+}
+
+function glitchText(text, x, y, size, color){
+  ctx.font="bold "+size+"px 'Courier New',monospace";
+  ctx.textAlign="center";
+  ctx.globalAlpha=.6;
+  ctx.fillStyle=PURPLE; ctx.fillText(text,x-size*.06,y);
+  ctx.fillStyle=RED===color?TEAL:RED; ctx.fillText(text,x+size*.06,y);
+  ctx.globalAlpha=1;
+  ctx.fillStyle=color; ctx.fillText(text,x,y);
+}
+
+function wrapLines(text,maxW,font){
+  ctx.font=font;
+  const words=text.split(" "), lines=[]; let line="";
+  for(const w of words){
+    const t=line?line+" "+w:w;
+    if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else line=t;
+  }
+  if(line)lines.push(line);
+  return lines;
+}
+
+function draw(){
+  const trial=(document.getElementById("trial").value||"").toUpperCase().trim();
+  const ruling=(document.getElementById("ruling").value||"").trim();
+  const ep=(document.getElementById("ep").value||"").toUpperCase().trim();
+  const tally=(document.getElementById("tally").value||"").toUpperCase().trim();
+  const color = verdict==="STOOPID" ? TEAL : RED;
+
+  // base
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+
+  // faint VHS noise blocks (seeded so it doesn't flicker on retype)
+  const rnd=rngSeeded(1337);
+  for(let i=0;i<40;i++){
+    ctx.fillStyle="rgba(255,255,255,"+(rnd()*0.04)+")";
+    ctx.fillRect(rnd()*W, rnd()*H, rnd()*220+30, rnd()*3+1);
+  }
+  // scanlines
+  ctx.fillStyle="rgba(255,255,255,0.03)";
+  for(let y=0;y<H;y+=6) ctx.fillRect(0,y,W,2);
+
+  // corner brackets
+  const m=Math.round(W*0.045), L=Math.round(W*0.075), t=Math.max(5,Math.round(W*0.006));
+  ctx.strokeStyle=color; ctx.lineWidth=t;
+  [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath();
+    ctx.moveTo(x+dx*L,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*L);
+    ctx.stroke();
+  });
+
+  const cx=W/2;
+  // header
+  ctx.textAlign="center";
+  ctx.fillStyle="#888";
+  ctx.font=(W*0.026)+"px 'Courier New',monospace";
+  ctx.fillText("⟨ STOOPID vs STUPID ⟩  —  COURT IS IN SESSION", cx, H*0.16);
+
+  // ON TRIAL label + behavior
+  ctx.fillStyle="#666";
+  ctx.font=(W*0.022)+"px 'Courier New',monospace";
+  ctx.fillText("ON TRIAL:", cx, H*0.26);
+
+  ctx.fillStyle="#fff";
+  const trialFont="'Courier New',monospace";
+  let tSize=fitText(trial||"…", W*0.8, W*0.06, trialFont);
+  const tLines=wrapLines(trial||"…", W*0.8, "bold "+tSize+"px "+trialFont);
+  ctx.font="bold "+tSize+"px "+trialFont;
+  tLines.forEach((ln,i)=>ctx.fillText(ln, cx, H*0.32 + i*tSize*1.25));
+
+  // VERDICT stamp
+  const vy=H*0.55;
+  ctx.fillStyle="#666";
+  ctx.font=(W*0.022)+"px 'Courier New',monospace";
+  ctx.fillText("THE VERDICT:", cx, vy-W*0.075);
+  glitchText(verdict, cx, vy+W*0.05, W*0.135, color);
+
+  // box around verdict
+  const vw=ctx.measureText(verdict).width;
+  ctx.strokeStyle=color; ctx.lineWidth=Math.max(4,Math.round(W*0.005));
+  ctx.strokeRect(cx-vw/2-W*0.04, vy-W*0.065, vw+W*0.08, W*0.155);
+
+  // ruling
+  if(ruling){
+    ctx.fillStyle=ORANGE; // the ruling is the flip landing
+    ctx.font="italic "+(W*0.03)+"px 'Courier New',monospace";
+    const rLines=wrapLines('"'+ruling+'"', W*0.78, "italic "+(W*0.03)+"px 'Courier New',monospace");
+    rLines.forEach((ln,i)=>ctx.fillText(ln, cx, H*0.72 + i*W*0.04));
+  }
+
+  // tally
+  if(tally){
+    ctx.fillStyle="#999";
+    ctx.font=(W*0.024)+"px 'Courier New',monospace";
+    ctx.fillText("[ SEASON TALLY: "+tally+" ]", cx, H*0.81);
+  }
+
+  // footer
+  ctx.fillStyle="#555";
+  ctx.font=(W*0.02)+"px 'Courier New',monospace";
+  ctx.fillText((ep?ep+"  —  ":"")+"@STOOPIDSHOW  —  SIGNAL RECEIVED", cx, H*0.9);
+  ctx.fillStyle=color;
+  ctx.fillText("STOOPID but TRUE", cx, H*0.935);
+}
+
+function download(){
+  const ep=(document.getElementById("ep").value||"card").trim().replace(/\W+/g,"_");
+  const a=document.createElement("a");
+  a.download="stoopid_verdict_"+ep+"_"+verdict.toLowerCase()+".png";
+  a.href=cv.toDataURL("image/png");
+  a.click();
+}
+draw();
+</script>
+</body>
+</html>
