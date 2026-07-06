@@ -226,8 +226,12 @@
     brick: {hp:85,  sp:36,  r:11, bounty:24,  col:PURPLE, shape:"block",  leak:2, label:"slop brick"},
     swarm: {hp:11,  sp:118, r:4,  bounty:4,   col:RED,    shape:"mote",   leak:1, label:"ratio swarm"},
     shield:{hp:95,  sp:40,  r:10, bounty:30,  col:WHITE,  shape:"sponsor",leak:2, label:"sponsored post", res:0.45, noslow:true},
+    reply: {hp:42,  sp:62,  r:9,  bounty:14,  col:WHITE,  shape:"reply",  leak:1, label:"reply guy"},
+    doom:  {hp:72,  sp:40,  r:10, bounty:22,  col:RED,    shape:"doom",   leak:2, label:"doomscroller"},
+    manager:{hp:300,sp:32,  r:13, bounty:80,  col:PURPLE, shape:"manager",leak:2, label:"the sponsor's manager"},
     boss:  {hp:520, sp:30,  r:16, bounty:130, col:RED,    shape:"hex",    leak:3, label:"THE ALGORITHM"}
   };
+  const AURA_R=70; // the manager's protection racket
   // gentle ramp early, compounding after wave 10 — a parked grid WILL fall
   function hpScale(w){
     const base=1 + 0.22*(w-1) + 0.005*w*w;
@@ -243,11 +247,11 @@
     "wave 6. ratio swarm inbound. small. fast. rude.",
     "wave 7. slop bricks. dense. confident. wrong.",
     "wave 8. sponsored posts detected. they resist the flip. paid to.",
-    "wave 9. the slop is monetizing. hold the line.",
+    "wave 9. reply guys detected. well, actually— just shoot them.",
     "wave 10. THE ALGORITHM is back. it says the metrics look great.",
-    "wave 11. the slop unionized. respect it. delete it.",
+    "wave 11. doomscroller inbound. it only gets faster. it never gets happier.",
     "wave 12. everything is content now. even this.",
-    "wave 13. the slop is doing a podcast about your grid.",
+    "wave 13. the sponsor sent its manager. it protects the slop. delete it first.",
     "wave 14. peak slop. allegedly.",
     "wave 15. THE ALGORITHM brought its manager. its manager is also THE ALGORITHM.",
     "wave 16. the slop found your address. it sent a brand deal.",
@@ -402,6 +406,9 @@
     if(w>=5) add("brick", Math.floor(w/2.5), 0.9);
     if(w>=7) add("swarm", 4+Math.floor(w*0.8), 0.17);
     if(w>=8) add("shield", Math.floor(w/4), 1.1);
+    if(w>=9) add("reply", Math.floor(w/3), 0.6);
+    if(w>=11) add("doom", Math.floor(w/4), 0.8);
+    if(w>=13 && w%4===1) add("manager", 1+Math.floor(w/18), 2.0);
     if(w%5===0) add("boss", Math.ceil(w/7), 2.4);
     return L;
   }
@@ -645,7 +652,7 @@
     return bestF;
   }
   function damage(f,dmg,col){
-    f.hp-=dmg*(1-(f.res||0));
+    f.hp-=dmg*(1-Math.max(f.res||0, f.auraRes||0));
     if(f.hp<=0&&!f.dead){
       f.dead=true; kills++;
       cash+=f.bounty; score+=f.shape==="hex"?150:10;
@@ -660,6 +667,16 @@
         const n=Math.min(5, 2+Math.floor(wave/8));
         for(let i=1;i<=n;i++) if(f.d-12*i>0) spawn("slop", f.d-12*i, 0.45);
         setStatus("THE ALGORITHM deleted. it decomposed into slop. of course it did.","good");
+      }
+      else if(f.shape==="reply"){
+        // it never ends. two more baits appear: "well, actually—"
+        for(let i=1;i<=2;i++) if(f.d-7*i>0) spawn("bait", f.d-7*i, 0.7);
+        sfx.kill();
+      }
+      else if(f.shape==="manager"){
+        rings.push({x:p.x,y:p.y,r:8,maxr:AURA_R,col:PURPLE,life:0.4});
+        setStatus("the manager was deleted. the slop is unprotected. proceed.","good");
+        sfx.boom();
       }
       else sfx.kill();
       syncHud();
@@ -702,10 +719,22 @@
         }
       }
     }
+    // the manager's aura — nearby slop gets corporate protection
+    for(const f of foes) f.auraRes=0;
+    for(const m of foes){
+      if(m.shape!=="manager"||m.hp<=0) continue;
+      const mp=posAt(m.d);
+      for(const f of foes){
+        if(f===m||f.hp<=0) continue;
+        const p=posAt(f.d);
+        if(Math.hypot(p.x-mp.x,p.y-mp.y)<=AURA_R) f.auraRes=0.5;
+      }
+    }
     // foes march
     for(const f of foes){
       if(f.hp<=0) continue;
-      f.d+=f.sp*f.slowF*dt;
+      const rage = f.shape==="doom" ? 1+0.9*(1-Math.max(0,f.hp)/f.maxhp) : 1;
+      f.d+=f.sp*f.slowF*rage*dt;
       // dart + boss leave trails
       if((f.shape==="dart"||f.shape==="hex") && Math.random()<dt*30){
         const p=posAt(f.d);
@@ -717,6 +746,9 @@
         waveLeaked=true; streak=0;
         cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
               : f.shape==="sponsor" ? "sponsored content (paid reach)"
+              : f.shape==="manager" ? "middle management"
+              : f.shape==="doom" ? "terminal doomscroll"
+              : f.shape==="reply" ? "the replies. always the replies."
               : "unmoderated slop";
         const e=PTS[PTS.length-1];
         rings.push({x:e.x-26,y:e.y,r:6,maxr:40,col:RED,life:0.35});
@@ -958,6 +990,36 @@
         cx.setLineDash([3,4]); cx.lineDashOffset=pulseT*20;
         cx.beginPath(); cx.arc(0,0,f.r+4,0,Math.PI*2); cx.stroke();
         cx.setLineDash([]);
+      } else if(f.shape==="reply"){
+        // speech bubble that will not stop
+        cx.beginPath(); cx.rect(-f.r,-f.r,f.r*2,f.r+4); cx.fill(); cx.stroke();
+        cx.beginPath(); cx.moveTo(-2,f.r-4); cx.lineTo(-6,f.r+2); cx.lineTo(3,f.r-4); cx.closePath(); cx.fill(); cx.stroke();
+        cx.strokeStyle=PURPLE; cx.lineWidth=1.5; cx.shadowBlur=0;
+        cx.beginPath(); cx.moveTo(-5,-5); cx.lineTo(5,-5); cx.moveTo(-5,-1); cx.lineTo(2,-1); cx.stroke();
+      } else if(f.shape==="doom"){
+        // the spiral — spins faster the angrier it gets
+        const rage=1+0.9*(1-Math.max(0,f.hp)/f.maxhp);
+        cx.beginPath(); cx.arc(0,0,f.r,0,Math.PI*2); cx.fill();
+        cx.rotate(pulseT*(1.2+rage*2.4)+f.wob);
+        cx.beginPath();
+        for(let a2=0;a2<Math.PI*4.6;a2+=0.3){
+          const rr=f.r*(0.12+0.88*a2/(Math.PI*4.6));
+          const x=Math.cos(a2)*rr, y=Math.sin(a2)*rr;
+          if(a2===0) cx.moveTo(x,y); else cx.lineTo(x,y);
+        }
+        cx.stroke();
+      } else if(f.shape==="manager"){
+        // the protection racket, visible
+        cx.save();
+        cx.strokeStyle="rgba(138,43,226,0.35)"; cx.lineWidth=1.5; cx.shadowBlur=0;
+        cx.setLineDash([4,6]); cx.lineDashOffset=-pulseT*18;
+        cx.beginPath(); cx.arc(0,0,AURA_R,0,Math.PI*2); cx.stroke();
+        cx.restore();
+        // the briefcase
+        cx.beginPath(); cx.rect(-f.r,-4,f.r*2,12); cx.fill(); cx.stroke();
+        cx.strokeRect(-4,-9,8,5);
+        cx.beginPath(); cx.moveTo(-f.r,2); cx.lineTo(f.r,2); cx.stroke();
+        cx.fillStyle=WHITE; cx.fillRect(-1.5,0.5,3,3);
       } else { // THE ALGORITHM
         bossAlive=f;
         cx.rotate(pulseT*1.4);
@@ -967,6 +1029,13 @@
         cx.rotate(-pulseT*2.6);
         cx.strokeStyle="rgba(255,255,255,0.7)";
         cx.strokeRect(-4,-4,8,8);
+      }
+      // corporate protection indicator
+      if(f.auraRes>0 && f.shape!=="manager"){
+        cx.strokeStyle=PURPLE; cx.lineWidth=1; cx.shadowBlur=4; cx.shadowColor=PURPLE;
+        cx.setLineDash([3,4]); cx.lineDashOffset=pulseT*16;
+        cx.beginPath(); cx.arc(0,0,f.r+4,0,Math.PI*2); cx.stroke();
+        cx.setLineDash([]);
       }
       cx.restore();
       // hp bar
