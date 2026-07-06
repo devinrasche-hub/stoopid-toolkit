@@ -740,7 +740,7 @@
         if(t.cd<=0){
           t.cd=1/s.rate; t.fx=0.09;
           const col=TOWERS[t.type].col;
-          beams.push({x1:tx,y1:ty,x2:p.x,y2:p.y,col,life:t.type==="beam"?0.16:0.07,w:t.type==="beam"?3:2});
+          beams.push({x1:tx,y1:ty-(t.type==="beam"?11:0),x2:p.x,y2:p.y,col,life:t.type==="beam"?0.16:0.07,w:t.type==="beam"?3:2});
           // muzzle spark
           parts.push({x:tx+Math.cos(t.angle)*10,y:ty+Math.sin(t.angle)*10,
             vx:Math.cos(t.angle)*60,vy:Math.sin(t.angle)*60,life:0.15,col,sz:2});
@@ -874,12 +874,42 @@
         cx.beginPath(); cx.arc(0,0,15,0,Math.PI*2); cx.stroke();
         cx.restore();
       }
-      cx.rotate(t.type==="flip" ? pulseT : t.angle+Math.PI/4);
-      const s2=(t.fx>0?11:9)+(t.lvl>=5?2:0);
-      cx.strokeRect(-s2/2,-s2/2,s2,s2);
-      if(t.type!=="flip"){
-        cx.rotate(-Math.PI/4);
-        cx.beginPath(); cx.moveTo(4,0); cx.lineTo(t.type==="beam"?17:13,0); cx.stroke();
+      if(t.lvl>=5) cx.scale(1.15,1.15);
+      if(t.type==="pulse"){
+        // squat laser cannon on a powered base (per concept art)
+        cx.strokeRect(-8,3,16,7);
+        cx.beginPath(); cx.arc(0,2,4.5,Math.PI,0); cx.stroke();
+        cx.save(); cx.rotate(t.angle);
+        cx.lineWidth=4; cx.beginPath(); cx.moveTo(2,0); cx.lineTo(13,0); cx.stroke();
+        cx.lineWidth=2; cx.beginPath(); cx.moveTo(13,0); cx.lineTo(15,0); cx.stroke();
+        if(t.fx>0){ cx.fillStyle=b.col; cx.fillRect(13,-2,5,4); }
+        cx.restore();
+      } else if(t.type==="beam"){
+        // obelisk pillar, floating truth crystal at the tip
+        cx.beginPath(); cx.moveTo(-6,12); cx.lineTo(-2,-6); cx.lineTo(2,-6); cx.lineTo(6,12); cx.closePath(); cx.stroke();
+        cx.beginPath(); cx.moveTo(-9,12); cx.lineTo(9,12); cx.stroke();
+        cx.save(); cx.translate(0,-11); cx.rotate(pulseT*1.2);
+        const cs=t.fx>0?6:4;
+        cx.strokeRect(-cs/2,-cs/2,cs,cs);
+        cx.restore();
+      } else if(t.type==="nova"){
+        // starburst — eight spikes, slow spin, core flares on fire
+        cx.save(); cx.rotate(pulseT*0.7);
+        cx.beginPath();
+        for(let i=0;i<8;i++){
+          const a=i*Math.PI/4, L=(i%2?7:12)+(t.fx>0?3:0);
+          cx.moveTo(Math.cos(a)*3.5,Math.sin(a)*3.5); cx.lineTo(Math.cos(a)*L,Math.sin(a)*L);
+        }
+        cx.stroke(); cx.restore();
+        cx.beginPath(); cx.arc(0,0,t.fx>0?4.5:3,0,Math.PI*2); cx.stroke();
+      } else {
+        // flip field — the truth orb on its pedestal
+        cx.beginPath(); cx.moveTo(-6,12); cx.lineTo(6,12); cx.lineTo(3,7); cx.lineTo(-3,7); cx.closePath(); cx.stroke();
+        cx.beginPath(); cx.arc(0,-1,7+Math.sin(pulseT*3)*0.8,0,Math.PI*2); cx.stroke();
+        cx.save(); cx.translate(0,-1); cx.rotate(pulseT);
+        cx.setLineDash([3,4]); cx.lineWidth=1;
+        cx.beginPath(); cx.arc(0,0,3.5,0,Math.PI*2); cx.stroke();
+        cx.restore();
       }
       cx.restore();
       // level pips
