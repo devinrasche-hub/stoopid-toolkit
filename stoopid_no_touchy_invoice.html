@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NO TOUCHY FOR FREE™ — INVOICE GENERATOR</title>
+<meta property="og:title" content="No Touchy For Free™ — Emotional Labor Invoice Generator">
+<meta property="og:description" content="Emotional labor has a cover charge now. Bill it. — THE STOOPID SHOW">
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 — orange = earned sincerity / the Flip landing */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:24px;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  h1{font-size:22px; letter-spacing:3px; margin-bottom:4px;}
+  h1 span{color:var(--teal);}
+  .sub{color:#666; font-size:12px; margin-bottom:20px; letter-spacing:1px;}
+  .wrap{display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start;}
+  .panel{width:360px; border:1px solid #333; padding:16px; position:relative;}
+  .corner{position:absolute; width:14px; height:14px; border:2px solid var(--teal);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  label{display:block; font-size:10px; color:#777; letter-spacing:2px; margin:12px 0 4px;}
+  input{width:100%; background:#0d0d0d; color:#fff; border:1px solid #2a2a2a;
+    font-family:inherit; font-size:13px; padding:7px;}
+  input:focus{outline:1px solid var(--teal);}
+  .stamp-btns{display:flex; gap:8px;}
+  .sbtn{flex:1; padding:9px 4px; font-family:inherit; font-size:10px; letter-spacing:1px;
+    background:#000; border:1px solid #333; color:#555; cursor:pointer;}
+  .sbtn.pastdue.active{border-color:var(--red); color:var(--red); box-shadow:0 0 12px rgba(255,45,45,.35);}
+  .sbtn.cover.active{border-color:var(--orange); color:var(--orange); box-shadow:0 0 12px rgba(204,85,0,.35);}
+  .sbtn.final.active{border-color:var(--purple); color:var(--purple); box-shadow:0 0 12px rgba(138,43,226,.35);}
+  .ratio-btns{display:flex; gap:8px;}
+  .rbtn{flex:1; padding:7px; font-family:inherit; font-size:11px; letter-spacing:1px;
+    background:#000; border:1px solid #333; color:#555; cursor:pointer;}
+  .rbtn.active{border-color:var(--purple); color:var(--purple);}
+  .dl{margin-top:20px; width:100%; padding:12px; background:#000; border:1px solid var(--teal);
+    color:var(--teal); font-family:inherit; font-size:14px; letter-spacing:3px; cursor:pointer;}
+  .dl:hover{background:var(--teal); color:#000;}
+  .post{margin-top:10px; width:100%; padding:12px; background:#000; border:1px solid var(--orange);
+    color:var(--orange); font-family:inherit; font-size:14px; letter-spacing:3px; cursor:pointer;}
+  .post:hover{background:var(--orange); color:#000;}
+  .hint{margin-top:8px; font-size:10px; color:#555; letter-spacing:1px; line-height:1.5;}
+  #preview{border:1px solid #222; max-width:min(560px,90vw); height:auto;}
+  .footer{margin-top:26px; font-size:11px; color:#555; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>NO TOUCHY FOR FREE<span>™</span> <span>[ INVOICE GENERATOR ]</span></h1>
+<div class="sub">EMOTIONAL LABOR HAS A COVER CHARGE NOW. TYPE WHAT YOU CARRIED. BILL IT. SIGNAL RECEIVED.</div>
+
+<div class="wrap">
+  <div class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+    <label>BILL TO (WHO DUMPED THE BACKPACK)</label>
+    <input id="billto" maxlength="40" placeholder="e.g. THE GUY WHO BROUGHT THE RAGE" value="THE GUY WHO BROUGHT THE RAGE">
+
+    <label>LABOR PERFORMED — ITEM 1</label>
+    <input id="item1" maxlength="60" placeholder="e.g. absorbed a rage he already brought" value="absorbed a rage he already brought">
+
+    <label>ITEM 2 (OPTIONAL)</label>
+    <input id="item2" maxlength="60" placeholder="e.g. nodded through a 40-min vent">
+
+    <label>ITEM 3 (OPTIONAL)</label>
+    <input id="item3" maxlength="60" placeholder="e.g. held the backpack full of rocks">
+
+    <label>STAMP</label>
+    <div class="stamp-btns">
+      <button class="sbtn pastdue active" id="s-past" onclick="setStamp('PAST DUE',this)">PAST DUE</button>
+      <button class="sbtn cover" id="s-cover" onclick="setStamp('COVER CHARGE APPLIES',this)">COVER CHARGE</button>
+      <button class="sbtn final" id="s-final" onclick="setStamp('FINAL NOTICE',this)">FINAL NOTICE</button>
+    </div>
+
+    <label>FORMAT</label>
+    <div class="ratio-btns">
+      <button class="rbtn active" id="r-sq" onclick="setRatio(1080,1080,this)">1:1 SQUARE</button>
+      <button class="rbtn" id="r-vt" onclick="setRatio(1080,1920,this)">9:16 VERTICAL</button>
+      <button class="rbtn" id="r-wd" onclick="setRatio(1920,1080,this)">16:9 WIDE</button>
+    </div>
+
+    <button class="dl" onclick="download()">DOWNLOAD PNG</button>
+    <button class="post" onclick="postIt()">POST THE INVOICE →</button>
+    <div class="hint">POST opens a pre-written post on X — attach the PNG you just downloaded. The invoice does the talking.</div>
+  </div>
+
+  <canvas id="preview" width="1080" height="1080"></canvas>
+</div>
+
+<div class="footer">FROM EP16 — THE 92. PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET — WHATEVER DEVICE WAS CHARGED</div>
+
+<script>
+const TEAL="#00FFC6", PURPLE="#8A2BE2", RED="#FF2D2D", ORANGE="#CC5500";
+const STAMP_COLORS={"PAST DUE":RED,"COVER CHARGE APPLIES":ORANGE,"FINAL NOTICE":PURPLE};
+let stamp="PAST DUE", W=1080, H=1080;
+const cv=document.getElementById("preview"), ctx=cv.getContext("2d");
+
+const UNITS=[["HRS",42.50],["SIGHS",12.00],["NODS",8.75],["MIN",1.85],["DEEP BREATHS",22.00],["UH-HUHS",6.50],["ROCKS CARRIED",31.00]];
+
+function setStamp(s,btn){
+  stamp=s;
+  document.querySelectorAll(".sbtn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  draw();
+}
+function setRatio(w,h,btn){
+  W=w; H=h; cv.width=w; cv.height=h;
+  document.querySelectorAll(".rbtn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  draw();
+}
+["billto","item1","item2","item3"].forEach(id=>document.getElementById(id).addEventListener("input",draw));
+
+function hash(str){ let h=5381; for(let i=0;i<str.length;i++) h=((h<<5)+h+str.charCodeAt(i))>>>0; return h; }
+function rngSeeded(seed){ let s=seed||1337; return ()=>{ s=(s*16807)%2147483647; return s/2147483647; }; }
+
+// qty/rate/amount derived from the item text — same text, same bill. official.
+function lineFor(text){
+  const h=hash(text.toLowerCase());
+  const [unit,rate]=UNITS[h%UNITS.length];
+  const qty=(h%17)/2+1;                       // 1 – 9 in .5 steps
+  const amount=Math.round(qty*rate*2)/2;
+  return {desc:text.toUpperCase(), qty:qty, unit:unit, rate:rate, amount:amount};
+}
+
+function items(){
+  return ["item1","item2","item3"]
+    .map(id=>(document.getElementById(id).value||"").trim())
+    .filter(Boolean).map(lineFor);
+}
+
+function fitText(text, maxW, base, weight){
+  let size=base;
+  do{ ctx.font=(weight||"bold ")+size+"px 'Courier New',monospace"; size-=2; }
+  while(ctx.measureText(text).width>maxW && size>14);
+  return size+2;
+}
+function truncate(text,maxW,font){
+  ctx.font=font;
+  if(ctx.measureText(text).width<=maxW) return text;
+  while(text.length>1 && ctx.measureText(text+"…").width>maxW) text=text.slice(0,-1);
+  return text+"…";
+}
+function wrapLines(text,maxW,font){
+  ctx.font=font;
+  const words=text.split(" "), lines=[]; let line="";
+  for(const w of words){
+    const t=line?line+" "+w:w;
+    if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else line=t;
+  }
+  if(line)lines.push(line);
+  return lines;
+}
+function glitchText(text, x, y, size, color){
+  ctx.font="bold "+size+"px 'Courier New',monospace";
+  ctx.textAlign="center";
+  ctx.globalAlpha=.6;
+  ctx.fillStyle=PURPLE; ctx.fillText(text,x-size*.05,y);
+  ctx.fillStyle=TEAL;   ctx.fillText(text,x+size*.05,y);
+  ctx.globalAlpha=1;
+  ctx.fillStyle=color; ctx.fillText(text,x,y);
+}
+function money(n){ return "$"+n.toFixed(2); }
+
+function draw(){
+  const billto=(document.getElementById("billto").value||"UNKNOWN DEBTOR").toUpperCase().trim();
+  const rows=items();
+  const color=STAMP_COLORS[stamp];
+  const seedText=rows.map(r=>r.desc).join("|")||"blank";
+  const invNo="NTFF-"+String(1000+hash(seedText)%9000);
+
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+
+  // faint VHS noise (seeded — no flicker on retype)
+  const rnd=rngSeeded(hash(seedText));
+  for(let i=0;i<40;i++){
+    ctx.fillStyle="rgba(255,255,255,"+(rnd()*0.04)+")";
+    ctx.fillRect(rnd()*W, rnd()*H, rnd()*220+30, rnd()*3+1);
+  }
+  ctx.fillStyle="rgba(255,255,255,0.03)";
+  for(let y=0;y<H;y+=6) ctx.fillRect(0,y,W,2);
+
+  // corner brackets
+  const m=Math.round(W*0.045), L=Math.round(W*0.075), t=Math.max(5,Math.round(W*0.006));
+  ctx.strokeStyle=TEAL; ctx.lineWidth=t;
+  [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath();
+    ctx.moveTo(x+dx*L,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*L);
+    ctx.stroke();
+  });
+
+  const cx=W/2, left=W*0.11, right=W*0.89;
+  const S=Math.min(W,H); // type scale off the short edge so 16:9 stays readable
+
+  // header
+  glitchText("NO TOUCHY FOR FREE™", cx, H*0.115, S*0.062, "#fff");
+  ctx.fillStyle="#888";
+  ctx.font=(S*0.02)+"px 'Courier New',monospace";
+  ctx.textAlign="center";
+  ctx.fillText("EMOTIONAL LABOR — BILLING DEPARTMENT — EST. EP16", cx, H*0.115+S*0.045);
+
+  // invoice meta
+  const today=new Date(), ds=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  ctx.textAlign="left";
+  ctx.fillStyle="#999";
+  ctx.font=(S*0.021)+"px 'Courier New',monospace";
+  ctx.fillText("INVOICE NO. "+invNo, left, H*0.215);
+  ctx.textAlign="right";
+  ctx.fillText("DATE: "+ds, right, H*0.215);
+  ctx.textAlign="left";
+  ctx.fillStyle="#666";
+  ctx.fillText("BILL TO:", left, H*0.255);
+  ctx.fillStyle="#fff";
+  ctx.font="bold "+(S*0.026)+"px 'Courier New',monospace";
+  ctx.fillText(truncate(billto, W*0.78, "bold "+(S*0.026)+"px 'Courier New',monospace"), left, H*0.255+S*0.035);
+
+  // table header
+  let ty=H*0.36;
+  const dash=(y)=>{ ctx.strokeStyle="#333"; ctx.lineWidth=Math.max(2,S*0.002);
+    ctx.setLineDash([S*0.008,S*0.008]); ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke(); ctx.setLineDash([]); };
+  ctx.fillStyle="#666";
+  ctx.font=(S*0.018)+"px 'Courier New',monospace";
+  ctx.textAlign="left";  ctx.fillText("LABOR PERFORMED", left, ty);
+  ctx.textAlign="right"; ctx.fillText("QTY × RATE          AMOUNT", right, ty);
+  dash(ty+S*0.012);
+
+  // rows
+  const rowFont=(S*0.0215)+"px 'Courier New',monospace";
+  let y=ty+S*0.05, subtotal=0;
+  const drawRows=rows.length?rows:[{desc:"…", qty:0, unit:"HRS", rate:0, amount:0}];
+  drawRows.forEach(r=>{
+    subtotal+=r.amount;
+    ctx.fillStyle="#fff";
+    ctx.textAlign="left";
+    ctx.font=rowFont;
+    ctx.fillText(truncate(r.desc, W*0.40, rowFont), left, y);
+    ctx.textAlign="right";
+    ctx.fillStyle="#bbb";
+    ctx.fillText(r.qty+" "+r.unit+" × "+money(r.rate)+"   "+money(r.amount), right, y);
+    y+=S*0.042;
+  });
+  dash(y-S*0.014);
+
+  // totals
+  y+=S*0.03;
+  ctx.font=(S*0.021)+"px 'Courier New',monospace";
+  ctx.textAlign="right";
+  ctx.fillStyle="#999";
+  ctx.fillText("SUBTOTAL:  "+money(subtotal), right, y);
+  y+=S*0.038;
+  ctx.fillText("PEACE PROTECTION FEE:  "+money(subtotal*0.2), right, y);
+  y+=S*0.05;
+  ctx.fillStyle="#fff";
+  ctx.font="bold "+(S*0.034)+"px 'Courier New',monospace";
+  ctx.fillText("TOTAL DUE:  "+money(subtotal*1.2), right, y);
+
+  // terms
+  y+=S*0.05;
+  ctx.textAlign="left";
+  ctx.fillStyle="#888";
+  ctx.font=(S*0.019)+"px 'Courier New',monospace";
+  ctx.fillText("TERMS: NET 0 — THE COVER CHARGE IS DUE AT THE DOOR.", left, y);
+  ctx.fillText("PAYMENT ACCEPTED: RECIPROCITY. SNACKS. SILENCE.", left, y+S*0.03);
+
+  // stamp — rotated, over the table zone
+  ctx.save();
+  ctx.translate(cx, H*0.47);
+  ctx.rotate(-0.12);
+  const stFont=fitText(stamp, W*0.62, S*0.075);
+  ctx.font="bold "+stFont+"px 'Courier New',monospace";
+  ctx.textAlign="center";
+  const sw=ctx.measureText(stamp).width;
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle=color; ctx.lineWidth=Math.max(5,S*0.007);
+  ctx.strokeRect(-sw/2-S*0.03, -stFont*0.95, sw+S*0.06, stFont*1.35);
+  ctx.fillStyle=color;
+  ctx.fillText(stamp, 0, 0);
+  ctx.globalAlpha=1;
+  ctx.restore();
+
+  // tall formats: fake barcode fills the void — fake-serious, like the credits
+  if(H/W>1.3){
+    const by=H*0.70, bh=S*0.06, bw=W*0.5;
+    let bx=cx-bw/2;
+    const brnd=rngSeeded(hash(seedText)+7);
+    ctx.fillStyle="#ccc";
+    while(bx<cx+bw/2){
+      const w2=Math.max(2,Math.round(brnd()*S*0.008));
+      if(brnd()>0.35) ctx.fillRect(bx,by,w2,bh);
+      bx+=w2+Math.round(brnd()*S*0.006)+2;
+    }
+    ctx.fillStyle="#666";
+    ctx.textAlign="center";
+    ctx.font=(S*0.016)+"px 'Courier New',monospace";
+    ctx.fillText("SCAN TO DISPUTE — DISPUTES ARE NOT ACCEPTED", cx, by+bh+S*0.03);
+  }
+
+  // the flip — the true line, in orange
+  ctx.textAlign="center";
+  ctx.fillStyle=ORANGE;
+  ctx.font="italic "+(S*0.023)+"px 'Courier New',monospace";
+  const flip="You're allowed to exist without becoming a dumpster for other people's feelings.";
+  wrapLines(flip, W*0.8, "italic "+(S*0.023)+"px 'Courier New',monospace")
+    .forEach((ln,i)=>ctx.fillText(ln, cx, H*0.885+i*S*0.032));
+
+  // footer
+  ctx.fillStyle="#555";
+  ctx.font=(S*0.017)+"px 'Courier New',monospace";
+  ctx.fillText("EP16 — @STOOPIDSHOW — SIGNAL RECEIVED", cx, H*0.955);
+  ctx.fillStyle=TEAL;
+  ctx.fillText("STOOPID but TRUE", cx, H*0.98);
+}
+
+function download(){
+  const a=document.createElement("a");
+  a.download="no_touchy_invoice_"+stamp.toLowerCase().replace(/\W+/g,"_")+".png";
+  a.href=cv.toDataURL("image/png");
+  a.click();
+}
+function postIt(){
+  const text="Invoice issued. Emotional labor has a cover charge now. No Touchy For Free™ @stoopidshow\n\nBill yours: https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_no_touchy_invoice.html";
+  window.open("https://x.com/intent/post?text="+encodeURIComponent(text), "_blank");
+}
+draw();
+</script>
+</body>
+</html>
