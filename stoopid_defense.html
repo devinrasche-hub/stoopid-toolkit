@@ -31,6 +31,10 @@
   .status.bad{color:var(--red);}
   .status.good{color:var(--teal);}
   .status.flip{color:var(--orange);}
+  .forecast{width:min(94vw,640px); margin:2px auto 0; font-size:11px; min-height:16px;
+    text-align:center; color:#555; letter-spacing:1px;}
+  .forecast b{color:var(--purple); font-weight:normal;}
+  .forecast b.warn{color:var(--red);}
   .stage{position:relative; margin:14px auto 4px; width:min(94vw,640px);}
   .stage .c{position:absolute; width:16px; height:16px; z-index:2; pointer-events:none;}
   .stage .tl{top:-4px; left:-4px; border-top:2px solid var(--teal); border-left:2px solid var(--teal);}
@@ -113,6 +117,7 @@
   <span>BEST <b id="hudBest">0</b></span>
 </div>
 <div class="status" id="statusBox">the grid is quiet. it will not stay quiet.</div>
+<div class="forecast" id="forecastBox"></div>
 
 <div class="stage">
   <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
@@ -132,6 +137,7 @@
   <div class="pstats" id="pStats"></div>
   <div class="btnrow" style="margin-top:0">
     <button class="btn mini" id="upBtn">UPGRADE</button>
+    <button class="btn mini flip" id="tgtBtn">TARGET: FIRST</button>
     <button class="btn mini alt" id="sellBtn">SELL</button>
   </div>
 </div>
@@ -142,7 +148,7 @@
   <button class="btn mini alt" id="speedBtn">SPEED &times;1</button>
   <button class="btn mini alt" id="soundBtn">SOUND: ON</button>
 </div>
-<div class="help">1-4 ARM &middot; CLICK GRID TO BUILD &middot; CLICK TOWER TO UPGRADE &middot; SPACE TRANSMITS &middot; F = SPEED &middot; ESC CANCELS</div>
+<div class="help">1-4 ARM &middot; CLICK GRID TO BUILD &middot; CLICK TOWER TO UPGRADE &middot; SPACE TRANSMITS &middot; F = SPEED &middot; T = TARGETING &middot; ESC CANCELS</div>
 
 <div class="result" id="resultCard">
   <div class="label">OFFICIAL GRID COLLAPSE REPORT</div>
@@ -164,7 +170,7 @@
   </div>
 </div>
 
-<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; the towers were paid in signal</footer>
+<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.35 &middot; the towers were paid in signal</footer>
 
 <script>
 (function(){
@@ -268,7 +274,13 @@
     "wave 17. the bait is quote-tweeting your towers now.",
     "wave 18. the slop built a garage. nobody watched. it kept coming.",
     "wave 19. where is everyone? the slop knows. it will not say.",
-    "wave 20. the milestone. you already know what it is."
+    "wave 20. the milestone. you already know what it is.",
+    "wave 21. the milestone moved. the slop followed it here.",
+    "wave 22. the slop upgraded itself. it calls itself 'premium' now.",
+    "wave 23. THE ALGORITHM left a review. one star. 'too much signal.'",
+    "wave 24. the grid is humming. that is either good or the end.",
+    "wave 25. the year is 2035. the slop got there first.",
+    "wave 26. the towers do not sleep. neither does the feed."
   ];
 
   /* ---------- STATE ---------- */
@@ -294,7 +306,7 @@
     document.getElementById("resultCard").classList.remove("show");
     waveBtn.disabled=false; waveBtn.textContent="TRANSMIT WAVE 1"; waveBtn.classList.remove("early");
     setStatus("the grid is quiet. it will not stay quiet.","");
-    syncHud(); syncBar(); syncPanel();
+    syncHud(); syncBar(); syncPanel(); syncForecast();
   }
 
   /* ---------- AUDIO (tiny synth, no files) ---------- */
@@ -407,7 +419,26 @@
     const ub=$("upBtn");
     if(t.lvl>=MAXLVL){ ub.disabled=true; ub.textContent="MAX LEVEL"; }
     else { ub.disabled=cash<upCost(t); ub.textContent="UPGRADE ("+upCost(t)+")"; }
+    const tb=$("tgtBtn");
+    if(t.type==="flip"){ tb.style.display="none"; }
+    else { tb.style.display=""; tb.textContent="TARGET: "+TGTMODES[t.tgt||0]; }
     $("sellBtn").textContent="SELL (+"+Math.round(t.invested*0.7)+")";
+  }
+
+  /* ---------- THREAT FORECAST (the grid sees the future now) ---------- */
+  function syncForecast(){
+    const el=$("forecastBox");
+    const show = state==="build" || (state==="wave" && earlyReady);
+    if(!show){ el.innerHTML=""; return; }
+    const counts={};
+    for(const s of buildSpawns(wave+1)) counts[s.t]=(counts[s.t]||0)+1;
+    const line=Object.keys(FOES).filter(k=>counts[k]).map(k=>{
+      const n=counts[k], lbl=FOES[k].label;
+      return (k==="boss"||k==="manager")
+        ? '<b class="warn">'+lbl+(n>1?" &times;"+n:"")+"</b>"
+        : lbl+" <b>&times;"+n+"</b>";
+    }).join(" &middot; ");
+    el.innerHTML="NEXT TRANSMISSION MANIFEST &mdash; "+line;
   }
 
   /* ---------- WAVES ---------- */
@@ -444,7 +475,7 @@
       : "wave "+wave+". the slop no longer knocks.");
     setStatus(line, boss?"bad":"");
     setBanner("WAVE "+wave, boss?RED:TEAL, boss?"THE ALGORITHM APPROACHES":"");
-    sfx.horn(); syncHud();
+    sfx.horn(); syncHud(); syncForecast();
   }
   function endWave(){
     state="build"; earlyReady=false;
@@ -469,7 +500,7 @@
     if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
     waveBtn.disabled=false; waveBtn.classList.remove("early");
     waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
-    sfx.kill(); syncHud();
+    sfx.kill(); syncHud(); syncForecast();
   }
   function spawn(type,dOverride,hpMul){
     const f=FOES[type], hs=hpScale(wave)*(hpMul||1);
@@ -495,7 +526,7 @@
     state="over"; sfx.over();
     lastVerdict=verdictFor(wave);
     setStatus("signal lost. the slop is doing a victory podcast.","bad");
-    waveBtn.disabled=true; waveBtn.classList.remove("early");
+    waveBtn.disabled=true; waveBtn.classList.remove("early"); syncForecast();
     if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
     $("resVerdict").textContent=lastVerdict.v;
     $("resVerdict").className="verdict "+lastVerdict.v.toLowerCase();
@@ -622,7 +653,7 @@
       if(!buildable(p.c,p.r)){ setStatus("can't build there. the path belongs to the slop.","bad"); return; }
       if(cash<cost){ setStatus("insufficient signal.","bad"); return; }
       cash-=cost; spent+=cost; built++;
-      towers.push({type:armed, c:p.c, r:p.r, lvl:1, cd:0, angle:0, invested:cost, fx:0});
+      towers.push({type:armed, c:p.c, r:p.r, lvl:1, cd:0, angle:0, invested:cost, fx:0, tgt:0});
       sfx.build(); syncHud();
       if(cash<cost) armed=null;
       syncBar();
@@ -635,6 +666,7 @@
     if(e.key==="Escape"){ armed=null; selected=null; syncBar(); syncPanel(); }
     else if(e.key===" "){ e.preventDefault(); if(!waveBtn.disabled) startWave(); }
     else if(e.key==="f"||e.key==="F"){ cycleSpeed(); }
+    else if(e.key==="t"||e.key==="T"){ cycleTarget(); }
     else if(e.key>="1"&&e.key<="4"){ armType(["pulse","beam","nova","flip"][+e.key-1]); }
   });
   $("upBtn").addEventListener("click",()=>{
@@ -645,6 +677,13 @@
     rings.push({x:tx,y:ty,r:4,maxr:26,col:TOWERS[t.type].col,life:0.3});
     sfx.build(); syncHud(); syncPanel();
   });
+  function cycleTarget(){
+    const t=selected; if(!t||t.type==="flip") return;
+    t.tgt=((t.tgt||0)+1)%TGTMODES.length;
+    syncPanel();
+    setStatus("fire control updated. targeting the "+["first","strongest","freshest"][t.tgt]+" threat.","");
+  }
+  $("tgtBtn").addEventListener("click", cycleTarget);
   $("sellBtn").addEventListener("click",()=>{
     const t=selected; if(!t) return;
     cash+=Math.round(t.invested*0.7);
@@ -654,12 +693,16 @@
   });
 
   /* ---------- COMBAT ---------- */
-  function nearestFoe(x,y,range){
-    let bestF=null, bestD=-1;
+  // fire-control protocols: 0 FIRST (furthest along), 1 STRONG (max hp), 2 LAST (freshest spawn)
+  const TGTMODES=["FIRST","STRONG","LAST"];
+  function nearestFoe(x,y,range,mode){
+    let bestF=null, bestV=-Infinity;
     for(const f of foes){
       if(f.hp<=0||f.d<0) continue;
       const p=posAt(f.d);
-      if(Math.hypot(p.x-x,p.y-y)<=range && f.d>bestD){ bestD=f.d; bestF=f; }
+      if(Math.hypot(p.x-x,p.y-y)>range) continue;
+      const v = mode===1 ? f.hp : mode===2 ? -f.d : f.d;
+      if(v>bestV){ bestV=v; bestF=f; }
     }
     return bestF;
   }
@@ -694,10 +737,17 @@
       syncHud();
     }
   }
+  const GLYPHS="01#$%&+x!?";
   function burst(x,y,col,n){
     for(let i=0;i<n;i++){
       const a=Math.random()*Math.PI*2, s=30+Math.random()*130;
       parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.4,col,sz:1+Math.random()*2.5});
+    }
+    // the slop decompiles — raw data escaping the corpse
+    for(let i=0;i<Math.min(4,Math.ceil(n/3));i++){
+      const a=Math.random()*Math.PI*2, s=15+Math.random()*55;
+      parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-24,life:0.55+Math.random()*0.4,col,sz:0,
+        ch:GLYPHS[Math.floor(Math.random()*GLYPHS.length)]});
     }
     if(parts.length>380) parts.splice(0,parts.length-380);
   }
@@ -715,6 +765,7 @@
         earlyReady=true;
         waveBtn.disabled=false; waveBtn.classList.add("early");
         waveBtn.textContent="TRANSMIT "+(wave+1)+" EARLY (+"+earlyBonus()+")";
+        syncForecast();
       }
     }
     // slow fields + truth burn
@@ -777,7 +828,7 @@
       if(t.type==="flip") continue;
       const s=stat(t), tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL;
       t.cd-=dt;
-      const tgt=nearestFoe(tx,ty,s.range);
+      const tgt=nearestFoe(tx,ty,s.range,t.tgt||0);
       if(tgt){
         const p=posAt(tgt.d);
         t.angle=Math.atan2(p.y-ty,p.x-tx);
@@ -910,6 +961,7 @@
       cx.strokeRect(-CELL/2+4,-CELL/2+4,CELL-8,CELL-8);
       cx.shadowColor=b.col; cx.shadowBlur=(t.fx>0?15:5)+3.5*t.lvl;
       cx.filter="brightness("+(100+15*(t.lvl-1))+"%) saturate("+(100+10*(t.lvl-1))+"%)";
+      if(Math.random()<0.015) cx.globalAlpha=0.55; // hologram flicker — projection budget cuts
       cx.strokeStyle=b.col; cx.lineWidth=2;
       // high-tier towers get a spinning halo
       if(t.lvl>=4){
@@ -1110,10 +1162,12 @@
       cx.restore();
     }
     // particles
+    cx.textAlign="center";
     for(const p of parts){
       cx.globalAlpha=Math.min(1,p.life*3);
       cx.fillStyle=p.col;
-      cx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
+      if(p.ch){ cx.font="9px 'Courier New',monospace"; cx.fillText(p.ch,p.x,p.y); }
+      else cx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
     }
     cx.globalAlpha=1;
     // floating bounty
@@ -1175,6 +1229,21 @@
         cx.beginPath(); cx.arc(gx,gy,b.range,0,Math.PI*2); cx.stroke();
       }
       cx.restore();
+    }
+
+    /* ---------- 2035 POST-PROCESS ---------- */
+    cx.setTransform(1,0,0,1,0,0);
+    // CRT refresh sweep — the monitor is old. the war is not.
+    const sweepY=((pulseT*46)%(H+120))-60;
+    cx.fillStyle="rgba(255,255,255,0.028)";
+    cx.fillRect(0,sweepY,W,26);
+    // slice glitch on impact — tracking error in the feed
+    if(shake>2.5 || flash){
+      const n=2+Math.floor(Math.random()*2);
+      for(let i=0;i<n;i++){
+        const sy=Math.random()*(H-18), sh=4+Math.random()*14, dx=(Math.random()-0.5)*14;
+        cx.drawImage(cv, 0,sy,W,sh, dx,sy,W,sh);
+      }
     }
   }
 
