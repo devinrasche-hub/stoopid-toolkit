@@ -25,6 +25,7 @@
     padding:10px 0 2px; text-transform:uppercase; flex-wrap:wrap;}
   .hud b{color:var(--teal);}
   .hud b.hurt{color:var(--red);}
+  .hud b.streaking{color:var(--orange);}
   .status{width:min(94vw,640px); margin:8px auto 0; font-size:13px; min-height:22px;
     text-align:center; color:#888; letter-spacing:1px;}
   .status.bad{color:var(--red);}
@@ -61,6 +62,9 @@
   .btn.alt:hover{background:var(--purple); color:#000;}
   .btn.flip{border-color:var(--orange); color:var(--orange);}
   .btn.flip:hover{background:var(--orange); color:#000;}
+  .btn.early{border-color:var(--orange); color:var(--orange); animation:earlyblink 1s steps(2) infinite;}
+  .btn.early:hover{background:var(--orange); color:#000;}
+  @keyframes earlyblink{50%{opacity:.55;}}
   .btn.mini{font-size:11px; padding:8px 12px; letter-spacing:2px;}
   .help{font-size:11px; color:#555; letter-spacing:2px; text-align:center; margin-top:6px;}
   .panel{display:none; width:min(94vw,640px); margin:10px auto 0; border:1px solid #333; padding:12px 14px;
@@ -83,6 +87,7 @@
   .result .ruling{font-size:12px; color:var(--orange); font-style:italic; margin-bottom:14px; line-height:1.5;}
   .result .stats{font-size:13px; line-height:1.9; letter-spacing:1px;}
   .result .stats b{color:var(--teal);}
+  .result .stats b.hi{color:var(--orange);}
   .result .signoff{font-size:11px; color:var(--purple); letter-spacing:2px; margin-top:12px;}
   .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
   footer{font-size:10px; color:#444; letter-spacing:2px; margin-top:20px; text-align:center;}
@@ -101,7 +106,9 @@
   <span>SIGNAL <b id="hudCash">0</b></span>
   <span>INTEGRITY <b id="hudLives">10</b></span>
   <span>WAVE <b id="hudWave">0</b></span>
-  <span>PEAK WAVE <b id="hudBest">0</b></span>
+  <span>SCORE <b id="hudScore">0</b></span>
+  <span>STREAK <b id="hudStreak">0</b></span>
+  <span>BEST <b id="hudBest">0</b></span>
 </div>
 <div class="status" id="statusBox">the grid is quiet. it will not stay quiet.</div>
 
@@ -111,10 +118,10 @@
 </div>
 
 <div class="buildbar" id="buildBar">
-  <button class="twr t-pulse" data-type="pulse">PULSE LASER<small>90 &middot; fast &middot; loyal</small></button>
-  <button class="twr t-beam" data-type="beam">PHILOSOPHY BEAM<small>170 &middot; long range truths</small></button>
-  <button class="twr t-nova" data-type="nova">URGENCY NOVA<small>230 &middot; area panic</small></button>
-  <button class="twr t-flip" data-type="flip">FLIP FIELD<small>140 &middot; slows slop until it turns true</small></button>
+  <button class="twr t-pulse" data-type="pulse">[1] PULSE LASER<small>90 &middot; fast &middot; loyal</small></button>
+  <button class="twr t-beam" data-type="beam">[2] PHILOSOPHY BEAM<small>170 &middot; long range truths</small></button>
+  <button class="twr t-nova" data-type="nova">[3] URGENCY NOVA<small>230 &middot; area panic</small></button>
+  <button class="twr t-flip" data-type="flip">[4] FLIP FIELD<small>140 &middot; slows slop until it turns true</small></button>
 </div>
 
 <div class="panel" id="towerPanel">
@@ -128,9 +135,11 @@
 
 <div class="controls">
   <button class="btn" id="waveBtn">TRANSMIT WAVE 1</button>
+  <button class="btn mini flip" id="ocBtn" style="display:none">OVERCLOCK</button>
+  <button class="btn mini alt" id="speedBtn">SPEED &times;1</button>
   <button class="btn mini alt" id="soundBtn">SOUND: ON</button>
 </div>
-<div class="help">PICK A TOWER &middot; CLICK THE GRID TO BUILD &middot; CLICK A TOWER TO UPGRADE &middot; ESC CANCELS</div>
+<div class="help">1-4 ARM &middot; CLICK GRID TO BUILD &middot; CLICK TOWER TO UPGRADE &middot; SPACE TRANSMITS &middot; F = SPEED &middot; ESC CANCELS</div>
 
 <div class="result" id="resultCard">
   <div class="label">OFFICIAL GRID COLLAPSE REPORT</div>
@@ -138,9 +147,10 @@
   <div class="ruling" id="resRuling"></div>
   <div class="stats">
     waves survived: <b id="resWaves"></b><br>
+    signal score: <b class="hi" id="resScore"></b><br>
     slop deleted: <b id="resKills"></b><br>
+    perfect waves: <b id="resPerfect"></b><br>
     towers built: <b id="resBuilt"></b><br>
-    signal spent: <b id="resSpent"></b><br>
     cause of collapse: <span id="resCause" style="color:var(--red)"></span>
   </div>
   <div class="signoff">SIGNAL RECEIVED — @stoopidshow</div>
@@ -188,7 +198,8 @@
     }
   }
 
-  /* ---------- TOWERS ---------- */
+  /* ---------- TOWERS (5 levels deep — signal always has a job) ---------- */
+  const MAXLVL=5;
   const TOWERS={
     pulse:{name:"PULSE LASER",   col:TEAL,   cost:90,  range:100, rate:3.2,  dmg:7,  desc:"fast. cheap. loyal."},
     beam:{name:"PHILOSOPHY BEAM",col:PURPLE, cost:170, range:175, rate:0.75, dmg:38, desc:"slow, devastating truths."},
@@ -196,25 +207,32 @@
     flip:{name:"FLIP FIELD",     col:ORANGE, cost:140, range:95,  rate:0,    dmg:0,  slow:0.45, desc:"slows slop until it turns true."}
   };
   function stat(t){
-    const b=TOWERS[t.type], m=t.lvl-1;
+    const b=TOWERS[t.type], m=t.lvl-1, oc=1+0.12*(typeof ocLevel==="number"?ocLevel:0);
     return {
-      dmg:   b.dmg*Math.pow(1.45,m),
-      range: b.range*Math.pow(1.12,m),
+      dmg:   b.dmg*Math.pow(1.45,m)*oc,
+      range: b.range*Math.pow(1.10,m),
       rate:  b.rate*Math.pow(1.18,m),
-      slow:  b.slow ? Math.max(0.22, b.slow-0.10*m) : 0,
-      splash:b.splash ? b.splash*Math.pow(1.18,m) : 0
+      slow:  b.slow ? Math.max(0.15, b.slow-0.08*m) : 0,
+      dot:   t.type==="flip" && t.lvl>=3 ? 5*(t.lvl-2)*oc : 0,
+      splash:b.splash ? b.splash*Math.pow(1.16,m) : 0
     };
   }
-  function upCost(t){ return Math.round(TOWERS[t.type].cost*(t.lvl===1?0.9:1.5)); }
+  function upCost(t){ return Math.round(TOWERS[t.type].cost*[0.9,1.5,2.4,3.8][t.lvl-1]); }
 
   /* ---------- THE SLOP ---------- */
   const FOES={
-    slop: {hp:26,  sp:52, r:9,  bounty:11,  col:RED,    shape:"blob",  leak:1, label:"raw slop"},
-    bait: {hp:15,  sp:98, r:7,  bounty:9,   col:WHITE,  shape:"dart",  leak:1, label:"engagement bait"},
-    brick:{hp:85,  sp:36, r:11, bounty:24,  col:PURPLE, shape:"block", leak:2, label:"slop brick"},
-    boss: {hp:520, sp:30, r:16, bounty:130, col:RED,    shape:"hex",   leak:3, label:"THE ALGORITHM"}
+    slop:  {hp:26,  sp:52,  r:9,  bounty:11,  col:RED,    shape:"blob",   leak:1, label:"raw slop"},
+    bait:  {hp:15,  sp:106, r:7,  bounty:9,   col:WHITE,  shape:"dart",   leak:1, label:"engagement bait"},
+    brick: {hp:85,  sp:36,  r:11, bounty:24,  col:PURPLE, shape:"block",  leak:2, label:"slop brick"},
+    swarm: {hp:11,  sp:118, r:4,  bounty:4,   col:RED,    shape:"mote",   leak:1, label:"ratio swarm"},
+    shield:{hp:95,  sp:40,  r:10, bounty:30,  col:WHITE,  shape:"sponsor",leak:2, label:"sponsored post", res:0.45, noslow:true},
+    boss:  {hp:520, sp:30,  r:16, bounty:130, col:RED,    shape:"hex",    leak:3, label:"THE ALGORITHM"}
   };
-  function hpScale(w){ return 1 + 0.22*(w-1) + 0.005*w*w; }
+  // gentle ramp early, compounding after wave 10 — a parked grid WILL fall
+  function hpScale(w){
+    const base=1 + 0.22*(w-1) + 0.005*w*w;
+    return w>10 ? base*Math.pow(1.115,w-10) : base;
+  }
 
   const WAVELINES=[
     "wave 1. the slop arrives politely.",
@@ -222,31 +240,45 @@
     "wave 3. engagement bait detected. do not engage. shoot.",
     "wave 4. the slop is not mad. just disappointed.",
     "wave 5. THE ALGORITHM has entered the grid. it calls this 'content'.",
-    "wave 6. the slop has read one book and will not shut up about it.",
+    "wave 6. ratio swarm inbound. small. fast. rude.",
     "wave 7. slop bricks. dense. confident. wrong.",
-    "wave 8. the bait is running now. it learned that from you.",
+    "wave 8. sponsored posts detected. they resist the flip. paid to.",
     "wave 9. the slop is monetizing. hold the line.",
     "wave 10. THE ALGORITHM is back. it says the metrics look great.",
     "wave 11. the slop unionized. respect it. delete it.",
     "wave 12. everything is content now. even this.",
     "wave 13. the slop is doing a podcast about your grid.",
     "wave 14. peak slop. allegedly.",
-    "wave 15. THE ALGORITHM brought its manager. its manager is also THE ALGORITHM."
+    "wave 15. THE ALGORITHM brought its manager. its manager is also THE ALGORITHM.",
+    "wave 16. the slop found your address. it sent a brand deal.",
+    "wave 17. the bait is quote-tweeting your towers now.",
+    "wave 18. the slop built a garage. nobody watched. it kept coming.",
+    "wave 19. where is everyone? the slop knows. it will not say.",
+    "wave 20. the milestone. you already know what it is."
   ];
 
   /* ---------- STATE ---------- */
   let cash, lives, wave, state, foes, towers, beams, rings, parts, texts,
       spawnList, spawnTimer, kills, built, spent, shake, cause, lastVerdict,
-      armed=null, selected=null, hoverCell=null, pulseT=0;
+      score, streak, perfect, waveLeaked, banner, flash, earlyReady,
+      ocLevel, ocCost,
+      armed=null, selected=null, hoverCell=null, pulseT=0, speedMul=1;
   let best=+(localStorage.getItem("stoopid_defense_best")||0);
+  let bestScore=+(localStorage.getItem("stoopid_defense_best_score")||0);
+
+  // ambient data motes drifting through the off-grid
+  const MOTES=[];
+  for(let i=0;i<26;i++) MOTES.push({x:Math.random()*W, y:Math.random()*H, s:4+Math.random()*11, tw:Math.random()*7});
 
   function reset(){
     cash=260; lives=10; wave=0; state="build";
     foes=[]; towers=[]; beams=[]; rings=[]; parts=[]; texts=[];
     spawnList=[]; spawnTimer=0; kills=0; built=0; spent=0; shake=0;
+    score=0; streak=0; perfect=0; waveLeaked=false; banner=null; flash=null; earlyReady=false;
+    ocLevel=0; ocCost=400; syncOc();
     cause="unmoderated slop"; lastVerdict=null; armed=null; selected=null;
     document.getElementById("resultCard").classList.remove("show");
-    waveBtn.disabled=false; waveBtn.textContent="TRANSMIT WAVE 1";
+    waveBtn.disabled=false; waveBtn.textContent="TRANSMIT WAVE 1"; waveBtn.classList.remove("early");
     setStatus("the grid is quiet. it will not stay quiet.","");
     syncHud(); syncBar(); syncPanel();
   }
@@ -274,6 +306,8 @@
     sell(){ tone(660,220,0.15,"square",0.05); },
     leak(){ tone(220,55,0.4,"square",0.09); },
     horn(){ tone(110,330,0.35,"sawtooth",0.07); },
+    streakup(){ tone(660,1320,0.14,"triangle",0.06); tone(880,1760,0.2,"triangle",0.04); },
+    bossdie(){ tone(90,30,0.5,"sawtooth",0.1); tone(1200,300,0.3,"square",0.05); },
     over(){ tone(440,40,0.9,"sawtooth",0.09); }
   };
   document.getElementById("soundBtn").addEventListener("click",e=>{
@@ -324,12 +358,15 @@
   const $=id=>document.getElementById(id);
   const waveBtn=$("waveBtn"), statusBox=$("statusBox");
   function setStatus(msg,cls){ statusBox.textContent=msg; statusBox.className="status"+(cls?" "+cls:""); }
+  function setBanner(txt,col,sub){ banner={txt,col,sub:sub||"",life:3.2,max:3.2}; }
   function syncHud(){
     $("hudCash").textContent=Math.floor(cash);
     const lv=$("hudLives"); lv.textContent=lives; lv.className=lives<=3?"hurt":"";
     $("hudWave").textContent=wave;
-    $("hudBest").textContent=best;
-    syncBar();
+    $("hudScore").textContent=score;
+    const st=$("hudStreak"); st.textContent=streak; st.className=streak>=2?"streaking":"";
+    $("hudBest").textContent=bestScore;
+    syncBar(); syncOc();
   }
   function syncBar(){
     document.querySelectorAll(".twr").forEach(btn=>{
@@ -347,11 +384,12 @@
     $("pName").style.color=b.col;
     let line = t.type==="flip"
       ? "slows slop to <b>"+Math.round(s.slow*100)+"%</b> speed &middot; range <b>"+Math.round(s.range)+"</b>"
+        +(s.dot?" &middot; truth burn <b>"+s.dot+"/s</b>":"")
       : "damage <b>"+Math.round(s.dmg)+"</b> &middot; range <b>"+Math.round(s.range)+"</b> &middot; rate <b>"+s.rate.toFixed(1)+"/s</b>"
         +(s.splash?" &middot; splash <b>"+Math.round(s.splash)+"</b>":"");
     $("pStats").innerHTML=line+"<br>"+b.desc;
     const ub=$("upBtn");
-    if(t.lvl>=3){ ub.disabled=true; ub.textContent="MAX LEVEL"; }
+    if(t.lvl>=MAXLVL){ ub.disabled=true; ub.textContent="MAX LEVEL"; }
     else { ub.disabled=cash<upCost(t); ub.textContent="UPGRADE ("+upCost(t)+")"; }
     $("sellBtn").textContent="SELL (+"+Math.round(t.invested*0.7)+")";
   }
@@ -359,40 +397,71 @@
   /* ---------- WAVES ---------- */
   function buildSpawns(w){
     const L=[], add=(t,n,g)=>{ for(let i=0;i<n;i++) L.push({t,g}); };
-    add("slop", 6+Math.floor(w*1.6), Math.max(0.28, 0.6-w*0.012));
-    if(w>=3) add("bait", Math.floor(w*0.9), 0.34);
-    if(w>=5) add("brick", Math.floor(w/2.5), 0.95);
-    if(w%5===0) add("boss", Math.ceil(w/7), 2.6);
+    add("slop", 6+Math.floor(w*1.5), Math.max(0.26, 0.6-w*0.012));
+    if(w>=2) add("bait", Math.floor(w*0.9), 0.32);
+    if(w>=5) add("brick", Math.floor(w/2.5), 0.9);
+    if(w>=7) add("swarm", 4+Math.floor(w*0.8), 0.17);
+    if(w>=8) add("shield", Math.floor(w/4), 1.1);
+    if(w%5===0) add("boss", Math.ceil(w/7), 2.4);
     return L;
   }
+  function earlyBonus(){ return 30+wave*5; }
   function startWave(){
-    if(state!=="build") return;
-    wave++; state="wave";
-    spawnList=buildSpawns(wave); spawnTimer=0.4;
-    waveBtn.disabled=true; waveBtn.textContent="WAVE "+wave+" IN PROGRESS";
-    const line = wave%5===0 ? "wave "+wave+". THE ALGORITHM has entered the grid."
-      : (WAVELINES[wave-1] || "wave "+wave+". the slop no longer knocks.");
-    setStatus(line, wave%5===0?"bad":"");
+    if(state==="over") return;
+    if(state==="wave"){
+      if(spawnList.length || !earlyReady) return;
+      const b=earlyBonus();
+      cash+=b; score+=b;
+      texts.push({x:W/2,y:H/2-30,txt:"EARLY TRANSMIT +"+b,life:1.2,col:ORANGE});
+      setStatus("early transmission. +"+b+" signal. reckless. respected.","flip");
+    }
+    wave++; state="wave"; earlyReady=false;
+    if(wave===1) waveLeaked=false; // streak window opens per cleared batch
+    spawnList=buildSpawns(wave); spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
+    waveBtn.disabled=true; waveBtn.classList.remove("early");
+    waveBtn.textContent="WAVE "+wave+" IN PROGRESS";
+    const boss=wave%5===0;
+    const line = WAVELINES[wave-1] || (boss ? "wave "+wave+". THE ALGORITHM has entered the grid."
+      : "wave "+wave+". the slop no longer knocks.");
+    setStatus(line, boss?"bad":"");
+    setBanner("WAVE "+wave, boss?RED:TEAL, boss?"THE ALGORITHM APPROACHES":"");
     sfx.horn(); syncHud();
   }
   function endWave(){
-    state="build";
-    const bonus=40+wave*6;
-    cash+=bonus;
-    if(wave===20){
-      setStatus("wave 20 cleared. the milestone was a trap. so I moved it. keep going.","flip");
+    state="build"; earlyReady=false;
+    let bonus=30+wave*5;
+    if(!waveLeaked){
+      streak++; perfect++;
+      const sb=streak*15;
+      bonus+=sb; score+=100+streak*50;
+      if(streak>=2){ setBanner("PERFECT ×"+streak, ORANGE, "+"+sb+" streak signal"); sfx.streakup(); }
+    } else {
+      streak=0;
+    }
+    waveLeaked=false;
+    cash+=bonus; score+=wave*10;
+    if(wave>=20 && wave%20===0){
+      setBanner("THE MILESTONE WAS A TRAP", ORANGE, "so you moved it. keep going.");
+      setStatus("wave "+wave+" cleared. the milestone was a trap. so I moved it. keep going.","flip");
     } else {
       setStatus("wave "+wave+" cleared. +"+bonus+" signal. the quiet is temporary.","good");
     }
     if(wave>best){ best=wave; localStorage.setItem("stoopid_defense_best",best); }
-    waveBtn.disabled=false; waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
+    if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
+    waveBtn.disabled=false; waveBtn.classList.remove("early");
+    waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
     sfx.kill(); syncHud();
   }
-  function spawn(type){
-    const f=FOES[type], hs=hpScale(wave);
-    foes.push({type, d:-20-Math.random()*12, hp:f.hp*hs, maxhp:f.hp*hs,
+  function spawn(type,dOverride,hpMul){
+    const f=FOES[type], hs=hpScale(wave)*(hpMul||1);
+    const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
+    foes.push({type, d, hp:f.hp*hs, maxhp:f.hp*hs,
       sp:f.sp, r:f.r, col:f.col, shape:f.shape, slowF:1, wob:Math.random()*7,
-      bounty:f.bounty+Math.floor(wave/3), leak:f.leak});
+      bounty:f.bounty+Math.floor(wave/4), leak:f.leak, res:f.res||0, noslow:!!f.noslow});
+    if(dOverride===undefined){
+      const p=posAt(2);
+      rings.push({x:p.x,y:p.y,r:2,maxr:16,col:f.col,life:0.22});
+    }
   }
 
   /* ---------- GAME OVER ---------- */
@@ -407,14 +476,16 @@
     state="over"; sfx.over();
     lastVerdict=verdictFor(wave);
     setStatus("signal lost. the slop is doing a victory podcast.","bad");
-    waveBtn.disabled=true;
+    waveBtn.disabled=true; waveBtn.classList.remove("early");
+    if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
     $("resVerdict").textContent=lastVerdict.v;
     $("resVerdict").className="verdict "+lastVerdict.v.toLowerCase();
     $("resRuling").textContent='"'+lastVerdict.r+'"';
     $("resWaves").textContent=wave;
+    $("resScore").textContent=score+(score>=bestScore?" (BEST)":"");
     $("resKills").textContent=kills;
+    $("resPerfect").textContent=perfect;
     $("resBuilt").textContent=built;
-    $("resSpent").textContent=spent;
     $("resCause").textContent=cause;
     $("resultCard").classList.add("show");
     $("resultCard").scrollIntoView({behavior:"smooth", block:"center"});
@@ -449,22 +520,22 @@
       if((line+w2).length>52){ c.fillText(line.trim(),mid,ly); ly+=44; line=""; }
       line+=w2+" ";
     }
-    c.fillText(line.trim(),mid,ly); ly+=90;
+    c.fillText(line.trim(),mid,ly); ly+=84;
     c.fillStyle="#fff"; c.font="34px 'Courier New',monospace";
-    const rows=[["waves survived",wave],["slop deleted",kills],["towers built",built],["signal spent",spent],["cause of collapse",cause]];
+    const rows=[["waves survived",wave],["signal score",score],["slop deleted",kills],["perfect waves",perfect],["towers built",built],["cause of collapse",cause]];
     for(const [k,val] of rows){
       c.fillStyle="#888"; c.textAlign="right"; c.fillText(k+":", mid-16, ly);
-      c.fillStyle= k==="cause of collapse" ? RED : TEAL;
+      c.fillStyle= k==="cause of collapse" ? RED : (k==="signal score" ? ORANGE : TEAL);
       c.textAlign="left"; c.fillText(String(val).toUpperCase(), mid+16, ly);
-      ly+=64;
+      ly+=60;
     }
     c.textAlign="center";
     c.fillStyle=PURPLE; c.font="28px 'Courier New',monospace";
-    c.fillText("the slop is coming. protect your peace.",mid,1140);
+    c.fillText("the slop is coming. protect your peace.",mid,1150);
     c.fillStyle="#888"; c.font="26px 'Courier New',monospace";
-    c.fillText("@STOOPIDSHOW — SIGNAL RECEIVED",mid,1210);
+    c.fillText("@STOOPIDSHOW — SIGNAL RECEIVED",mid,1215);
     c.fillStyle=TEAL;
-    c.fillText("STOOPID but TRUE",mid,1255);
+    c.fillText("STOOPID but TRUE",mid,1258);
     return c2;
   }
   $("dlBtn").addEventListener("click",()=>{
@@ -475,12 +546,32 @@
   });
   $("postBtn").addEventListener("click",()=>{
     const v=lastVerdict||verdictFor(wave);
-    const text="STOOPID DEFENSE — survived "+wave+" waves. "+kills+" slop deleted. cause of collapse: "
+    const text="STOOPID DEFENSE — survived "+wave+" waves. signal score "+score+". "+kills+" slop deleted. cause of collapse: "
       +cause+". verdict: "+v.v+".\n\nprotect your peace: https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_defense.html @stoopidshow";
     window.open("https://x.com/intent/post?text="+encodeURIComponent(text), "_blank");
   });
   $("againBtn").addEventListener("click", reset);
   waveBtn.addEventListener("click", startWave);
+  function syncOc(){
+    const b=$("ocBtn");
+    if(wave<8){ b.style.display="none"; return; }
+    b.style.display="";
+    b.textContent="OVERCLOCK +12% ("+ocCost+")";
+    b.disabled=cash<ocCost;
+  }
+  $("ocBtn").addEventListener("click",()=>{
+    if(cash<ocCost) return;
+    cash-=ocCost; spent+=ocCost; ocLevel++;
+    ocCost=Math.round(ocCost*1.6);
+    setStatus("grid overclocked. all lasers +12%. total +"+(ocLevel*12)+"%. the hum is louder now.","flip");
+    rings.push({x:W/2,y:H/2,r:10,maxr:120,col:ORANGE,life:0.4});
+    sfx.streakup(); syncHud(); syncPanel();
+  });
+  $("speedBtn").addEventListener("click", cycleSpeed);
+  function cycleSpeed(){
+    speedMul = speedMul>=3 ? 1 : speedMul+1;
+    $("speedBtn").textContent="SPEED ×"+speedMul;
+  }
 
   /* ---------- INPUT ---------- */
   function cellFromEvent(e){
@@ -491,14 +582,14 @@
   function buildable(c,r){
     return c>=0&&c<COLS&&r>=0&&r<ROWS && !pathCells.has(c+","+r) && !towers.some(t=>t.c===c&&t.r===r);
   }
+  function armType(t){
+    if(cash<TOWERS[t].cost && armed!==t){ setStatus("insufficient signal. the "+TOWERS[t].name.toLowerCase()+" costs "+TOWERS[t].cost+".","bad"); return; }
+    armed = armed===t ? null : t;
+    selected=null; syncBar(); syncPanel();
+    if(armed) setStatus(TOWERS[t].name.toLowerCase()+" armed. click the grid. not the path. the path belongs to the slop.","");
+  }
   document.querySelectorAll(".twr").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      const t=btn.dataset.type;
-      if(cash<TOWERS[t].cost && armed!==t){ setStatus("insufficient signal. the "+TOWERS[t].name.toLowerCase()+" costs "+TOWERS[t].cost+".","bad"); return; }
-      armed = armed===t ? null : t;
-      selected=null; syncBar(); syncPanel();
-      if(armed) setStatus(TOWERS[t].name.toLowerCase()+" armed. click the grid. not the path. the path belongs to the slop.","");
-    });
+    btn.addEventListener("click",()=>armType(btn.dataset.type));
   });
   cv.addEventListener("mousemove",e=>{ hoverCell=cellFromEvent(e); });
   cv.addEventListener("mouseleave",()=>{ hoverCell=null; });
@@ -523,12 +614,16 @@
   cv.addEventListener("contextmenu",e=>{ e.preventDefault(); armed=null; selected=null; syncBar(); syncPanel(); });
   window.addEventListener("keydown",e=>{
     if(e.key==="Escape"){ armed=null; selected=null; syncBar(); syncPanel(); }
-    if(e.key===" "&&state==="build"&&wave>0===false){}
+    else if(e.key===" "){ e.preventDefault(); if(!waveBtn.disabled) startWave(); }
+    else if(e.key==="f"||e.key==="F"){ cycleSpeed(); }
+    else if(e.key>="1"&&e.key<="4"){ armType(["pulse","beam","nova","flip"][+e.key-1]); }
   });
   $("upBtn").addEventListener("click",()=>{
-    const t=selected; if(!t||t.lvl>=3) return;
+    const t=selected; if(!t||t.lvl>=MAXLVL) return;
     const c=upCost(t); if(cash<c){ setStatus("insufficient signal for that upgrade.","bad"); return; }
     cash-=c; spent+=c; t.invested+=c; t.lvl++;
+    const tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL;
+    rings.push({x:tx,y:ty,r:4,maxr:26,col:TOWERS[t.type].col,life:0.3});
     sfx.build(); syncHud(); syncPanel();
   });
   $("sellBtn").addEventListener("click",()=>{
@@ -550,14 +645,22 @@
     return bestF;
   }
   function damage(f,dmg,col){
-    f.hp-=dmg;
+    f.hp-=dmg*(1-(f.res||0));
     if(f.hp<=0&&!f.dead){
       f.dead=true; kills++;
-      cash+=f.bounty;
+      cash+=f.bounty; score+=f.shape==="hex"?150:10;
       const p=posAt(f.d);
-      burst(p.x,p.y,f.col,f.shape==="hex"?26:12);
+      burst(p.x,p.y,f.col,f.shape==="hex"?30:12);
       texts.push({x:p.x,y:p.y-12,txt:"+"+f.bounty,life:0.9,col:TEAL});
-      if(f.shape==="hex"){ shake=Math.min(shake+7,10); sfx.boom(); setStatus("THE ALGORITHM deleted. it will be back. it is always back.","good"); }
+      if(f.shape==="hex"){
+        shake=Math.min(shake+9,12); sfx.bossdie();
+        flash={col:RED,life:0.16,max:0.16};
+        rings.push({x:p.x,y:p.y,r:10,maxr:95,col:RED,life:0.45});
+        // it never really dies — it decomposes into slop
+        const n=Math.min(5, 2+Math.floor(wave/8));
+        for(let i=1;i<=n;i++) if(f.d-12*i>0) spawn("slop", f.d-12*i, 0.45);
+        setStatus("THE ALGORITHM deleted. it decomposed into slop. of course it did.","good");
+      }
       else sfx.kill();
       syncHud();
     }
@@ -567,6 +670,7 @@
       const a=Math.random()*Math.PI*2, s=30+Math.random()*130;
       parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.4,col,sz:1+Math.random()*2.5});
     }
+    if(parts.length>380) parts.splice(0,parts.length-380);
   }
 
   /* ---------- UPDATE ---------- */
@@ -577,8 +681,14 @@
       while(spawnTimer<=0 && spawnList.length){
         const s=spawnList.shift(); spawn(s.t); spawnTimer+=s.g;
       }
+      // early transmit unlocks once the current wave has fully spawned
+      if(!spawnList.length && !earlyReady && foes.length){
+        earlyReady=true;
+        waveBtn.disabled=false; waveBtn.classList.add("early");
+        waveBtn.textContent="TRANSMIT "+(wave+1)+" EARLY (+"+earlyBonus()+")";
+      }
     }
-    // slow fields
+    // slow fields + truth burn
     for(const f of foes) f.slowF=1;
     for(const t of towers){
       if(t.type!=="flip") continue;
@@ -586,17 +696,30 @@
       for(const f of foes){
         if(f.hp<=0) continue;
         const p=posAt(f.d);
-        if(Math.hypot(p.x-tx,p.y-ty)<=s.range) f.slowF=Math.min(f.slowF,s.slow);
+        if(Math.hypot(p.x-tx,p.y-ty)<=s.range){
+          if(!f.noslow) f.slowF=Math.min(f.slowF,s.slow);
+          if(s.dot) damage(f,s.dot*dt,ORANGE);
+        }
       }
     }
     // foes march
     for(const f of foes){
       if(f.hp<=0) continue;
       f.d+=f.sp*f.slowF*dt;
+      // dart + boss leave trails
+      if((f.shape==="dart"||f.shape==="hex") && Math.random()<dt*30){
+        const p=posAt(f.d);
+        parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,col:f.col,sz:f.shape==="hex"?2.5:1.5});
+      }
       if(f.d>=TOTAL){
         f.hp=0; f.dead=true;
         lives-=f.leak; shake=Math.min(shake+6,10); sfx.leak();
-        cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)" : "unmoderated slop";
+        waveLeaked=true; streak=0;
+        cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
+              : f.shape==="sponsor" ? "sponsored content (paid reach)"
+              : "unmoderated slop";
+        const e=PTS[PTS.length-1];
+        rings.push({x:e.x-26,y:e.y,r:6,maxr:40,col:RED,life:0.35});
         setStatus(FOES[f.type].label+" reached the signal core. integrity -"+f.leak+".","bad");
         syncHud();
         if(lives<=0){ lives=0; syncHud(); gameOver(); return; }
@@ -618,6 +741,9 @@
           t.cd=1/s.rate; t.fx=0.09;
           const col=TOWERS[t.type].col;
           beams.push({x1:tx,y1:ty,x2:p.x,y2:p.y,col,life:t.type==="beam"?0.16:0.07,w:t.type==="beam"?3:2});
+          // muzzle spark
+          parts.push({x:tx+Math.cos(t.angle)*10,y:ty+Math.sin(t.angle)*10,
+            vx:Math.cos(t.angle)*60,vy:Math.sin(t.angle)*60,life:0.15,col,sz:2});
           if(t.type==="nova"){
             rings.push({x:p.x,y:p.y,r:6,maxr:s.splash,col,life:0.28});
             for(const f of foes){
@@ -643,6 +769,10 @@
     parts=parts.filter(p=>p.life>0);
     for(const t of texts){ t.life-=dt; t.y-=22*dt; }
     texts=texts.filter(t=>t.life>0);
+    if(texts.length>40) texts.splice(0,texts.length-40);
+    if(banner){ banner.life-=dt; if(banner.life<=0) banner=null; }
+    if(flash){ flash.life-=dt; if(flash.life<=0) flash=null; }
+    for(const m of MOTES){ m.y-=m.s*dt; if(m.y<-4){ m.y=H+4; m.x=Math.random()*W; } }
     shake*=Math.pow(0.0018,dt);
   }
 
@@ -652,6 +782,15 @@
     cx.clearRect(0,0,W,H);
     if(shake>0.3) cx.setTransform(1,0,0,1,(Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
     cx.drawImage(bg,0,0);
+
+    // drifting data motes — the off-grid breathes
+    cx.fillStyle="rgba(0,255,198,0.14)";
+    for(const m of MOTES){
+      const tw=0.5+0.5*Math.sin(pulseT*2+m.tw);
+      cx.globalAlpha=0.06+0.1*tw;
+      cx.fillRect(m.x,m.y,1.5,1.5);
+    }
+    cx.globalAlpha=1;
 
     // animated path pulse — light cycles that never came home
     cx.save();
@@ -663,14 +802,44 @@
     cx.stroke();
     cx.restore();
 
-    // signal core beacon
+    // entrance portal — where the slop comes from
+    {
+      const p0=posAt(6);
+      cx.save();
+      cx.strokeStyle=RED; cx.shadowColor=RED;
+      cx.shadowBlur=8+4*Math.sin(pulseT*5);
+      cx.globalAlpha=0.5+0.25*Math.sin(pulseT*5);
+      cx.lineWidth=2;
+      const g=6+2*Math.sin(pulseT*5);
+      cx.beginPath(); cx.moveTo(p0.x-2,p0.y-14-g+4); cx.lineTo(p0.x-2,p0.y-14); cx.lineTo(p0.x+6,p0.y-14); cx.stroke();
+      cx.beginPath(); cx.moveTo(p0.x-2,p0.y+14+g-4); cx.lineTo(p0.x-2,p0.y+14); cx.lineTo(p0.x+6,p0.y+14); cx.stroke();
+      cx.restore();
+    }
+
+    // signal core beacon — dims as integrity fails
     const e=PTS[PTS.length-1];
-    cx.save();
-    cx.shadowColor=TEAL; cx.shadowBlur=14;
-    cx.fillStyle=TEAL;
-    const bs=4+Math.sin(pulseT*4)*1.5;
-    cx.fillRect(e.x-28-bs/2, e.y-bs/2, bs, bs);
-    cx.restore();
+    {
+      const health=lives/10;
+      cx.save();
+      cx.shadowColor= health>0.3?TEAL:RED; cx.shadowBlur=10+10*health;
+      cx.strokeStyle= health>0.3?TEAL:RED;
+      cx.globalAlpha=0.35+0.65*health;
+      const cr=8+Math.sin(pulseT*3)*2;
+      cx.lineWidth=1.5;
+      cx.beginPath(); cx.arc(e.x-26,e.y,cr,0,Math.PI*2); cx.stroke();
+      cx.beginPath(); cx.arc(e.x-26,e.y,cr+5+Math.sin(pulseT*3+1.5)*2,0,Math.PI*2);
+      cx.globalAlpha*=0.4; cx.stroke();
+      cx.globalAlpha=0.35+0.65*health;
+      cx.fillStyle= health>0.3?TEAL:RED;
+      const bs=4+Math.sin(pulseT*4)*1.5;
+      cx.fillRect(e.x-26-bs/2, e.y-bs/2, bs, bs);
+      // integrity pips under the core
+      for(let i=0;i<10;i++){
+        cx.globalAlpha= i<lives ? 0.9 : 0.15;
+        cx.fillRect(e.x-46+i*4.2, e.y+22, 2.5, 2.5);
+      }
+      cx.restore();
+    }
 
     // flip auras
     for(const t of towers){
@@ -680,6 +849,11 @@
       cx.strokeStyle="rgba(204,85,0,0.4)"; cx.lineWidth=1.5;
       cx.setLineDash([5,7]); cx.lineDashOffset=-pulseT*24;
       cx.beginPath(); cx.arc(tx,ty,s.range,0,Math.PI*2); cx.stroke();
+      if(s.dot){
+        cx.setLineDash([2,10]); cx.lineDashOffset=pulseT*40;
+        cx.globalAlpha=0.5;
+        cx.beginPath(); cx.arc(tx,ty,s.range*0.7,0,Math.PI*2); cx.stroke();
+      }
       cx.restore();
     }
 
@@ -692,8 +866,16 @@
       cx.strokeRect(-CELL/2+4,-CELL/2+4,CELL-8,CELL-8);
       cx.shadowColor=b.col; cx.shadowBlur=t.fx>0?18:9;
       cx.strokeStyle=b.col; cx.lineWidth=2;
+      // high-tier towers get a spinning halo
+      if(t.lvl>=4){
+        cx.save();
+        cx.rotate(pulseT*1.6);
+        cx.setLineDash([4,9]); cx.globalAlpha=0.65; cx.lineWidth=1;
+        cx.beginPath(); cx.arc(0,0,15,0,Math.PI*2); cx.stroke();
+        cx.restore();
+      }
       cx.rotate(t.type==="flip" ? pulseT : t.angle+Math.PI/4);
-      const s2=t.fx>0?11:9;
+      const s2=(t.fx>0?11:9)+(t.lvl>=5?2:0);
       cx.strokeRect(-s2/2,-s2/2,s2,s2);
       if(t.type!=="flip"){
         cx.rotate(-Math.PI/4);
@@ -702,7 +884,7 @@
       cx.restore();
       // level pips
       cx.fillStyle=b.col;
-      for(let i=0;i<t.lvl;i++) cx.fillRect(tx-8+i*6, ty+CELL/2-8, 3, 3);
+      for(let i=0;i<t.lvl;i++) cx.fillRect(tx-11+i*5, ty+CELL/2-8, 3, 3);
       // selection ring
       if(selected===t){
         const s=stat(t);
@@ -714,6 +896,7 @@
     }
 
     // foes
+    let bossAlive=null;
     for(const f of foes){
       if(f.hp<=0) continue;
       const p=posAt(f.d);
@@ -733,7 +916,20 @@
       } else if(f.shape==="block"){
         cx.rotate(pulseT*0.8+f.wob);
         cx.fillRect(-f.r,-f.r,f.r*2,f.r*2); cx.strokeRect(-f.r,-f.r,f.r*2,f.r*2);
+      } else if(f.shape==="mote"){
+        const w2=1+Math.sin(pulseT*9+f.wob)*0.25;
+        cx.beginPath(); cx.arc(0,0,f.r*w2,0,Math.PI*2); cx.fill(); cx.stroke();
+      } else if(f.shape==="sponsor"){
+        cx.rotate(Math.PI/4);
+        cx.fillRect(-f.r+2,-f.r+2,(f.r-2)*2,(f.r-2)*2); cx.strokeRect(-f.r+2,-f.r+2,(f.r-2)*2,(f.r-2)*2);
+        cx.rotate(-Math.PI/4);
+        // paid shield ring
+        cx.strokeStyle=PURPLE; cx.shadowColor=PURPLE; cx.lineWidth=1.5;
+        cx.setLineDash([3,4]); cx.lineDashOffset=pulseT*20;
+        cx.beginPath(); cx.arc(0,0,f.r+4,0,Math.PI*2); cx.stroke();
+        cx.setLineDash([]);
       } else { // THE ALGORITHM
+        bossAlive=f;
         cx.rotate(pulseT*1.4);
         cx.beginPath();
         for(let i=0;i<6;i++){ const a=i*Math.PI/3; cx.lineTo(Math.cos(a)*f.r,Math.sin(a)*f.r); }
@@ -784,6 +980,45 @@
     }
     cx.globalAlpha=1;
 
+    // boss integrity bar
+    if(bossAlive){
+      const frac=Math.max(0,bossAlive.hp/bossAlive.maxhp);
+      cx.save();
+      cx.fillStyle="rgba(0,0,0,0.55)"; cx.fillRect(W/2-120,8,240,20);
+      cx.strokeStyle=RED; cx.lineWidth=1; cx.strokeRect(W/2-120,8,240,20);
+      cx.fillStyle=RED; cx.shadowColor=RED; cx.shadowBlur=6;
+      cx.fillRect(W/2-117,11,234*frac,14);
+      cx.shadowBlur=0;
+      cx.fillStyle="#fff"; cx.font="bold 10px 'Courier New',monospace"; cx.textAlign="center";
+      cx.fillText("THE ALGORITHM",W/2,36+4);
+      cx.restore();
+    }
+
+    // wave banner — glitch flicker
+    if(banner){
+      const a=Math.min(1, banner.life/(banner.max*0.35));
+      const gl=Math.random()<0.12 ? (Math.random()-0.5)*6 : 0;
+      cx.save();
+      cx.globalAlpha=a*(Math.random()<0.06?0.4:1);
+      cx.fillStyle=banner.col; cx.shadowColor=banner.col; cx.shadowBlur=16;
+      cx.font="bold 36px 'Courier New',monospace"; cx.textAlign="center";
+      cx.fillText(banner.txt, W/2+gl, H/2-8);
+      if(banner.sub){
+        cx.font="13px 'Courier New',monospace"; cx.shadowBlur=8;
+        cx.globalAlpha=a*0.85;
+        cx.fillText(banner.sub, W/2-gl, H/2+18);
+      }
+      cx.restore();
+    }
+
+    // boss-kill flash
+    if(flash){
+      cx.save();
+      cx.globalAlpha=0.1*(flash.life/flash.max);
+      cx.fillStyle=flash.col; cx.fillRect(0,0,W,H);
+      cx.restore();
+    }
+
     // build ghost
     if(armed && hoverCell && hoverCell.c>=0){
       const ok=buildable(hoverCell.c,hoverCell.r);
@@ -803,7 +1038,7 @@
   let last=performance.now();
   function loop(now){
     const dt=Math.min(0.05,(now-last)/1000); last=now;
-    if(state!=="over") update(dt);
+    if(state!=="over"){ for(let i=0;i<speedMul;i++) update(dt); }
     render();
     requestAnimationFrame(loop);
   }
