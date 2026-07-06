@@ -286,7 +286,7 @@
   /* ---------- STATE ---------- */
   let cash, lives, wave, state, foes, towers, beams, rings, parts, texts,
       spawnList, spawnTimer, kills, built, spent, shake, cause, lastVerdict,
-      score, streak, perfect, waveLeaked, banner, flash, earlyReady,
+      score, streak, perfect, waveMeta, banner, flash, earlyReady,
       ocLevel, ocCost,
       armed=null, selected=null, hoverCell=null, pulseT=0, speedMul=1;
   let best=+(localStorage.getItem("stoopid_defense_best")||0);
@@ -300,7 +300,7 @@
     cash=260; lives=10; wave=0; state="build";
     foes=[]; towers=[]; beams=[]; rings=[]; parts=[]; texts=[];
     spawnList=[]; spawnTimer=0; kills=0; built=0; spent=0; shake=0;
-    score=0; streak=0; perfect=0; waveLeaked=false; banner=null; flash=null; earlyReady=false;
+    score=0; streak=0; perfect=0; waveMeta={}; banner=null; flash=null; earlyReady=false;
     ocLevel=0; ocCost=400; syncOc();
     cause="unmoderated slop"; lastVerdict=null; armed=null; selected=null;
     document.getElementById("resultCard").classList.remove("show");
@@ -466,7 +466,8 @@
       setStatus("early transmission. +"+b+" signal. reckless. respected.","flip");
     }
     wave++; state="wave"; earlyReady=false;
-    if(wave===1) waveLeaked=false; // streak window opens per cleared batch
+    // per-wave ledger — early transmits stack waves, each still gets its own streak credit
+    waveMeta[wave]={leaked:false, alive:0, doneSpawning:false, credited:false};
     spawnList=buildSpawns(wave); spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
     waveBtn.disabled=true; waveBtn.classList.remove("early");
     waveBtn.textContent="WAVE "+wave+" IN PROGRESS";
@@ -477,10 +478,14 @@
     setBanner("WAVE "+wave, boss?RED:TEAL, boss?"THE ALGORITHM APPROACHES":"");
     sfx.horn(); syncHud(); syncForecast();
   }
-  function endWave(){
-    state="build"; earlyReady=false;
-    let bonus=30+wave*5;
-    if(!waveLeaked){
+  // a wave is settled when it has fully spawned and its last foe is gone —
+  // even if the next wave is already on the grid. early transmit keeps the streak.
+  function creditWave(w){
+    const m=waveMeta[w];
+    if(!m || m.credited || !m.doneSpawning || m.alive>0) return;
+    m.credited=true;
+    let bonus=30+w*5;
+    if(!m.leaked){
       streak++; perfect++;
       const sb=streak*15;
       bonus+=sb; score+=100+streak*50;
@@ -488,24 +493,30 @@
     } else {
       streak=0;
     }
-    waveLeaked=false;
-    cash+=bonus; score+=wave*10;
-    if(wave>=20 && wave%20===0){
+    cash+=bonus; score+=w*10;
+    if(w>=20 && w%20===0){
       setBanner("THE MILESTONE WAS A TRAP", ORANGE, "so you moved it. keep going.");
-      setStatus("wave "+wave+" cleared. the milestone was a trap. so I moved it. keep going.","flip");
+      setStatus("wave "+w+" cleared. the milestone was a trap. so I moved it. keep going.","flip");
     } else {
-      setStatus("wave "+wave+" cleared. +"+bonus+" signal. the quiet is temporary.","good");
+      setStatus("wave "+w+" cleared. +"+bonus+" signal. the quiet is temporary.","good");
     }
+    syncHud();
+  }
+  function endWave(){
+    state="build"; earlyReady=false;
+    creditWave(wave);
     if(wave>best){ best=wave; localStorage.setItem("stoopid_defense_best",best); }
     if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
     waveBtn.disabled=false; waveBtn.classList.remove("early");
     waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
     sfx.kill(); syncHud(); syncForecast();
   }
-  function spawn(type,dOverride,hpMul){
+  function spawn(type,dOverride,hpMul,wv){
     const f=FOES[type], hs=hpScale(wave)*(hpMul||1);
     const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
-    foes.push({type, d, hp:f.hp*hs, maxhp:f.hp*hs,
+    const w = wv===undefined ? wave : wv;
+    if(waveMeta[w]) waveMeta[w].alive++;
+    foes.push({type, d, hp:f.hp*hs, maxhp:f.hp*hs, wv:w,
       sp:f.sp, r:f.r, col:f.col, shape:f.shape, slowF:1, wob:Math.random()*7,
       bounty:f.bounty+Math.floor(wave/4), leak:f.leak, res:f.res||0, noslow:!!f.noslow});
     if(dOverride===undefined){
@@ -720,12 +731,12 @@
         rings.push({x:p.x,y:p.y,r:10,maxr:95,col:RED,life:0.45});
         // it never really dies — it decomposes into slop
         const n=Math.min(5, 2+Math.floor(wave/8));
-        for(let i=1;i<=n;i++) if(f.d-12*i>0) spawn("slop", f.d-12*i, 0.45);
+        for(let i=1;i<=n;i++) if(f.d-12*i>0) spawn("slop", f.d-12*i, 0.45, f.wv);
         setStatus("THE ALGORITHM deleted. it decomposed into slop. of course it did.","good");
       }
       else if(f.shape==="reply"){
         // it never ends. two more baits appear: "well, actually—"
-        for(let i=1;i<=2;i++) if(f.d-7*i>0) spawn("bait", f.d-7*i, 0.7);
+        for(let i=1;i<=2;i++) if(f.d-7*i>0) spawn("bait", f.d-7*i, 0.7, f.wv);
         sfx.kill();
       }
       else if(f.shape==="manager"){
@@ -734,6 +745,8 @@
         sfx.boom();
       }
       else sfx.kill();
+      if(waveMeta[f.wv]) waveMeta[f.wv].alive--;
+      creditWave(f.wv);
       syncHud();
     }
   }
@@ -759,6 +772,10 @@
       spawnTimer-=dt;
       while(spawnTimer<=0 && spawnList.length){
         const s=spawnList.shift(); spawn(s.t); spawnTimer+=s.g;
+      }
+      if(!spawnList.length && waveMeta[wave] && !waveMeta[wave].doneSpawning){
+        waveMeta[wave].doneSpawning=true;
+        creditWave(wave);
       }
       // early transmit unlocks once the current wave has fully spawned
       if(!spawnList.length && !earlyReady && foes.length){
@@ -806,7 +823,8 @@
       if(f.d>=TOTAL){
         f.hp=0; f.dead=true;
         lives-=f.leak; shake=Math.min(shake+6,10); sfx.leak();
-        waveLeaked=true; streak=0;
+        if(waveMeta[f.wv]){ waveMeta[f.wv].leaked=true; waveMeta[f.wv].alive--; }
+        streak=0;
         cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
               : f.shape==="sponsor" ? "sponsored content (paid reach)"
               : f.shape==="manager" ? "middle management"
@@ -818,6 +836,7 @@
         setStatus(FOES[f.type].label+" reached the signal core. integrity -"+f.leak+".","bad");
         syncHud();
         if(lives<=0){ lives=0; syncHud(); gameOver(); return; }
+        creditWave(f.wv);
       }
     }
     foes=foes.filter(f=>f.hp>0);
