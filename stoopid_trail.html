@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE STOOPID TRAIL</title>
+<style>
+:root{
+  --teal:#00FFC6;
+  --white:#FFFFFF;
+  --purple:#8A2BE2;
+  --red:#FF2D2D;
+  --orange:#CC5500;
+  --black:#000000;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--black);height:100%;}
+body{
+  color:var(--teal);
+  font-family:"Share Tech Mono","Courier New",Courier,monospace;
+  font-size:clamp(13px,1.7vw,17px);
+  line-height:1.5;
+  text-shadow:0 0 4px rgba(0,255,198,.5);
+  overflow:hidden;
+}
+#wrap{
+  position:relative;
+  max-width:920px;
+  height:100vh;
+  margin:0 auto;
+  padding:26px 20px;
+  display:flex;
+  flex-direction:column;
+}
+/* corner brackets */
+.bk{position:absolute;width:26px;height:26px;border:0 solid var(--teal);pointer-events:none;z-index:5;}
+.bk.tl{top:8px;left:8px;border-top-width:2px;border-left-width:2px;}
+.bk.tr{top:8px;right:8px;border-top-width:2px;border-right-width:2px;}
+.bk.bl{bottom:8px;left:8px;border-bottom-width:2px;border-left-width:2px;}
+.bk.br{bottom:8px;right:8px;border-bottom-width:2px;border-right-width:2px;}
+/* CRT scanlines + vignette */
+#crt{
+  position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0px,rgba(0,0,0,.22) 1px,transparent 1px,transparent 3px);
+}
+#crt::after{
+  content:"";position:absolute;inset:0;
+  box-shadow:inset 0 0 140px rgba(0,0,0,.85);
+}
+#screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 4px;scrollbar-width:thin;scrollbar-color:var(--teal) var(--black);}
+#screen::-webkit-scrollbar{width:6px;}
+#screen::-webkit-scrollbar-thumb{background:var(--teal);}
+.w{color:var(--white);text-shadow:0 0 4px rgba(255,255,255,.5);}
+.p{color:var(--purple);text-shadow:0 0 5px rgba(138,43,226,.6);}
+.r{color:var(--red);text-shadow:0 0 5px rgba(255,45,45,.6);}
+.o{color:var(--orange);text-shadow:0 0 8px rgba(204,85,0,.8);}
+.dim{opacity:.62;}
+.c{text-align:center;}
+.big{font-size:2.1em;letter-spacing:.08em;line-height:1.15;}
+.med{font-size:1.35em;letter-spacing:.06em;}
+.gap{height:1.2em;}
+.gap2{height:2.4em;}
+pre{font-family:inherit;line-height:1.25;white-space:pre;overflow-x:auto;}
+.menu{margin-top:1em;}
+.mi{display:block;width:100%;text-align:left;background:none;border:none;color:var(--teal);
+  font:inherit;text-shadow:inherit;cursor:pointer;padding:3px 8px;}
+.mi:hover,.mi.sel{background:var(--teal);color:var(--black);text-shadow:none;}
+.mi .k{color:var(--white);text-shadow:0 0 4px rgba(255,255,255,.5);}
+.mi:hover .k,.mi.sel .k{color:var(--black);text-shadow:none;}
+input[type=text]{
+  background:var(--black);border:none;border-bottom:2px solid var(--teal);
+  color:var(--white);font:inherit;font-size:1.1em;text-shadow:inherit;
+  padding:2px 6px;outline:none;width:min(420px,86%);letter-spacing:.05em;
+}
+.statbar{
+  border-top:1px solid var(--teal);border-bottom:1px solid var(--teal);
+  padding:4px 0;margin:8px 0;display:flex;flex-wrap:wrap;gap:2px 18px;font-size:.92em;
+}
+.statbar span b{color:var(--white);font-weight:normal;text-shadow:0 0 4px rgba(255,255,255,.4);}
+canvas{display:block;margin:6px auto;image-rendering:pixelated;background:var(--black);}
+.rule{border:none;border-top:1px dashed rgba(0,255,198,.4);margin:10px 0;}
+.deathscreen{color:var(--red);text-shadow:0 0 6px rgba(255,45,45,.6);}
+.blink{animation:bl 1.1s steps(1) infinite;}
+@keyframes bl{50%{opacity:0;}}
+table.store{width:100%;border-collapse:collapse;margin:8px 0;}
+table.store td{padding:2px 6px;}
+table.store td.n{color:var(--white);text-shadow:0 0 4px rgba(255,255,255,.4);}
+@media (max-width:600px){
+  #wrap{padding:18px 10px;}
+  .big{font-size:1.5em;}
+}
+</style>
+</head>
+<body>
+<div id="crt"></div>
+<div id="wrap">
+  <div class="bk tl"></div><div class="bk tr"></div><div class="bk bl"></div><div class="bk br"></div>
+  <div id="screen"></div>
+</div>
+<script>
+"use strict";
+/* ============ THE STOOPID TRAIL ============ */
+/* Destination is fixed. It always was. */
+const DAV = {n:"Davenport", st:"IA", la:41.5236, lo:-90.5776};
+
+/* ~480 largest US cities: Name|ST|lat|lon (rough population order) */
+const CITY_DATA =
+"New York|NY|40.71|-74.01;Los Angeles|CA|34.05|-118.24;Chicago|IL|41.88|-87.63;Houston|TX|29.76|-95.37;"+
+"Phoenix|AZ|33.45|-112.07;Philadelphia|PA|39.95|-75.17;San Antonio|TX|29.42|-98.49;San Diego|CA|32.72|-117.16;"+
+"Dallas|TX|32.78|-96.80;Jacksonville|FL|30.33|-81.66;Austin|TX|30.27|-97.74;Fort Worth|TX|32.75|-97.33;"+
+"San Jose|CA|37.34|-121.89;Columbus|OH|39.96|-83.00;Charlotte|NC|35.23|-80.84;Indianapolis|IN|39.77|-86.16;"+
+"San Francisco|CA|37.77|-122.42;Seattle|WA|47.61|-122.33;Denver|CO|39.74|-104.99;Oklahoma City|OK|35.47|-97.52;"+
+"Nashville|TN|36.16|-86.78;Washington|DC|38.91|-77.04;El Paso|TX|31.76|-106.49;Las Vegas|NV|36.17|-115.14;"+
+"Boston|MA|42.36|-71.06;Detroit|MI|42.33|-83.05;Portland|OR|45.52|-122.68;Louisville|KY|38.25|-85.76;"+
+"Memphis|TN|35.15|-90.05;Baltimore|MD|39.29|-76.61;Milwaukee|WI|43.04|-87.91;Albuquerque|NM|35.08|-106.65;"+
+"Tucson|AZ|32.22|-110.97;Fresno|CA|36.75|-119.77;Sacramento|CA|38.58|-121.49;Mesa|AZ|33.42|-111.83;"+
+"Kansas City|MO|39.10|-94.58;Atlanta|GA|33.75|-84.39;Colorado Springs|CO|38.83|-104.82;Omaha|NE|41.26|-95.94;"+
+"Raleigh|NC|35.78|-78.64;Miami|FL|25.76|-80.19;Virginia Beach|VA|36.85|-75.98;Long Beach|CA|33.77|-118.19;"+
+"Oakland|CA|37.80|-122.27;Minneapolis|MN|44.98|-93.27;Tampa|FL|27.95|-82.46;Tulsa|OK|36.15|-95.99;"+
+"Arlington|TX|32.74|-97.11;Wichita|KS|37.69|-97.34;New Orleans|LA|29.95|-90.07;Bakersfield|CA|35.37|-119.02;"+
+"Cleveland|OH|41.50|-81.69;Aurora|CO|39.73|-104.83;Anaheim|CA|33.84|-117.91;Honolulu|HI|21.31|-157.86;"+
+"Santa Ana|CA|33.75|-117.87;Riverside|CA|33.95|-117.40;Corpus Christi|TX|27.80|-97.40;Lexington|KY|38.04|-84.50;"+
+"Stockton|CA|37.96|-121.29;St. Louis|MO|38.63|-90.20;Saint Paul|MN|44.95|-93.09;Henderson|NV|36.04|-114.98;"+
+"Pittsburgh|PA|40.44|-79.99;Cincinnati|OH|39.10|-84.51;Anchorage|AK|61.22|-149.90;Greensboro|NC|36.07|-79.79;"+
+"Plano|TX|33.02|-96.70;Newark|NJ|40.74|-74.17;Lincoln|NE|40.81|-96.68;Orlando|FL|28.54|-81.38;"+
+"Irvine|CA|33.68|-117.83;Toledo|OH|41.65|-83.54;Jersey City|NJ|40.73|-74.08;Chula Vista|CA|32.64|-117.08;"+
+"Durham|NC|35.99|-78.90;Fort Wayne|IN|41.08|-85.14;St. Petersburg|FL|27.77|-82.64;Laredo|TX|27.51|-99.51;"+
+"Buffalo|NY|42.89|-78.88;Madison|WI|43.07|-89.40;Lubbock|TX|33.58|-101.86;Chandler|AZ|33.31|-111.84;"+
+"Scottsdale|AZ|33.49|-111.93;Glendale|AZ|33.54|-112.19;Reno|NV|39.53|-119.81;Norfolk|VA|36.85|-76.29;"+
+"Winston-Salem|NC|36.10|-80.24;North Las Vegas|NV|36.20|-115.12;Irving|TX|32.81|-96.95;Chesapeake|VA|36.77|-76.29;"+
+"Gilbert|AZ|33.35|-111.79;Hialeah|FL|25.86|-80.28;Garland|TX|32.91|-96.64;Fremont|CA|37.55|-121.99;"+
+"Baton Rouge|LA|30.45|-91.15;Richmond|VA|37.54|-77.44;Boise|ID|43.62|-116.20;San Bernardino|CA|34.11|-117.29;"+
+"Spokane|WA|47.66|-117.43;Des Moines|IA|41.59|-93.62;Modesto|CA|37.64|-120.99;Birmingham|AL|33.52|-86.80;"+
+"Tacoma|WA|47.25|-122.44;Fontana|CA|34.09|-117.44;Rochester|NY|43.16|-77.61;Oxnard|CA|34.20|-119.18;"+
+"Moreno Valley|CA|33.94|-117.23;Fayetteville|NC|35.05|-78.88;Aurora|IL|41.76|-88.32;Yonkers|NY|40.93|-73.90;"+
+"Huntington Beach|CA|33.66|-118.00;Montgomery|AL|32.37|-86.30;Amarillo|TX|35.19|-101.85;Little Rock|AR|34.75|-92.29;"+
+"Akron|OH|41.08|-81.52;Columbus|GA|32.46|-84.99;Augusta|GA|33.47|-81.97;Grand Rapids|MI|42.96|-85.66;"+
+"Shreveport|LA|32.53|-93.75;Salt Lake City|UT|40.76|-111.89;Huntsville|AL|34.73|-86.59;Mobile|AL|30.69|-88.04;"+
+"Tallahassee|FL|30.44|-84.28;Grand Prairie|TX|32.75|-97.00;Overland Park|KS|38.98|-94.67;Knoxville|TN|35.96|-83.92;"+
+"Port St. Lucie|FL|27.27|-80.35;Worcester|MA|42.26|-71.80;Brownsville|TX|25.90|-97.50;Tempe|AZ|33.43|-111.94;"+
+"Santa Clarita|CA|34.39|-118.54;Newport News|VA|37.09|-76.47;Cape Coral|FL|26.56|-81.95;Providence|RI|41.82|-71.41;"+
+"Fort Lauderdale|FL|26.12|-80.14;Chattanooga|TN|35.05|-85.31;Rancho Cucamonga|CA|34.10|-117.59;Oceanside|CA|33.20|-117.38;"+
+"Santa Rosa|CA|38.44|-122.71;Garden Grove|CA|33.77|-117.94;Vancouver|WA|45.64|-122.66;Sioux Falls|SD|43.55|-96.73;"+
+"Ontario|CA|34.06|-117.65;McKinney|TX|33.20|-96.62;Elk Grove|CA|38.41|-121.37;Jackson|MS|32.30|-90.18;"+
+"Pembroke Pines|FL|26.01|-80.30;Salem|OR|44.94|-123.04;Springfield|MO|37.22|-93.29;Corona|CA|33.88|-117.57;"+
+"Eugene|OR|44.05|-123.09;Fort Collins|CO|40.59|-105.08;Peoria|AZ|33.58|-112.24;Frisco|TX|33.15|-96.82;"+
+"Cary|NC|35.79|-78.78;Lancaster|CA|34.69|-118.15;Hayward|CA|37.67|-122.08;Palmdale|CA|34.58|-118.10;"+
+"Salinas|CA|36.68|-121.66;Alexandria|VA|38.80|-77.05;Lakewood|CO|39.70|-105.08;Springfield|MA|42.10|-72.59;"+
+"Pasadena|TX|29.69|-95.21;Sunnyvale|CA|37.37|-122.04;Macon|GA|32.84|-83.63;Pomona|CA|34.06|-117.75;"+
+"Hollywood|FL|26.01|-80.15;Kansas City|KS|39.11|-94.63;Escondido|CA|33.12|-117.09;Clarksville|TN|36.53|-87.36;"+
+"Joliet|IL|41.53|-88.08;Rockford|IL|42.27|-89.09;Torrance|CA|33.84|-118.34;Naperville|IL|41.75|-88.15;"+
+"Paterson|NJ|40.92|-74.17;Savannah|GA|32.08|-81.10;Bridgeport|CT|41.19|-73.20;Mesquite|TX|32.77|-96.60;"+
+"Killeen|TX|31.12|-97.73;Syracuse|NY|43.05|-76.15;McAllen|TX|26.20|-98.23;Pasadena|CA|34.15|-118.14;"+
+"Bellevue|WA|47.61|-122.20;Fullerton|CA|33.87|-117.93;Orange|CA|33.79|-117.85;Dayton|OH|39.76|-84.19;"+
+"Miramar|FL|25.98|-80.30;Thornton|CO|39.87|-104.97;West Valley City|UT|40.69|-112.00;Olathe|KS|38.88|-94.82;"+
+"Hampton|VA|37.03|-76.35;Warren|MI|42.51|-83.01;Midland|TX|32.00|-102.08;Waco|TX|31.55|-97.15;"+
+"Charleston|SC|32.78|-79.93;Columbia|SC|34.00|-81.03;Denton|TX|33.21|-97.13;Carrollton|TX|32.98|-96.90;"+
+"Surprise|AZ|33.63|-112.37;Roseville|CA|38.75|-121.29;Sterling Heights|MI|42.58|-83.03;Murfreesboro|TN|35.85|-86.39;"+
+"Gainesville|FL|29.65|-82.32;Cedar Rapids|IA|42.01|-91.64;Visalia|CA|36.33|-119.29;Coral Springs|FL|26.27|-80.27;"+
+"New Haven|CT|41.31|-72.92;Stamford|CT|41.05|-73.54;Thousand Oaks|CA|34.17|-118.84;Concord|CA|37.98|-122.03;"+
+"Elizabeth|NJ|40.66|-74.21;Lafayette|LA|30.22|-92.02;Kent|WA|47.38|-122.23;Topeka|KS|39.05|-95.68;"+
+"Simi Valley|CA|34.27|-118.78;Santa Clara|CA|37.35|-121.95;Athens|GA|33.96|-83.38;Hartford|CT|41.76|-72.67;"+
+"Victorville|CA|34.54|-117.29;Abilene|TX|32.45|-99.73;Norman|OK|35.22|-97.44;Vallejo|CA|38.10|-122.26;"+
+"Berkeley|CA|37.87|-122.27;Round Rock|TX|30.51|-97.68;Ann Arbor|MI|42.28|-83.74;Fargo|ND|46.88|-96.79;"+
+"Columbia|MO|38.95|-92.33;Allentown|PA|40.61|-75.47;Evansville|IN|37.97|-87.57;Beaumont|TX|30.08|-94.10;"+
+"Odessa|TX|31.85|-102.37;Independence|MO|39.09|-94.42;Springfield|IL|39.80|-89.65;Wilmington|NC|34.23|-77.94;"+
+"Arvada|CO|39.80|-105.09;Provo|UT|40.23|-111.66;Lansing|MI|42.73|-84.56;Downey|CA|33.94|-118.13;"+
+"Carlsbad|CA|33.16|-117.35;Costa Mesa|CA|33.64|-117.92;Miami Gardens|FL|25.94|-80.25;Westminster|CO|39.84|-105.04;"+
+"Rochester|MN|44.02|-92.47;Clearwater|FL|27.97|-82.80;Elgin|IL|42.04|-88.28;Pueblo|CO|38.25|-104.61;"+
+"West Jordan|UT|40.61|-112.00;Waterbury|CT|41.56|-73.05;Gresham|OR|45.50|-122.44;Fairfield|CA|38.25|-122.04;"+
+"Lowell|MA|42.63|-71.32;Cambridge|MA|42.37|-71.11;High Point|NC|35.96|-80.01;Billings|MT|45.78|-108.50;"+
+"Manchester|NH|42.99|-71.45;Richardson|TX|32.95|-96.73;Antioch|CA|38.00|-121.81;Murrieta|CA|33.55|-117.21;"+
+"Temecula|CA|33.49|-117.15;Pearland|TX|29.56|-95.29;Everett|WA|47.98|-122.20;West Palm Beach|FL|26.72|-80.05;"+
+"College Station|TX|30.63|-96.33;Wichita Falls|TX|33.91|-98.49;Palm Bay|FL|28.03|-80.59;Centennial|CO|39.58|-104.88;"+
+"Norwalk|CA|33.90|-118.08;Boulder|CO|40.01|-105.27;North Charleston|SC|32.85|-79.97;Broken Arrow|OK|36.06|-95.79;"+
+"Green Bay|WI|44.51|-88.01;Burbank|CA|34.18|-118.31;El Monte|CA|34.07|-118.03;Daly City|CA|37.69|-122.47;"+
+"Pompano Beach|FL|26.24|-80.12;Lewisville|TX|33.05|-96.99;Edmond|OK|35.65|-97.48;League City|TX|29.51|-95.09;"+
+"South Bend|IN|41.68|-86.25;Davie|FL|26.06|-80.25;Sandy Springs|GA|33.92|-84.38;Tyler|TX|32.35|-95.30;"+
+"West Covina|CA|34.07|-117.94;Renton|WA|47.48|-122.20;Sparks|NV|39.53|-119.75;Allen|TX|33.10|-96.67;"+
+"Rialto|CA|34.11|-117.37;Santa Maria|CA|34.95|-120.44;El Cajon|CA|32.79|-116.96;San Mateo|CA|37.56|-122.33;"+
+"Clovis|CA|36.83|-119.70;Compton|CA|33.90|-118.22;Jurupa Valley|CA|34.00|-117.47;Vista|CA|33.20|-117.24;"+
+"Spokane Valley|WA|47.67|-117.24;Tuscaloosa|AL|33.21|-87.57;Yuma|AZ|32.69|-114.63;Brockton|MA|42.08|-71.02;"+
+"Sioux City|IA|42.50|-96.40;Greeley|CO|40.42|-104.71;Federal Way|WA|47.32|-122.31;Deltona|FL|28.90|-81.26;"+
+"Mission Viejo|CA|33.60|-117.67;Vacaville|CA|38.36|-121.99;Quincy|MA|42.25|-71.00;Chico|CA|39.73|-121.84;"+
+"Lynn|MA|42.47|-70.95;Lee's Summit|MO|38.91|-94.38;New Bedford|MA|41.64|-70.93;Fall River|MA|41.70|-71.16;"+
+"Plantation|FL|26.13|-80.23;Newton|MA|42.34|-71.21;San Angelo|TX|31.46|-100.44;Edinburg|TX|26.30|-98.16;"+
+"Sugar Land|TX|29.62|-95.63;Longview|TX|32.50|-94.74;Bryan|TX|30.67|-96.37;Lawrence|KS|38.97|-95.24;"+
+"Roanoke|VA|37.27|-79.94;Lakeland|FL|28.04|-81.95;Trenton|NJ|40.22|-74.74;Clifton|NJ|40.86|-74.16;"+
+"Portsmouth|VA|36.84|-76.30;Suffolk|VA|36.73|-76.58;Lynchburg|VA|37.41|-79.14;Boca Raton|FL|26.37|-80.10;"+
+"Sunrise|FL|26.13|-80.29;Largo|FL|27.91|-82.79;Melbourne|FL|28.08|-80.61;Deerfield Beach|FL|26.32|-80.10;"+
+"Fort Myers|FL|26.62|-81.87;Kissimmee|FL|28.29|-81.41;Daytona Beach|FL|29.21|-81.02;Boynton Beach|FL|26.53|-80.09;"+
+"Camden|NJ|39.93|-75.12;Passaic|NJ|40.86|-74.13;Union City|NJ|40.78|-74.02;Bayonne|NJ|40.67|-74.11;"+
+"East Orange|NJ|40.77|-74.20;Vineland|NJ|39.49|-75.03;New Brunswick|NJ|40.49|-74.45;Hoboken|NJ|40.74|-74.03;"+
+"Atlantic City|NJ|39.36|-74.42;Erie|PA|42.13|-80.09;Reading|PA|40.34|-75.93;Scranton|PA|41.41|-75.66;"+
+"Bethlehem|PA|40.63|-75.37;Lancaster|PA|40.04|-76.31;Harrisburg|PA|40.27|-76.88;Altoona|PA|40.52|-78.39;"+
+"York|PA|39.96|-76.73;State College|PA|40.79|-77.86;Wilkes-Barre|PA|41.25|-75.88;Parma|OH|41.40|-81.72;"+
+"Canton|OH|40.80|-81.38;Youngstown|OH|41.10|-80.65;Lorain|OH|41.45|-82.18;Hamilton|OH|39.40|-84.56;"+
+"Springfield|OH|39.92|-83.81;Kettering|OH|39.69|-84.17;Elyria|OH|41.37|-82.11;Flint|MI|43.01|-83.69;"+
+"Dearborn|MI|42.32|-83.18;Livonia|MI|42.37|-83.37;Troy|MI|42.61|-83.15;Westland|MI|42.32|-83.40;"+
+"Farmington Hills|MI|42.48|-83.38;Kalamazoo|MI|42.29|-85.59;Wyoming|MI|42.91|-85.71;Southfield|MI|42.47|-83.22;"+
+"Rochester Hills|MI|42.66|-83.15;Saginaw|MI|43.42|-83.95;Battle Creek|MI|42.32|-85.18;Traverse City|MI|44.76|-85.62;"+
+"Marquette|MI|46.54|-87.40;Roswell|GA|34.02|-84.36;Johns Creek|GA|34.03|-84.20;Albany|GA|31.58|-84.16;"+
+"Warner Robins|GA|32.62|-83.60;Alpharetta|GA|34.08|-84.29;Marietta|GA|33.95|-84.55;Valdosta|GA|30.83|-83.28;"+
+"Smyrna|GA|33.88|-84.51;Concord|NC|35.41|-80.58;Greenville|NC|35.61|-77.37;Asheville|NC|35.60|-82.55;"+
+"Gastonia|NC|35.26|-81.19;Jacksonville|NC|34.75|-77.43;Chapel Hill|NC|35.91|-79.06;Huntersville|NC|35.41|-80.84;"+
+"Apex|NC|35.73|-78.85;Pensacola|FL|30.42|-87.22;Sarasota|FL|27.34|-82.53;Ocala|FL|29.19|-82.14;"+
+"Bradenton|FL|27.50|-82.57;Panama City|FL|30.16|-85.66;Key West|FL|24.56|-81.78;St. Augustine|FL|29.90|-81.31;"+
+"Naples|FL|26.14|-81.79;Palm Coast|FL|29.53|-81.21;Yakima|WA|46.60|-120.51;Kirkland|WA|47.68|-122.21;"+
+"Bellingham|WA|48.75|-122.48;Kennewick|WA|46.21|-119.14;Auburn|WA|47.31|-122.23;Pasco|WA|46.24|-119.10;"+
+"Marysville|WA|48.05|-122.18;Redmond|WA|47.67|-122.12;Lakewood|WA|47.17|-122.51;Richland|WA|46.29|-119.28;"+
+"Olympia|WA|47.04|-122.90;Walla Walla|WA|46.06|-118.34;Longmont|CO|40.17|-105.10;Loveland|CO|40.40|-105.07;"+
+"Grand Junction|CO|39.06|-108.55;Broomfield|CO|39.92|-105.09;Castle Rock|CO|39.37|-104.86;Commerce City|CO|39.81|-104.93;"+
+"Parker|CO|39.52|-104.76;Durango|CO|37.28|-107.88;Somerville|MA|42.39|-71.10;Framingham|MA|42.28|-71.42;"+
+"Haverhill|MA|42.78|-71.08;Lawrence|MA|42.71|-71.16;Columbia|MD|39.20|-76.86;Germantown|MD|39.17|-77.27;"+
+"Silver Spring|MD|38.99|-77.03;Frederick|MD|39.41|-77.41;Rockville|MD|39.08|-77.15;Gaithersburg|MD|39.14|-77.20;"+
+"Bowie|MD|38.94|-76.73;Annapolis|MD|38.98|-76.49;Hagerstown|MD|39.64|-77.72;Harrisonburg|VA|38.45|-78.87;"+
+"Charlottesville|VA|38.03|-78.48;Arlington|VA|38.88|-77.10;Franklin|TN|35.93|-86.87;Jackson|TN|35.61|-88.81;"+
+"Johnson City|TN|36.31|-82.35;Kingsport|TN|36.55|-82.56;O'Fallon|MO|38.81|-90.70;St. Joseph|MO|39.77|-94.85;"+
+"St. Charles|MO|38.78|-90.48;Blue Springs|MO|39.02|-94.28;Joplin|MO|37.08|-94.51;Jefferson City|MO|38.58|-92.17;"+
+"Cape Girardeau|MO|37.31|-89.52;Hannibal|MO|39.71|-91.36;Duluth|MN|46.79|-92.10;Bloomington|MN|44.84|-93.30;"+
+"Brooklyn Park|MN|45.09|-93.36;Plymouth|MN|45.01|-93.46;Woodbury|MN|44.92|-92.96;Maple Grove|MN|45.07|-93.46;"+
+"St. Cloud|MN|45.56|-94.16;Eagan|MN|44.80|-93.17;Eden Prairie|MN|44.85|-93.47;Mankato|MN|44.16|-94.00;"+
+"Moorhead|MN|46.87|-96.77;Kenosha|WI|42.58|-87.82;Racine|WI|42.73|-87.78;Appleton|WI|44.26|-88.41;"+
+"Waukesha|WI|43.01|-88.23;Eau Claire|WI|44.81|-91.50;Oshkosh|WI|44.02|-88.54;Janesville|WI|42.68|-89.02;"+
+"La Crosse|WI|43.80|-91.24;Sheboygan|WI|43.75|-87.71;Wausau|WI|44.96|-89.63;Carmel|IN|39.98|-86.13;"+
+"Fishers|IN|39.96|-86.01;Bloomington|IN|39.17|-86.53;Hammond|IN|41.58|-87.50;Gary|IN|41.60|-87.35;"+
+"Lafayette|IN|40.42|-86.87;Muncie|IN|40.19|-85.39;Terre Haute|IN|39.47|-87.41;Noblesville|IN|40.05|-86.02;"+
+"Kokomo|IN|40.49|-86.13;Elkhart|IN|41.68|-85.98;Peoria|IL|40.69|-89.59;Champaign|IL|40.12|-88.24;"+
+"Waukegan|IL|42.36|-87.84;Cicero|IL|41.85|-87.75;Bloomington|IL|40.48|-88.99;Evanston|IL|42.05|-87.69;"+
+"Schaumburg|IL|42.03|-88.08;Decatur|IL|39.84|-88.95;Moline|IL|41.51|-90.51;Rock Island|IL|41.51|-90.58;"+
+"Skokie|IL|42.03|-87.73;Iowa City|IA|41.66|-91.53;Waterloo|IA|42.49|-92.34;Ames|IA|42.03|-93.62;"+
+"West Des Moines|IA|41.57|-93.71;Council Bluffs|IA|41.26|-95.85;Dubuque|IA|42.50|-90.66;Ankeny|IA|41.73|-93.60;"+
+"Cedar Falls|IA|42.53|-92.45;Bettendorf|IA|41.54|-90.51;Davenport|IA|41.52|-90.58;Norman|OK|35.22|-97.44;"+
+"Lawton|OK|34.61|-98.39;Moore|OK|35.34|-97.49;Midwest City|OK|35.45|-97.40;Stillwater|OK|36.12|-97.06;"+
+"Enid|OK|36.40|-97.88;Muskogee|OK|35.75|-95.37;Hillsboro|OR|45.52|-122.99;Bend|OR|44.06|-121.31;"+
+"Beaverton|OR|45.49|-122.80;Medford|OR|42.33|-122.88;Springfield|OR|44.05|-123.02;Corvallis|OR|44.56|-123.26;"+
+"Albany|OR|44.64|-123.11;Astoria|OR|46.19|-123.83;Oregon City|OR|45.36|-122.61;Bowling Green|KY|36.99|-86.44;"+
+"Owensboro|KY|37.77|-87.11;Covington|KY|39.08|-84.51;Frankfort|KY|38.20|-84.87;Paducah|KY|37.08|-88.60;"+
+"Lake Charles|LA|30.23|-93.22;Kenner|LA|29.99|-90.24;Bossier City|LA|32.52|-93.73;Monroe|LA|32.51|-92.12;"+
+"Alexandria|LA|31.31|-92.44;Houma|LA|29.60|-90.72;Hoover|AL|33.41|-86.81;Dothan|AL|31.22|-85.39;"+
+"Auburn|AL|32.61|-85.48;Decatur|AL|34.61|-86.98;Florence|AL|34.80|-87.68;Mount Pleasant|SC|32.83|-79.83;"+
+"Rock Hill|SC|34.92|-81.03;Greenville|SC|34.85|-82.40;Summerville|SC|33.02|-80.18;Spartanburg|SC|34.95|-81.93;"+
+"Myrtle Beach|SC|33.69|-78.89;Orem|UT|40.30|-111.69;Sandy|UT|40.56|-111.84;St. George|UT|37.10|-113.58;"+
+"Ogden|UT|41.22|-111.97;Layton|UT|41.06|-111.97;Lehi|UT|40.39|-111.85;Logan|UT|41.74|-111.83;"+
+"Carson City|NV|39.16|-119.77;Elko|NV|40.83|-115.76;Las Cruces|NM|32.32|-106.76;Rio Rancho|NM|35.23|-106.66;"+
+"Santa Fe|NM|35.69|-105.94;Roswell|NM|33.39|-104.52;Farmington|NM|36.73|-108.22;Shawnee|KS|39.02|-94.72;"+
+"Manhattan|KS|39.18|-96.57;Salina|KS|38.84|-97.61;Hutchinson|KS|38.06|-97.93;Dodge City|KS|37.75|-100.02;"+
+"Bellevue|NE|41.14|-95.91;Grand Island|NE|40.93|-98.34;Kearney|NE|40.70|-99.08;North Platte|NE|41.12|-100.77;"+
+"Fremont|NE|41.43|-96.50;Norfolk|NE|42.03|-97.42;Scottsbluff|NE|41.87|-103.66;Fort Smith|AR|35.39|-94.40;"+
+"Fayetteville|AR|36.06|-94.16;Springdale|AR|36.19|-94.13;Jonesboro|AR|35.84|-90.70;North Little Rock|AR|34.77|-92.27;"+
+"Conway|AR|35.09|-92.44;Rogers|AR|36.33|-94.12;Pine Bluff|AR|34.23|-92.00;Bentonville|AR|36.37|-94.21;"+
+"Hot Springs|AR|34.50|-93.06;Gulfport|MS|30.37|-89.09;Southaven|MS|34.99|-90.00;Biloxi|MS|30.40|-88.89;"+
+"Hattiesburg|MS|31.33|-89.29;Meridian|MS|32.36|-88.70;Tupelo|MS|34.26|-88.70;Vicksburg|MS|32.35|-90.88;"+
+"Norwalk|CT|41.12|-73.41;Danbury|CT|41.39|-73.45;New Britain|CT|41.66|-72.78;Warwick|RI|41.70|-71.42;"+
+"Cranston|RI|41.78|-71.44;Pawtucket|RI|41.88|-71.38;Newport|RI|41.49|-71.31;Nashua|NH|42.77|-71.47;"+
+"Concord|NH|43.21|-71.54;Portsmouth|NH|43.07|-70.76;Burlington|VT|44.48|-73.21;Montpelier|VT|44.26|-72.58;"+
+"Portland|ME|43.66|-70.26;Lewiston|ME|44.10|-70.21;Bangor|ME|44.80|-68.77;Augusta|ME|44.31|-69.78;"+
+"Charleston|WV|38.35|-81.63;Huntington|WV|38.42|-82.44;Morgantown|WV|39.63|-79.96;Parkersburg|WV|39.27|-81.56;"+
+"Wheeling|WV|40.06|-80.72;Wilmington|DE|39.75|-75.55;Dover|DE|39.16|-75.52;Newark|DE|39.68|-75.75;"+
+"Missoula|MT|46.87|-113.99;Great Falls|MT|47.51|-111.30;Bozeman|MT|45.68|-111.04;Butte|MT|46.00|-112.53;"+
+"Helena|MT|46.59|-112.04;Cheyenne|WY|41.14|-104.82;Casper|WY|42.85|-106.31;Laramie|WY|41.31|-105.59;"+
+"Gillette|WY|44.29|-105.50;Rock Springs|WY|41.59|-109.20;Jackson|WY|43.48|-110.76;Meridian|ID|43.61|-116.39;"+
+"Nampa|ID|43.54|-116.56;Idaho Falls|ID|43.49|-112.03;Pocatello|ID|42.87|-112.45;Caldwell|ID|43.66|-116.69;"+
+"Coeur d'Alene|ID|47.68|-116.78;Twin Falls|ID|42.56|-114.46;Bismarck|ND|46.81|-100.78;Grand Forks|ND|47.93|-97.03;"+
+"Minot|ND|48.23|-101.30;Rapid City|SD|44.08|-103.23;Aberdeen|SD|45.46|-98.49;Brookings|SD|44.31|-96.80;"+
+"Pierre|SD|44.37|-100.35;Fairbanks|AK|64.84|-147.72;Juneau|AK|58.30|-134.42;Hilo|HI|19.71|-155.09;"+
+"New Rochelle|NY|40.91|-73.78;Mount Vernon|NY|40.91|-73.84;Schenectady|NY|42.81|-73.94;Utica|NY|43.10|-75.23;"+
+"Albany|NY|42.65|-73.75;Niagara Falls|NY|43.10|-79.04;Binghamton|NY|42.10|-75.91;Ithaca|NY|42.44|-76.50;"+
+"White Plains|NY|41.03|-73.76;Poughkeepsie|NY|41.71|-73.92;Santa Barbara|CA|34.42|-119.70;Santa Cruz|CA|36.97|-122.03;"+
+"San Luis Obispo|CA|35.28|-120.66;Merced|CA|37.30|-120.48;Ventura|CA|34.27|-119.29;Redding|CA|40.59|-122.39;"+
+"Napa|CA|38.30|-122.29;Eureka|CA|40.80|-124.16;South Gate|CA|33.95|-118.21;Inglewood|CA|33.96|-118.35;"+
+"Flagstaff|AZ|35.20|-111.65;Buckeye|AZ|33.37|-112.58;Casa Grande|AZ|32.88|-111.76;Lake Havasu City|AZ|34.48|-114.32;"+
+"Queen Creek|AZ|33.25|-111.63;Maricopa|AZ|33.06|-112.05;Prescott|AZ|34.54|-112.47;Avondale|AZ|33.44|-112.35;"+
+"Goodyear|AZ|33.44|-112.36;Galveston|TX|29.30|-94.80;New Braunfels|TX|29.70|-98.12;Conroe|TX|30.31|-95.46;"+
+"Victoria|TX|28.81|-97.00;Harlingen|TX|26.19|-97.70;Temple|TX|31.10|-97.34;Flower Mound|TX|33.01|-97.10;"+
+"Missouri City|TX|29.62|-95.54;Baytown|TX|29.74|-94.98;Pharr|TX|26.19|-98.18;Del Rio|TX|29.36|-100.90;"+
+"Texarkana|TX|33.43|-94.05;Lufkin|TX|31.34|-94.73;Salem|MA|42.52|-70.90;Springfield|TN|36.51|-86.89";
+
+const CITIES = CITY_DATA.split(";").map(s=>{
+  const p=s.split("|");
+  return {n:p[0], st:p[1], la:+p[2], lo:+p[3]};
+});
+
+/* ================= RNG ================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let SEED = 0;
+(function(){
+  const m = location.search.match(/[?&]seed=([0-9A-Fa-f]{1,4})/);
+  SEED = m ? parseInt(m[1],16) : (Math.random()*65536)|0;
+})();
+let rnd = mulberry32(SEED);
+function ri(a,b){return a+Math.floor(rnd()*(b-a+1));}   // int in [a,b]
+function pick(arr){return arr[Math.floor(rnd()*arr.length)];}
+function chance(p){return rnd()<p;}
+const seedStr = ()=>SEED.toString(16).toUpperCase().padStart(4,"0");
+
+/* ================= GEO ================= */
+function haversine(a,b){
+  const R=3958.8, d=Math.PI/180;
+  const dLa=(b.la-a.la)*d, dLo=(b.lo-a.lo)*d;
+  const h=Math.sin(dLa/2)**2+Math.cos(a.la*d)*Math.cos(b.la*d)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+// interpolate along great circle (good enough at these distances)
+function gcPoint(a,b,f){
+  const d=Math.PI/180, la1=a.la*d, lo1=a.lo*d, la2=b.la*d, lo2=b.lo*d;
+  const dd=2*Math.asin(Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2));
+  if(dd<1e-9) return {la:a.la, lo:a.lo};
+  const A=Math.sin((1-f)*dd)/Math.sin(dd), B=Math.sin(f*dd)/Math.sin(dd);
+  const x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2);
+  const y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2);
+  const z=A*Math.sin(la1)+B*Math.sin(la2);
+  return {la:Math.atan2(z,Math.hypot(x,y))/d, lo:Math.atan2(y,x)/d};
+}
+function nearestCity(pt,excl){
+  let best=null,bd=1e18;
+  for(const c of CITIES){
+    if(excl.has(c)) continue;
+    const dx=(c.la-pt.la), dy=(c.lo-pt.lo)*Math.cos(pt.la*Math.PI/180);
+    const dd=dx*dx+dy*dy;
+    if(dd<bd){bd=dd;best=c;}
+  }
+  return best;
+}
+
+/* ================= AUDIO ================= */
+const SND = {
+  on:true, ready:false, ctx:null, gain:null, src:null, fallback:null, started:false,
+  init(){
+    if(this.ready||this.failed) return;
+    try{
+      this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+      this.gain = this.ctx.createGain();
+      this.gain.connect(this.ctx.destination);
+      this.ready = true;
+      fetch("kwtf_trail_loop.mp3").then(r=>{
+        if(!r.ok) throw 0;
+        return r.arrayBuffer();
+      }).then(b=>this.ctx.decodeAudioData(b)).then(buf=>{
+        this.buf = buf;
+        if(this.on && this.started) this.play();
+      }).catch(()=>{ this.useFallback(); });
+    }catch(e){ this.failed=true; this.useFallback(); }
+  },
+  useFallback(){
+    // file:// or fetch blocked: plain looping <audio>
+    if(this.fallback) return;
+    this.fallback = new Audio("kwtf_trail_loop.mp3");
+    this.fallback.loop = true;
+    if(this.on && this.started) this.fallback.play().catch(()=>{});
+  },
+  start(){ // first user gesture
+    if(this.started) return;
+    this.started = true;
+    this.init();
+    if(this.on) this.play();
+  },
+  play(){
+    if(!this.on) return;
+    if(this.buf && this.ctx){
+      if(this.src) return;
+      const s=this.ctx.createBufferSource();
+      s.buffer=this.buf; s.loop=true; s.connect(this.gain);
+      this.gain.gain.setValueAtTime(0.85,this.ctx.currentTime);
+      s.start(); this.src=s;
+      if(this.ctx.state==="suspended") this.ctx.resume();
+    }else if(this.fallback){
+      this.fallback.play().catch(()=>{});
+    }
+  },
+  stop(){
+    if(this.src){ try{this.src.stop();}catch(e){} this.src=null; }
+    if(this.fallback) this.fallback.pause();
+  },
+  toggle(){
+    this.on=!this.on;
+    this.start();
+    this.static_();
+    if(this.on) this.play(); else this.stop();
+    const el=document.getElementById("sndstate");
+    if(el) el.textContent = this.on?"ON":"OFF";
+  },
+  static_(){ // KWTF radio tuning burst
+    if(!this.ctx) return;
+    try{
+      const len=this.ctx.sampleRate*0.22;
+      const b=this.ctx.createBuffer(1,len,this.ctx.sampleRate);
+      const d=b.getChannelData(0);
+      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len)*0.5;
+      const s=this.ctx.createBufferSource(); s.buffer=b;
+      const f=this.ctx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1800; f.Q.value=0.7;
+      const g=this.ctx.createGain(); g.gain.value=0.35;
+      s.connect(f); f.connect(g); g.connect(this.ctx.destination);
+      s.start();
+    }catch(e){}
+  },
+  duck(){ // the wagon radio has the decency to go quiet
+    if(this.gain&&this.ctx) this.gain.gain.linearRampToValueAtTime(0.0,this.ctx.currentTime+0.6);
+    if(this.fallback) this.fallback.volume=0;
+  },
+  unduck(){
+    if(this.gain&&this.ctx) this.gain.gain.linearRampToValueAtTime(0.85,this.ctx.currentTime+1.2);
+    if(this.fallback) this.fallback.volume=1;
+  }
+};
+
+/* ============ SCREEN FRAMEWORK ============ */
+const SCR = document.getElementById("screen");
+let keyHandler = null;
+let menuItems = [];
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function show(html){
+  SCR.innerHTML = html;
+  SCR.scrollTop = 0;
+  menuItems = [];
+}
+function menu(opts, onpick){
+  // opts: [{k:"1", t:"TRAVEL THE TRAIL", fn}...]
+  menuItems = opts;
+  const div=document.createElement("div");
+  div.className="menu";
+  opts.forEach(o=>{
+    const b=document.createElement("button");
+    b.className="mi";
+    b.innerHTML='<span class="k">['+o.k+']</span> '+o.t;
+    b.onclick=(e)=>{e.stopPropagation(); SND.start(); o.fn();};
+    div.appendChild(b);
+    o._el=b;
+  });
+  SCR.appendChild(div);
+  keyHandler = (e)=>{
+    const o = opts.find(x=>x.k.toLowerCase()===e.key.toLowerCase());
+    if(o){ o.fn(); return true; }
+    return false;
+  };
+}
+function anyKey(fn,label){
+  const p=document.createElement("div");
+  p.className="c dim";
+  p.style.marginTop="1.4em";
+  p.innerHTML='<span class="blink">'+(label||"PRESS ENTER TO CONTINUE")+"</span>";
+  SCR.appendChild(p);
+  setTimeout(()=>{ SCR.onclick=()=>{SND.start(); SCR.onclick=null; fn();}; },80);
+  keyHandler=(e)=>{ if(e.key==="s"||e.key==="S") return false; SCR.onclick=null; fn(); return true; };
+}
+function askText(prompt, fn, maxlen, prefill){
+  const d=document.createElement("div");
+  d.style.marginTop="1em";
+  d.innerHTML=esc(prompt)+"<br><br>";
+  const inp=document.createElement("input");
+  inp.type="text"; inp.maxLength=maxlen||24; inp.autocomplete="off";
+  inp.spellcheck=false;
+  if(prefill) inp.value=prefill;
+  d.appendChild(inp);
+  SCR.appendChild(d);
+  inp.focus();
+  keyHandler=null; // input handles its own keys
+  inp.addEventListener("keydown",e=>{
+    e.stopPropagation();
+    SND.start();
+    if(e.key==="Enter"){ fn(inp.value.trim()); }
+  });
+  setTimeout(()=>inp.focus(),30);
+  return inp;
+}
+document.addEventListener("keydown",e=>{
+  if(e.target && e.target.tagName==="INPUT") return;
+  SND.start();
+  if(e.key==="s"||e.key==="S"){
+    if(!(keyHandler&&menuItems.some(m=>m.k.toLowerCase()==="s"))){ SND.toggle(); return; }
+  }
+  if(keyHandler) keyHandler(e);
+});
+
+/* ============ GAME STATE ============ */
+let G = null;
+const MONTHS=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+const MLEN=[31,28,31,30,31,30,31,31,30,31,30,31];
+const OCCS=[
+  {n:"BANKER FROM THE EAST", cash:1600, mult:1},
+  {n:"CARPENTER", cash:800, mult:2},
+  {n:"FARMER", cash:400, mult:3}
+];
+
+/* session-only top ten. nothing is saved. */
+let TOPTEN = [
+  {n:"STOO",s:7452},
+  {n:"LOCAL MAN",s:6810},
+  {n:"SOMEONE'S DAD",s:5977},
+  {n:"THE FERRYMAN",s:5304},
+  {n:"A GUY FROM MOLINE",s:4841},
+  {n:"THE SECOND SON",s:4102},
+  {n:"WHOEVER CHARGED THE DEVICE",s:3560},
+  {n:"THE OXEN, COLLECTIVELY",s:2988},
+  {n:"HATERS (FUEL)",s:2415},
+  {n:"THE VOID",s:0}
+];
+
+/* ============ TITLE ============ */
+function titleScreen(){
+  G=null;
+  show(
+    '<div class="gap2"></div>'+
+    '<div class="c big w">THE STOOPID TRAIL</div>'+
+    '<div class="gap"></div>'+
+    '<div class="c">DESTINATION: <span class="w">THE WORLD FAMOUS DAVENPORT, IA</span></div>'+
+    '<div class="c dim">POPULATION: AWARE OF ITS FAME</div>'+
+    '<div class="gap"></div>'+
+    '<pre class="c">'+WAGON_ART+'</pre>'+
+    '<div class="gap"></div>'
+  );
+  menu([
+    {k:"1",t:"TRAVEL THE TRAIL",fn:startSetup},
+    {k:"2",t:"LEARN ABOUT THE TRAIL",fn:learnScreen},
+    {k:"3",t:"SEE THE TOP TEN",fn:topTenScreen},
+    {k:"4",t:'SOUND: <span class="w" id="sndstate">'+(SND.on?"ON":"OFF")+"</span>",fn:()=>SND.toggle()}
+  ]);
+  const f=document.createElement("div");
+  f.className="c dim"; f.style.marginTop="2em";
+  f.innerHTML="KWTF 88.8 PLAYS FROM THE WAGON RADIO";
+  SCR.appendChild(f);
+}
+
+const WAGON_ART =
+"        ______________\n"+
+"      /|             |\\\n"+
+"     / |  STOOPID    | \\\n"+
+"    |  |   TRAIL     |  |\n"+
+"  __|__|_____________|__|__\n"+
+"    O   O           O   O\n"+
+" oxen sold separately. see matt.";
+
+/* ============ LEARN ============ */
+const LEARN_PAGES=[
+  '<div class="med w">ABOUT THE TRAIL</div><hr class="rule">'+
+  'THE TRAIL RUNS FROM WHEREVER YOU ARE TO DAVENPORT, IOWA.<br><br>'+
+  'DAVENPORT IS WORLD FAMOUS.<br>NO FURTHER QUESTIONS.<br><br>'+
+  'MANY SET OUT. SOME ARRIVE.<br>THE DIFFERENCE IS USUALLY OXEN.',
+
+  '<div class="med w">ABOUT YOUR PROFESSION</div><hr class="rule">'+
+  'A BANKER STARTS WITH $1,600. LIFE HAS BEEN KIND TO THE BANKER. THE SCORE KNOWS THIS.<br><br>'+
+  'A CARPENTER STARTS WITH $800 AND THE ABILITY TO LOOK AT A BROKEN WHEEL WITHOUT CRYING.<br><br>'+
+  'A FARMER STARTS WITH $400. THE FARMER IS USED TO THINGS DYING. FINAL SCORE IS TRIPLED.',
+
+  '<div class="med w">ABOUT RIVERS</div><hr class="rule">'+
+  'RIVERS DO NOT CARE ABOUT YOU.<br><br>'+
+  'UNDER THREE FEET: WALK ACROSS. PROBABLY FINE.<br>'+
+  'DEEPER: CAULK THE WAGON AND FLOAT IT. SOMETIMES THIS WORKS.<br>'+
+  'THE FERRY COSTS MONEY. THE FERRYMAN HAS NEVER ONCE DROWNED. DRAW YOUR OWN CONCLUSIONS.',
+
+  '<div class="med w">ABOUT HUNTING</div><hr class="rule">'+
+  'BULLETS COME IN BOXES OF 20. AIM. FIRE. MEAT.<br><br>'+
+  'YOU CAN CARRY 100 POUNDS BACK TO THE WAGON.<br>'+
+  'NOT 101. NOT "BUT THE BUFFALO WAS RIGHT THERE."<br>'+
+  '100 POUNDS. THIS HAS ALWAYS BEEN TRUE AND WILL ALWAYS BE TRUE.',
+
+  '<div class="med w">ABOUT DYSENTERY</div><hr class="rule">'+
+  'IT IS EXACTLY WHAT YOU THINK IT IS.<br><br>'+
+  'ALSO AVAILABLE ON THE TRAIL: CHOLERA, TYPHOID, MEASLES, EXHAUSTION, AND SNAKES.<br><br>'+
+  'REST. EAT WELL. WEAR CLOTHES.<br>THE TRAIL RESPECTS PREPARATION. IT JUST DOESN\'T ALWAYS MENTION IT.',
+
+  '<div class="med w">ABOUT DAVENPORT</div><hr class="rule">'+
+  'IT SITS ON THE MISSISSIPPI RIVER, WHICH YOU WILL LIKELY HAVE TO CROSS. THE RIVER IS THE FINAL EXAM.<br><br>'+
+  'PEOPLE ASK WHY DAVENPORT.<br><br>'+
+  'PEOPLE WHO HAVE BEEN THERE DO NOT ASK.'
+];
+function learnScreen(pg){
+  pg=pg||0;
+  show('<div class="gap"></div>'+LEARN_PAGES[pg]+
+    '<div class="gap"></div><div class="dim c">PAGE '+(pg+1)+' OF '+LEARN_PAGES.length+'</div>');
+  const opts=[];
+  if(pg<LEARN_PAGES.length-1) opts.push({k:"1",t:"NEXT PAGE",fn:()=>learnScreen(pg+1)});
+  if(pg>0) opts.push({k:"2",t:"PREVIOUS PAGE",fn:()=>learnScreen(pg-1)});
+  opts.push({k:"3",t:"RETURN TO TITLE",fn:titleScreen});
+  menu(opts,null);
+}
+
+/* ============ TOP TEN ============ */
+function topTenScreen(){
+  let rows=TOPTEN.map((e,i)=>
+    ('  '+(i+1)).slice(-2)+'. '+(e.n+"                          ").slice(0,26)+String(e.s).padStart(6," ")
+  ).join("\n");
+  show(
+    '<div class="gap"></div><div class="c med w">THE STOOPID TRAIL — TOP TEN</div>'+
+    '<hr class="rule"><pre>'+esc(rows)+'</pre><hr class="rule">'+
+    '<div class="c dim">SCORES ARE NOT SAVED. NOTHING IS.</div>'
+  );
+  menu([{k:"1",t:"RETURN TO TITLE",fn:titleScreen}]);
+}
+
+/* ============ SETUP FLOW ============ */
+function startSetup(){
+  // fresh run, fresh seed unless first run with url seed unused
+  if(G && G.usedSeed){ SEED=(Math.random()*65536)|0; }
+  rnd = mulberry32(SEED);
+  G = {
+    usedSeed:true,
+    occ:null, mult:1, cash:0,
+    party:[], oxen:0, food:0, clothing:0, bullets:0,
+    parts:{wheel:0,axle:0,tongue:0},
+    pace:1, rations:1, // idx: pace 0 steady 1? see PACES/RATIONS
+    month:3, day:1,    // set at departure question
+    miles:0, route:0, landmarks:[], lmIdx:0,
+    health:100, sick:[],
+    isVoid:false, start:null, done:false,
+    grassless:0, log:[]
+  };
+  G.pace=0; G.rations=0;
+  occupationScreen();
+}
+function occupationScreen(){
+  show('<div class="gap"></div><div class="med w">MANY KINDS OF PEOPLE MAKE THE TRIP TO DAVENPORT.</div>'+
+    '<div class="gap"></div>YOU MAY:<br>');
+  menu(OCCS.map((o,i)=>({k:String(i+1),
+    t:"BE A "+o.n+" — $"+o.cash+" <span class='dim'>(SCORE x"+o.mult+")</span>",
+    fn:()=>{G.occ=o; G.cash=o.cash; G.mult=o.mult; nameScreen(0);}
+  })));
+}
+function nameScreen(i){
+  const labels=["WHAT IS THE FIRST NAME OF THE WAGON LEADER?",
+    "WHAT IS THE FIRST NAME OF THE SECOND MEMBER?",
+    "WHAT IS THE FIRST NAME OF THE THIRD MEMBER?",
+    "WHAT IS THE FIRST NAME OF THE FOURTH MEMBER?",
+    "WHAT IS THE FIRST NAME OF THE FIFTH MEMBER?"];
+  const defaults=["STOO","BUCK","SOCKS","BEANS","MILO"];
+  show('<div class="gap"></div><div class="med w">YOUR PARTY</div><hr class="rule">'+
+    G.party.map(p=>'&nbsp;&nbsp;'+esc(p.name)).join("<br>")+(G.party.length?"<br>":""));
+  askText(labels[i], v=>{
+    const name=(v||defaults[i]).toUpperCase().slice(0,12);
+    G.party.push({name, alive:true, disease:null, sickDays:0});
+    if(i<4) nameScreen(i+1); else monthScreen();
+  }, 12);
+}
+function monthScreen(){
+  show('<div class="gap"></div><div class="med w">WHEN DOES YOUR JOURNEY BEGIN?</div>'+
+    '<div class="gap"></div><span class="dim">LEAVE TOO EARLY AND THERE IS NO GRASS. LEAVE TOO LATE AND THERE IS NO YOU.</span><br>');
+  menu([
+    {k:"1",t:"MARCH",fn:()=>{G.month=2;G.day=1;cityScreen();}},
+    {k:"2",t:"APRIL",fn:()=>{G.month=3;G.day=1;cityScreen();}},
+    {k:"3",t:"MAY",fn:()=>{G.month=4;G.day=1;cityScreen();}},
+    {k:"4",t:"JUNE",fn:()=>{G.month=5;G.day=1;cityScreen();}},
+    {k:"5",t:"JULY",fn:()=>{G.month=6;G.day=1;cityScreen();}}
+  ]);
+}
+
+/* ---- city fuzzy matching ---- */
+function norm(s){return s.toLowerCase().replace(/[^a-z0-9 ,]/g,"").replace(/\s+/g," ").trim();}
+function matchCity(input){
+  const q=norm(input);
+  if(!q) return null;
+  // allow "city, st" / "city st"
+  let qc=q, qst=null;
+  const m=q.match(/^(.+?)[, ]+([a-z]{2})$/);
+  if(m && CITIES.some(c=>c.st.toLowerCase()===m[2])){ qc=m[1].trim(); qst=m[2]; }
+  const pool = qst? CITIES.filter(c=>c.st.toLowerCase()===qst) : CITIES;
+  const nn = c=>norm(c.n);
+  let hit = pool.find(c=>nn(c)===qc);
+  if(!hit) hit = pool.find(c=>nn(c).startsWith(qc));
+  if(!hit) hit = pool.find(c=>nn(c).includes(qc));
+  if(!hit && qc.length>=4){ // forgiving: allow one typo-ish prefix match
+    hit = pool.find(c=>{
+      const a=nn(c).slice(0,qc.length);
+      if(Math.abs(a.length-qc.length)>1) return false;
+      let diff=0;
+      for(let i=0;i<Math.min(a.length,qc.length);i++) if(a[i]!==qc[i]) diff++;
+      return diff<=1;
+    });
+  }
+  return hit||null;
+}
+function cityScreen(msg){
+  show('<div class="gap"></div><div class="med w">WHERE DOES YOUR JOURNEY BEGIN?</div>'+
+    (msg?'<div class="gap"></div><span class="p">'+esc(msg)+"</span>":"")+
+    '<div class="gap"></div><span class="dim">TYPE ANY CITY IN THE UNITED STATES.</span>');
+  askText("", v=>{
+    if(!v){ cityScreen("SILENCE IS NOT A CITY."); return; }
+    const hit=matchCity(v);
+    if(hit && hit.n==="Davenport" && hit.st==="IA"){ alreadyHere(); return; }
+    if(!hit){ voidConfirm(v); return; }
+    confirmCity(hit);
+  },40);
+}
+function confirmCity(c){
+  show('<div class="gap"></div>YOU WILL DEPART FROM:<div class="gap"></div>'+
+    '<div class="c med w">'+esc(c.n.toUpperCase())+", "+c.st+"</div>"+
+    '<div class="gap"></div><div class="c dim">'+Math.round(haversine(c,DAV)*1.2)+' MILES TO DAVENPORT, MORE OR LESS. MOSTLY MORE.</div>');
+  menu([
+    {k:"1",t:"YES. THAT IS WHERE I AM.",fn:()=>{buildRoute(c); storeScreen(true);}},
+    {k:"2",t:"NO. TYPE IT AGAIN.",fn:()=>cityScreen()}
+  ]);
+}
+function voidConfirm(v){
+  show('<div class="gap"></div><span class="p">NO RECORD OF "'+esc(v.toUpperCase())+'" EXISTS.</span>'+
+    '<div class="gap"></div>YOU WILL DEPART FROM <span class="p">THE VOID</span>.'+
+    '<div class="gap"></div><div class="dim">DISTANCE TO DAVENPORT: 2,000 MILES. THE VOID IS FARTHER THAN IT LOOKS.</div>');
+  menu([
+    {k:"1",t:"ACCEPT THIS",fn:()=>{buildVoidRoute(); storeScreen(true);}},
+    {k:"2",t:"TYPE IT AGAIN",fn:()=>cityScreen()}
+  ]);
+}
+function alreadyHere(){
+  G.done=true;
+  show('<div class="gap2"></div>'+
+    '<div class="c big o">THE WORLD FAMOUS<br>DAVENPORT, IA</div>'+
+    '<div class="gap"></div><div class="c w">YOU ARE ALREADY HERE. CONGRATULATIONS?</div>'+
+    '<div class="gap"></div><div class="c">FINAL SCORE: 0</div>'+
+    '<div class="c dim">THE JOURNEY OF A THOUSAND MILES YOU DID NOT TAKE.</div>'+
+    '<div class="gap"></div><div class="c dim">TRAIL SEED: '+seedStr()+'</div>');
+  menu([{k:"1",t:"RETURN TO TITLE",fn:titleScreen}]);
+}
+
+/* ---- route + landmarks ---- */
+/* each river: name, lon band, lat band — so the Rio Grande stays out of South Dakota */
+const RIVERS_REAL=[
+  {n:"THE COLUMBIA RIVER",  lo:[-125,-115], la:[44,49]},
+  {n:"THE SNAKE RIVER",     lo:[-120,-111], la:[42,47]},
+  {n:"THE SACRAMENTO RIVER",lo:[-124,-120], la:[37,41]},
+  {n:"THE COLORADO RIVER",  lo:[-118,-106], la:[31,40]},
+  {n:"THE GREEN RIVER",     lo:[-112,-107], la:[38,43]},
+  {n:"THE YELLOWSTONE RIVER",lo:[-112,-103],la:[44,48]},
+  {n:"THE PLATTE RIVER",    lo:[-106,-95],  la:[39,43]},
+  {n:"THE ARKANSAS RIVER",  lo:[-106,-91],  la:[33,39]},
+  {n:"THE RIO GRANDE",      lo:[-108,-97],  la:[25,38]},
+  {n:"THE PECOS RIVER",     lo:[-106,-101], la:[28,36]},
+  {n:"THE RED RIVER",       lo:[-101,-92],  la:[31,35]},
+  {n:"THE MISSOURI RIVER",  lo:[-104,-90],  la:[38,48]},
+  {n:"THE DES MOINES RIVER",lo:[-96,-91],   la:[40,44]},
+  {n:"THE IOWA RIVER",      lo:[-94,-91],   la:[41,43]},
+  {n:"THE CEDAR RIVER",     lo:[-93,-91],   la:[41,44]},
+  {n:"THE SKUNK RIVER",     lo:[-93,-91],   la:[40,43]},
+  {n:"THE WAPSIPINICON RIVER",lo:[-92,-90], la:[41,43]},
+  {n:"THE ROCK RIVER",      lo:[-91,-88],   la:[41,44]},
+  {n:"THE ILLINOIS RIVER",  lo:[-91,-87],   la:[38,42]},
+  {n:"THE OHIO RIVER",      lo:[-89,-80],   la:[36,41]},
+  {n:"THE WABASH RIVER",    lo:[-89,-84],   la:[38,41]},
+  {n:"THE TENNESSEE RIVER", lo:[-89,-83],   la:[34,37]},
+  {n:"THE CUMBERLAND RIVER",lo:[-89,-84],   la:[36,38]},
+  {n:"THE ALLEGHENY RIVER", lo:[-81,-78],   la:[40,43]},
+  {n:"THE SUSQUEHANNA RIVER",lo:[-78,-74],  la:[39,43]},
+  {n:"THE HUDSON RIVER",    lo:[-75,-73],   la:[40,44]},
+  {n:"THE POTOMAC RIVER",   lo:[-79,-76],   la:[38,40]}
+];
+function riverNameFor(pt,used){
+  let pool=RIVERS_REAL.filter(r=>!used.has(r.n) &&
+    pt.lo>=r.lo[0]-1 && pt.lo<=r.lo[1]+1 && pt.la>=r.la[0]-1 && pt.la<=r.la[1]+1);
+  if(!pool.length) pool=RIVERS_REAL.filter(r=>!used.has(r.n) && pt.lo>=r.lo[0]-4 && pt.lo<=r.lo[1]+4);
+  const nm=pool.length?pick(pool).n:"AN UNNAMED RIVER";
+  used.add(nm); return nm;
+}
+function buildRoute(startCity){
+  G.start=startCity;
+  const dist=Math.max(40,Math.round(haversine(startCity,DAV)*1.2));
+  G.route=dist;
+  const L=Math.max(8,Math.min(14,Math.round(dist/170)));
+  const nRivers=Math.max(2,Math.min(4, 2+(dist>1400?1:0)+(dist>2400?1:0)));
+  // pick which landmark slots are rivers (spread out, none first)
+  const riverSlots=new Set();
+  while(riverSlots.size<nRivers-1){ riverSlots.add(ri(1,L-2)); }
+  // final crossing: the Mississippi if we approach from west or south
+  const fromWestOrSouth = startCity.lo < DAV.lo-0.4 || startCity.la < DAV.la-1.2;
+  if(fromWestOrSouth) riverSlots.add(L-1); else riverSlots.add(ri(1,L-2));
+  const excl=new Set([startCity]);
+  const dav=CITIES.find(c=>c.n==="Davenport"&&c.st==="IA");
+  if(dav) excl.add(dav);
+  const usedRivers=new Set();
+  let townToggle=0;
+  G.landmarks=[];
+  for(let i=1;i<=L;i++){
+    const f=i/(L+1);
+    const pt=gcPoint(startCity,DAV,f);
+    const c=nearestCity(pt,excl); excl.add(c);
+    const at=Math.round(dist*f*(0.97+rnd()*0.06));
+    const slot=i-1;
+    if(riverSlots.has(slot)){
+      const isMiss = fromWestOrSouth && slot===L-1;
+      const nm = isMiss? "THE MISSISSIPPI RIVER" : riverNameFor(c,usedRivers);
+      const big = isMiss;
+      G.landmarks.push({type:"river", name:nm, miles:at,
+        depth: big? ri(9,22) : ri(2,14), width: big? ri(1200,2400) : ri(150,900)});
+    }else if(townToggle++%2===0){
+      G.landmarks.push({type:"town", name:c.n.toUpperCase()+", "+c.st, miles:at, city:c});
+    }else{
+      G.landmarks.push({type:"fort", name:"FORT "+c.n.toUpperCase().split(" ")[0], miles:at, city:c});
+    }
+  }
+  G.landmarks.sort((a,b)=>a.miles-b.miles);
+  // enforce mississippi last if present
+  const mi=G.landmarks.findIndex(l=>l.name==="THE MISSISSIPPI RIVER");
+  if(mi>=0){ const [ms]=G.landmarks.splice(mi,1); ms.miles=Math.round(dist*0.96); G.landmarks.push(ms); }
+}
+const VOID_TOWNS=["THE GRAY EXPANSE","MILE MARKER NOTHING","A TOWN THAT ISN'T","THE LONG QUIET","STATIC FIELDS","THE HUM","LOWER ABSENCE","PALE JUNCTION","THE UNPLACE","SETTLEMENT 404","THE FORMER SOMEWHERE"];
+const VOID_FORTS=["FORT DOUBT","FORT NOTHING","FORT PROBABLY","FORT SIGNAL","FORT STATIC"];
+const VOID_RIVERS=["THE RIVER UNNAMED","THE SLOW DARK","THE MURMUR","A RIVER OF SOME KIND"];
+function buildVoidRoute(){
+  G.isVoid=true;
+  G.start={n:"The Void",st:"??",la:41.5,lo:-120.6}; // west of everything
+  G.route=2000;
+  const L=12, towns=[...VOID_TOWNS], forts=[...VOID_FORTS], rivers=[...VOID_RIVERS];
+  const riverSlots=new Set([3,7]);
+  G.landmarks=[];
+  let toggle=0;
+  for(let i=1;i<=L;i++){
+    const at=Math.round(2000*(i/(L+1))*(0.97+rnd()*0.06));
+    const slot=i-1;
+    if(slot===L-1){
+      G.landmarks.push({type:"river",name:"THE MISSISSIPPI RIVER",miles:1920,depth:ri(9,22),width:ri(1200,2400)});
+    }else if(riverSlots.has(slot)){
+      G.landmarks.push({type:"river",name:rivers.splice(ri(0,rivers.length-1),1)[0],miles:at,depth:ri(2,14),width:ri(150,900)});
+    }else if(toggle++%2===0){
+      G.landmarks.push({type:"town",name:towns.splice(ri(0,towns.length-1),1)[0],miles:at,voidTown:true});
+    }else{
+      G.landmarks.push({type:"fort",name:forts.splice(ri(0,forts.length-1),1)[0],miles:at,voidTown:true});
+    }
+  }
+  G.landmarks.sort((a,b)=>a.miles-b.miles);
+}
+
+/* ============ GENERAL STORE ============ */
+const STORE_ITEMS=[
+  {id:"oxen",    n:"OXEN (PER YOKE OF 2)", base:40,  max:9,   unit:"YOKE"},
+  {id:"food",    n:"FOOD (PER 50 LBS)",    base:10,  max:40,  unit:"LOT", mult:50},
+  {id:"clothing",n:"CLOTHING (PER SET)",   base:10,  max:20,  unit:"SET"},
+  {id:"bullets", n:"AMMUNITION (BOX OF 20)",base:2,  max:50,  unit:"BOX", mult:20},
+  {id:"wheel",   n:"SPARE WAGON WHEEL",    base:10,  max:3,   unit:"WHEEL"},
+  {id:"axle",    n:"SPARE WAGON AXLE",     base:10,  max:3,   unit:"AXLE"},
+  {id:"tongue",  n:"SPARE WAGON TONGUE",   base:10,  max:3,   unit:"TONGUE"}
+];
+const MATT_LINES=[
+  "TAKE YOUR TIME. THE TRAIL WON'T.",
+  "EVERYTHING'S PRICED FAIR. FAIRNESS IS REGIONAL.",
+  "THE OXEN ARE OUT BACK. THEY KNOW.",
+  "NO REFUNDS. THE TRAIL DOESN'T GIVE THEM EITHER.",
+  "FOLKS ASK WHAT THEY NEED. I SAY: MORE.",
+  "LAST FELLOW BOUGHT ONE YOKE. GOOD LISTENER. BAD PLANNER.",
+  "I'D SELL YOU COURAGE IF IT KEPT ON A SHELF."
+];
+function priceFactor(){
+  if(!G || !G.route) return 1;
+  return 1 + 0.9*(G.miles/G.route);
+}
+function itemPrice(it){ return Math.max(1, Math.round(it.base*priceFactor())); }
+function invCount(id){
+  if(id==="oxen")return G.oxen;
+  if(id==="food")return G.food;
+  if(id==="clothing")return G.clothing;
+  if(id==="bullets")return G.bullets;
+  return G.parts[id];
+}
+function addInv(id,q){
+  if(id==="oxen")G.oxen+=q;
+  else if(id==="food")G.food+=q*50;
+  else if(id==="clothing")G.clothing+=q;
+  else if(id==="bullets")G.bullets+=q*20;
+  else G.parts[id]+=q;
+}
+function storeScreen(isStart, backFn){
+  const where=isStart? (G.isVoid?"THE VOID GENERAL STORE":esc(G.start.n.toUpperCase())+" GENERAL STORE")
+                     : "GENERAL STORE";
+  let rows=STORE_ITEMS.map((it,i)=>{
+    return '<tr><td class="n">['+(i+1)+'] '+it.n+'</td>'+
+      '<td>$'+itemPrice(it)+'</td>'+
+      '<td class="dim">HAVE: '+invCount(it.id)+(it.id==="food"?" LBS":it.id==="bullets"?"":"")+'</td></tr>';
+  }).join("");
+  show('<div class="gap"></div><div class="med w">'+where+'</div>'+
+    '<div class="dim">"'+pick(MATT_LINES)+'"</div><hr class="rule">'+
+    '<table class="store">'+rows+'</table><hr class="rule">'+
+    'CASH: <span class="w">$'+G.cash.toFixed(0)+'</span>'+
+    (isStart?'<div class="dim">YOU WILL WANT OXEN. THIS IS NOT A SUGGESTION. IT IS PHYSICS.</div>':""));
+  const opts=STORE_ITEMS.map((it,i)=>({k:String(i+1),t:"BUY "+it.n,fn:()=>buyScreen(it,isStart,backFn)}));
+  opts.push({k:"0",t:isStart?"LEAVE THE STORE AND HIT THE TRAIL":"LEAVE THE STORE",fn:()=>{
+    if(isStart && G.oxen<1){
+      show('<div class="gap2"></div><div class="c med">YOU HAVE NO OXEN.</div>'+
+        '<div class="gap"></div><div class="c dim">THE WAGON HAS CONSIDERED YOUR PLAN AND DECLINED.</div>');
+      anyKey(()=>storeScreen(isStart,backFn));
+      return;
+    }
+    if(isStart) departScreen(); else backFn();
+  }});
+  menu(opts,null);
+}
+function buyScreen(it,isStart,backFn){
+  const pr=itemPrice(it);
+  const canAfford=Math.floor(G.cash/pr);
+  const room=it.max-(it.id==="food"?G.food/50:it.id==="bullets"?G.bullets/20:invCount(it.id));
+  const maxBuy=Math.max(0,Math.min(canAfford,Math.floor(room)));
+  show('<div class="gap"></div><div class="med w">'+it.n+'</div>'+
+    '<div class="gap"></div>PRICE: $'+pr+' PER '+it.unit+
+    '<br>YOU CAN AFFORD '+canAfford+'. YOU CAN CARRY '+Math.floor(room)+' MORE.'+
+    '<div class="gap"></div>');
+  askText("HOW MANY?", v=>{
+    const q=Math.max(0,Math.min(maxBuy,parseInt(v||"0",10)||0));
+    if(q>0){ G.cash-=q*pr; addInv(it.id,q); }
+    storeScreen(isStart,backFn);
+  },4);
+}
+function departScreen(){
+  const from=G.isVoid?"THE VOID":G.start.n.toUpperCase()+", "+G.start.st;
+  show('<div class="gap2"></div><div class="c med w">'+esc(from)+'</div>'+
+    '<div class="c">'+MONTHS[G.month]+' '+G.day+'</div>'+
+    '<div class="gap"></div><div class="c">THE WAGON IS LOADED. THE OXEN ARE PATIENT.<br>DAVENPORT DOES NOT KNOW YOU ARE COMING. IT NEVER DOES.</div>'+
+    '<div class="gap"></div><div class="c p">THE TRAIL BEGINS.</div>');
+  anyKey(()=>travelScreen());
+}
+
+/* ============ TRAVEL CORE ============ */
+const PACES=[{n:"STEADY",f:1.0,h:0},{n:"STRENUOUS",f:1.35,h:-1},{n:"GRUELING",f:1.65,h:-2.5}];
+const RATIONS=[{n:"FILLING",lbs:3,h:1},{n:"MEAGER",lbs:2,h:-0.5},{n:"BARE BONES",lbs:1,h:-2}];
+function aliveCount(){return G.party.filter(p=>p.alive).length;}
+function healthWord(){
+  return G.health>75?"GOOD":G.health>50?"FAIR":G.health>25?"POOR":"VERY POOR";
+}
+function advanceDate(){
+  G.day++;
+  if(G.day>MLEN[G.month]){G.day=1;G.month=(G.month+1)%12;}
+}
+function currentPos(){ // interpolated position for weather purposes
+  const f=Math.min(1,G.miles/G.route);
+  return gcPoint(G.start,DAV,f);
+}
+function rollWeather(){
+  const pos=currentPos();
+  const m=G.month;
+  const winterish = (m<=1||m>=10);
+  const summerish = (m>=5&&m<=8);
+  const cold = winterish || pos.la>44 && (m<=2||m>=9);
+  let w="CLEAR";
+  const r=rnd();
+  if(cold){
+    if(r<0.12) w="BLIZZARD";
+    else if(r<0.32) w="SNOW";
+    else if(r<0.5) w="COLD RAIN";
+    else if(r<0.62) w="BITTER COLD";
+  }else if(summerish){
+    if(r<0.08) w="THUNDERSTORM";
+    else if(r<0.2) w="RAIN";
+    else if(r<0.34) w="VERY HOT";
+  }else{
+    if(r<0.15) w="RAIN";
+    else if(r<0.2) w="THUNDERSTORM";
+    else if(r<0.26) w="COLD";
+  }
+  G.weather=w;
+}
+function milesPerDay(){
+  if(G.oxen<1) return 0;
+  let mpd=(13+2.6*Math.min(G.oxen,4))*PACES[G.pace].f;
+  if(G.weather==="RAIN"||G.weather==="COLD RAIN") mpd*=0.7;
+  if(G.weather==="SNOW") mpd*=0.5;
+  if(G.weather==="THUNDERSTORM") mpd*=0.6;
+  if(G.weather==="BLIZZARD") mpd=0;
+  if(G.health<=50) mpd*=0.85;
+  if(G.health<=25) mpd*=0.7;
+  if(G.grassless>0) mpd*=0.75;
+  return Math.round(mpd);
+}
+function dailyHealth(){
+  let d=PACES[G.pace].h + RATIONS[G.rations].h;
+  if(G.food<=0) d-=6;
+  if(G.weather==="BLIZZARD"||G.weather==="BITTER COLD"){
+    d -= (G.clothing>=aliveCount()) ? 1.5 : 4;
+  }
+  if(G.weather==="VERY HOT") d-=0.5;
+  if(G.weather==="CLEAR") d+=0.5;
+  const sickCount=G.party.filter(p=>p.alive&&p.disease).length;
+  d -= sickCount*1.5;
+  G.health=Math.max(0,Math.min(100,G.health+d));
+}
+function consumeFood(){
+  const need=aliveCount()*RATIONS[G.rations].lbs;
+  G.food=Math.max(0,G.food-need);
+}
+
+/* ---- diseases & death ---- */
+const DISEASES=["DYSENTERY","CHOLERA","TYPHOID","MEASLES","EXHAUSTION"];
+function infect(who,dis){
+  if(!who||who.disease) return false;
+  who.disease=dis; who.sickDays=0;
+  return true;
+}
+function randomHealthy(){
+  const c=G.party.filter(p=>p.alive&&!p.disease);
+  return c.length?pick(c):null;
+}
+function tickSickness(deaths){
+  for(const p of G.party){
+    if(!p.alive||!p.disease) continue;
+    p.sickDays++;
+    const dur=ri(4,10);
+    if(p.sickDays>=4){
+      // resolve: die or recover. worse aggregate health = worse odds
+      const dieP=0.03+(100-G.health)*0.0035+(G.rations===2?0.04:0)+(G.pace===2?0.03:0);
+      if(chance(dieP)){ p.alive=false; deaths.push({p,cause:p.disease}); }
+      else if(p.sickDays>=dur){ p.disease=null; p.sickDays=0; }
+    }
+  }
+}
+
+/* ---- random events ---- */
+function eventPool(){
+  const E=[];
+  const W=(w,fn)=>E.push({w,fn});
+  const sickMod = (100-G.health)/100; // 0..1
+  W(5+8*sickMod,()=>{ const p=randomHealthy(); if(!p)return null;
+    const dis=pick(["DYSENTERY","DYSENTERY","CHOLERA","TYPHOID","MEASLES"]);
+    infect(p,dis); return {msg:p.name+" HAS "+dis+".", bad:true}; });
+  W(G.pace===2?5:1.5,()=>{ const p=randomHealthy(); if(!p)return null;
+    infect(p,"EXHAUSTION"); return {msg:p.name+" HAS EXHAUSTION.", bad:true}; });
+  W(2,()=>{ const p=randomHealthy(); if(!p)return null;
+    if(chance(0.5)){ infect(p,"SNAKEBITE"); G.health-=8;
+      return {msg:p.name+" WAS BITTEN BY A SNAKE.", bad:true}; }
+    return {msg:p.name+" WAS BITTEN BY A SNAKE. IT WAS FINE. THE SNAKE FELT NOTHING EITHER."}; });
+  W(4,()=>{ if(chance(0.6)&&G.parts.wheel>0){G.parts.wheel--;
+      return {msg:"A WAGON WHEEL BROKE. YOU HAVE A SPARE. THE SPARE IS NOW NOT A SPARE.", days:1};}
+    if(G.parts.wheel>0){G.parts.wheel--; return {msg:"A WAGON WHEEL BROKE. REPLACED.", days:1};}
+    return {msg:"A WAGON WHEEL BROKE. NO SPARE. YOU LOSE "+(3)+" DAYS IMPROVISING.", days:3, bad:true}; });
+  W(3,()=>{ if(G.parts.axle>0){G.parts.axle--; return {msg:"THE WAGON AXLE SNAPPED. REPLACED.", days:1};}
+    return {msg:"THE WAGON AXLE SNAPPED. NO SPARE. 4 DAYS OF CARPENTRY BY COMMITTEE.", days:4, bad:true}; });
+  W(2,()=>{ if(G.parts.tongue>0){G.parts.tongue--; return {msg:"THE WAGON TONGUE BROKE. REPLACED.", days:1};}
+    return {msg:"THE WAGON TONGUE BROKE. NO SPARE. 3 DAYS. THE OXEN WATCHED.", days:3, bad:true}; });
+  W(3,()=>{ if(G.oxen<1)return null;
+    if(chance(0.5)){ return {msg:"AN OX WANDERED OFF. YOU LOSE A DAY FINDING IT. IT WAS NOT HIDING.", days:1}; }
+    G.oxen=Math.max(0,G.oxen-1); return {msg:"AN OX WANDERED OFF AND DID NOT COME BACK. IT HAD ITS REASONS.", bad:true}; });
+  W(2,()=>{ if(G.oxen<1)return null; G.oxen=Math.max(0,G.oxen-1);
+    return {msg:"AN OX HAS DIED. THE OTHERS SAY NOTHING.", bad:true}; });
+  W(3,()=>{ const what=ri(0,2);
+    if(what===0&&G.clothing>0){const q=ri(1,Math.min(3,G.clothing));G.clothing-=q;
+      return {msg:"A THIEF CAME IN THE NIGHT AND TOOK "+q+" SET"+(q>1?"S":"")+" OF CLOTHING.", bad:true};}
+    if(what===1&&G.bullets>0){const q=ri(20,Math.min(80,G.bullets));G.bullets-=q;
+      return {msg:"A THIEF TOOK "+q+" BULLETS. QUIETLY. WHICH IS THE ONLY WAY TO TAKE BULLETS.", bad:true};}
+    if(G.food>0){const q=ri(10,Math.min(60,Math.max(10,G.food)));G.food=Math.max(0,G.food-q);
+      return {msg:"A THIEF TOOK "+q+" POUNDS OF FOOD.", bad:true};}
+    return {msg:"A THIEF CAME AND FOUND NOTHING WORTH TAKING. SOMEHOW THIS IS WORSE."}; });
+  W(4,()=>{ if(chance(0.5)){ const p=randomHealthy();
+      if(p&&chance(0.6)){ infect(p,pick(["DYSENTERY","CHOLERA"])); return {msg:"BAD WATER. "+p.name+" DRANK IT ANYWAY.", bad:true}; } }
+    return {msg:"BAD WATER. YOU LOSE A DAY LOOKING FOR BETTER WATER. IT WAS ADEQUATE.", days:1}; });
+  W(3,()=>{ G.grassless=ri(2,4);
+    return {msg:"NO GRASS FOR THE OXEN. THEY SLOW DOWN. THEY DO NOT COMPLAIN. THAT'S THE WORST PART.", bad:true}; });
+  W(3,()=>{ return {msg:"YOU TOOK THE WRONG TRAIL AND LOST "+2+" DAYS. THE RIGHT TRAIL LOOKED WRONGER.", days:2, bad:true}; });
+  W(3,()=>{ const q=ri(15,35); G.food+=q;
+    return {msg:"YOU FOUND WILD FRUIT. "+q+" POUNDS. THE TRAIL PROVIDES, OCCASIONALLY."}; });
+  W(2,()=>{ const part=pick(["wheel","axle","tongue"]); G.parts[part]++;
+    return {msg:"AN ABANDONED WAGON. YOU TAKE A SPARE "+part.toUpperCase()+". YOU DO NOT ASK WHAT HAPPENED HERE."}; });
+  W(2,()=>{ if(G.weather!=="BLIZZARD"&&G.weather!=="THUNDERSTORM")return null;
+    const q=ri(5,25); G.food=Math.max(0,G.food-q);
+    return {msg:"SEVERE WEATHER TORE AT THE WAGON. LOST "+q+" POUNDS OF FOOD.", bad:true, days:1}; });
+  W(2,()=>{ const alive=G.party.filter(p=>p.alive); if(alive.length<2)return null;
+    const p=pick(alive.filter((_,i)=>i>0)||alive);
+    return {msg:p.name+" WANDERED OFF. YOU LOSE 2 DAYS SEARCHING. FOUND SITTING ON A ROCK. NO EXPLANATION OFFERED.", days:2}; });
+  W(1,()=>{ return {msg:"NOTHING HAPPENED TODAY. OUT HERE, THAT'S AN EVENT."}; });
+  return E;
+}
+function rollEvent(){
+  if(!chance(0.28)) return null;
+  const pool=eventPool();
+  const total=pool.reduce((s,e)=>s+e.w,0);
+  let r=rnd()*total;
+  for(const e of pool){ r-=e.w; if(r<=0){ const res=e.fn(); return res||null; } }
+  return null;
+}
+
+/* ============ TRAVEL SCREEN ============ */
+let anim=null;
+function stopAnim(){ if(anim){cancelAnimationFrame(anim);anim=null;} }
+function statusBar(){
+  const lm=G.landmarks[G.lmIdx];
+  const nextTxt=lm? (lm.miles-G.miles)+" MILES TO "+lm.name : (G.route-G.miles)+" MILES TO DAVENPORT";
+  return '<div class="statbar">'+
+    '<span>DATE: <b>'+MONTHS[G.month]+' '+G.day+'</b></span>'+
+    '<span>WEATHER: <b>'+(G.weather||"CLEAR")+'</b></span>'+
+    '<span>HEALTH: <b>'+healthWord()+'</b></span>'+
+    '<span>FOOD: <b>'+Math.round(G.food)+' LBS</b></span>'+
+    '<span>NEXT: <b>'+nextTxt+'</b></span>'+
+    '<span>TRAVELED: <b>'+G.miles+' MILES</b></span>'+
+    '</div>';
+}
+function travelScreen(){
+  stopAnim();
+  rollWeather();
+  show('<div class="med w c" style="margin-top:6px">THE STOOPID TRAIL</div>'+statusBar());
+  const cv=document.createElement("canvas");
+  cv.width=640; cv.height=120;
+  cv.style.width="min(640px,96%)";
+  SCR.appendChild(cv);
+  drawTrail(cv,false);
+  menu([
+    {k:"1",t:"CONTINUE ON TRAIL",fn:goTravel},
+    {k:"2",t:"CHECK SUPPLIES",fn:suppliesScreen},
+    {k:"3",t:"LOOK AT MAP",fn:mapScreen},
+    {k:"4",t:"CHANGE PACE <span class='dim'>(NOW: "+PACES[G.pace].n+")</span>",fn:paceScreen},
+    {k:"5",t:"CHANGE RATIONS <span class='dim'>(NOW: "+RATIONS[G.rations].n+")</span>",fn:rationScreen},
+    {k:"6",t:"STOP TO REST",fn:restScreen},
+    {k:"7",t:"ATTEMPT TO TRADE",fn:tradeScreen},
+    {k:"8",t:"HUNT FOR FOOD",fn:()=>startHunt(travelScreen)}
+  ]);
+}
+/* pixel wagon on canvas */
+function drawTrail(cv,moving){
+  const cx=cv.getContext("2d");
+  let off=0;
+  const teal="#00FFC6", white="#FFFFFF";
+  function frame(){
+    cx.fillStyle="#000"; cx.fillRect(0,0,cv.width,cv.height);
+    cx.fillStyle=teal;
+    // ground
+    for(let x=0;x<cv.width;x+=14){
+      cx.fillRect(((x-off)%cv.width+cv.width)%cv.width,96,8,2);
+    }
+    // horizon scenery by progress
+    const f=G?Math.min(1,G.miles/Math.max(1,G.route)):0;
+    for(let i=0;i<5;i++){
+      const sx=(((i*160-off*0.3)%cv.width)+cv.width)%cv.width;
+      if(f<0.4){ // mountains west / generic hills
+        cx.fillRect(sx,60,2,2);cx.fillRect(sx+2,56,2,6);cx.fillRect(sx+4,52,2,10);cx.fillRect(sx+6,56,2,6);cx.fillRect(sx+8,60,2,2);
+      }else{ // plains: grass ticks
+        cx.fillRect(sx,60,1,4);cx.fillRect(sx+6,62,1,2);
+      }
+    }
+    // wagon (pixel blocks) at x=90
+    const bob=moving? ((off>>3)%2) : 0;
+    const wx=90, wy=64+bob;
+    cx.fillStyle=teal;
+    cx.fillRect(wx+6,wy-14,34,14);      // canvas top
+    cx.fillRect(wx+2,wy,44,10);         // bed
+    cx.fillStyle=white;
+    cx.fillRect(wx+6,wy-12,34,2);       // canvas highlight
+    cx.fillStyle=teal;
+    // wheels
+    const spin=(off>>2)%2;
+    [[wx+10,wy+14],[wx+36,wy+14]].forEach(([x,y])=>{
+      cx.beginPath();cx.arc(x,y,7,0,7);cx.strokeStyle=teal;cx.lineWidth=2;cx.stroke();
+      cx.beginPath();
+      if(spin){cx.moveTo(x-5,y);cx.lineTo(x+5,y);cx.moveTo(x,y-5);cx.lineTo(x,y+5);}
+      else{cx.moveTo(x-4,y-4);cx.lineTo(x+4,y+4);cx.moveTo(x-4,y+4);cx.lineTo(x+4,y-4);}
+      cx.stroke();
+    });
+    // oxen ahead
+    if(G&&G.oxen>0){
+      for(let o=0;o<Math.min(G.oxen,3);o++){
+        const ox=wx+58+o*24;
+        cx.fillRect(ox,wy+2,16,8);
+        cx.fillRect(ox+12,wy-2,6,6); // head
+        cx.fillRect(ox+2,wy+10+bob,2,4); cx.fillRect(ox+12,wy+10+(1-bob),2,4); // legs
+      }
+    }
+    if(moving){ off+=2; anim=requestAnimationFrame(frame); }
+  }
+  frame();
+}
+
+/* ---- traveling day by day ---- */
+function goTravel(){
+  stopAnim();
+  show('<div class="med w c" style="margin-top:6px">THE STOOPID TRAIL</div>'+statusBar());
+  const cv=document.createElement("canvas");
+  cv.width=640; cv.height=120; cv.style.width="min(640px,96%)";
+  SCR.appendChild(cv);
+  const note=document.createElement("div");
+  note.className="c dim"; note.innerHTML='<span class="blink">TRAVELING — PRESS ENTER TO STOP</span>';
+  SCR.appendChild(note);
+  drawTrail(cv,true);
+  let stopped=false;
+  keyHandler=()=>{stopped=true;return true;};
+  function dayStep(){
+    if(stopped){ travelScreen(); return; }
+    const deaths=[];
+    advanceDate(); rollWeather();
+    const mpd=milesPerDay();
+    G.miles+=mpd;
+    if(G.grassless>0)G.grassless--;
+    consumeFood(); dailyHealth(); tickSickness(deaths);
+    // starvation deaths
+    if(G.food<=0 && chance(0.06)){
+      const p=randomHealthy()||G.party.find(x=>x.alive);
+      if(p){p.alive=false;deaths.push({p,cause:"STARVATION"});}
+    }
+    if(G.health<=0 && chance(0.25)){
+      const p=G.party.find(x=>x.alive);
+      if(p){p.alive=false;deaths.push({p,cause:p.disease||"THE TRAIL ITSELF"});}
+    }
+    // update status line
+    const sb=SCR.querySelector(".statbar");
+    if(sb)sb.outerHTML=statusBar();
+    if(aliveCount()===0){ stopAnim(); gameOverScreen(deaths[deaths.length-1]); return; }
+    if(deaths.length){ stopAnim(); deathScreen(deaths,()=>checkpointOrContinue()); return; }
+    const ev=rollEvent();
+    if(ev){
+      stopAnim();
+      if(ev.days){ for(let i=0;i<ev.days;i++){advanceDate();consumeFood();} }
+      eventScreen(ev);
+      return;
+    }
+    // landmark?
+    const lm=G.landmarks[G.lmIdx];
+    if(lm && G.miles>=lm.miles){ G.miles=lm.miles; stopAnim(); landmarkArrive(lm); return; }
+    if(G.miles>=G.route){ stopAnim(); arrivalScreen(); return; }
+    setTimeout(dayStep,420);
+  }
+  setTimeout(dayStep,420);
+}
+function checkpointOrContinue(){
+  const lm=G.landmarks[G.lmIdx];
+  if(lm && G.miles>=lm.miles){ landmarkArrive(lm); }
+  else if(G.miles>=G.route){ arrivalScreen(); }
+  else travelScreen();
+}
+function eventScreen(ev){
+  show('<div class="gap2"></div>'+statusBar()+
+    '<div class="gap"></div><div class="c '+(ev.bad?"":"")+'">'+ev.msg+'</div>');
+  anyKey(()=>checkpointOrContinue());
+}
+
+/* ---- sub screens ---- */
+function suppliesScreen(){
+  show('<div class="gap"></div><div class="med w">SUPPLIES</div><hr class="rule">'+
+    '<pre>'+
+    'CASH................ $'+G.cash.toFixed(0)+"\n"+
+    'OXEN................ '+G.oxen+" YOKE"+(G.oxen===1?"":"S")+" ("+G.oxen*2+" ANIMALS)\n"+
+    'FOOD................ '+Math.round(G.food)+" LBS\n"+
+    'CLOTHING............ '+G.clothing+" SETS\n"+
+    'AMMUNITION.......... '+G.bullets+" BULLETS\n"+
+    'SPARE WHEELS........ '+G.parts.wheel+"\n"+
+    'SPARE AXLES......... '+G.parts.axle+"\n"+
+    'SPARE TONGUES....... '+G.parts.tongue+"\n"+
+    '</pre><hr class="rule"><div class="med w">PARTY</div><pre>'+
+    G.party.map(p=>{
+      let s=p.name.padEnd(14," ");
+      if(!p.alive)s+="DEAD";
+      else if(p.disease)s+=p.disease;
+      else s+="WELL ENOUGH";
+      return s;
+    }).join("\n")+'</pre>');
+  menu([{k:"1",t:"BACK",fn:travelScreen}]);
+}
+function mapScreen(){
+  const W=52;
+  const f=Math.min(1,G.miles/G.route);
+  const px=Math.round(f*(W-1));
+  let line1="",line2="";
+  for(let i=0;i<W;i++) line1+= i===px?"@":"=";
+  // landmark ticks
+  const marks=new Array(W).fill(" ");
+  G.landmarks.forEach((lm,ix)=>{
+    const p=Math.round((lm.miles/G.route)*(W-1));
+    marks[p]= lm.type==="river"?"~": lm.type==="fort"?"F":"o";
+  });
+  line2=marks.join("");
+  const from=G.isVoid?"THE VOID":G.start.n.toUpperCase();
+  show('<div class="gap"></div><div class="med w">THE MAP</div><hr class="rule">'+
+    '<pre>'+esc(from)+"\n"+line1+" DAVENPORT\n"+line2+'</pre>'+
+    '<div class="dim">o TOWN &nbsp; F FORT &nbsp; ~ RIVER &nbsp; @ YOU</div><hr class="rule">'+
+    '<pre>'+G.landmarks.map((lm,i)=>{
+      const flag=i<G.lmIdx?" (PASSED)":"";
+      return (lm.miles+" MI").padStart(8," ")+"  "+lm.name+flag;
+    }).join("\n")+'</pre>');
+  menu([{k:"1",t:"BACK",fn:travelScreen}]);
+}
+function paceScreen(){
+  show('<div class="gap"></div><div class="med w">CHANGE PACE</div>'+
+    '<div class="dim">THE OXEN HAVE OPINIONS. THEY KEEP THEM TO THEMSELVES.</div>');
+  menu(PACES.map((p,i)=>({k:String(i+1),t:p.n+(G.pace===i?" <span class='w'>(CURRENT)</span>":""),
+    fn:()=>{G.pace=i;travelScreen();}})));
+}
+function rationScreen(){
+  show('<div class="gap"></div><div class="med w">CHANGE RATIONS</div>'+
+    '<div class="dim">FILLING: 3 LBS/PERSON/DAY. MEAGER: 2. BARE BONES: 1 AND A LECTURE ABOUT GRATITUDE.</div>');
+  menu(RATIONS.map((r,i)=>({k:String(i+1),t:r.n+(G.rations===i?" <span class='w'>(CURRENT)</span>":""),
+    fn:()=>{G.rations=i;travelScreen();}})));
+}
+function restScreen(){
+  show('<div class="gap"></div><div class="med w">STOP TO REST</div>'+
+    '<div class="dim">HOW MANY DAYS? (1-9)</div>');
+  askText("",v=>{
+    const d=Math.max(1,Math.min(9,parseInt(v||"1",10)||1));
+    for(let i=0;i<d;i++){
+      advanceDate();consumeFood();
+      G.health=Math.min(100,G.health+3+(RATIONS[G.rations].h>0?1:0));
+      // resting helps the sick recover
+      for(const p of G.party){ if(p.alive&&p.disease&&chance(0.28)){p.disease=null;p.sickDays=0;} }
+    }
+    show('<div class="gap2"></div><div class="c">YOU REST FOR '+d+' DAY'+(d>1?"S":"")+'.</div>'+
+      '<div class="c dim">THE OXEN PRETEND TO SLEEP. HEALTH IS NOW '+healthWord()+'.</div>');
+    anyKey(travelScreen);
+  },1);
+}
+function tradeScreen(){
+  if(!chance(0.65)){
+    show('<div class="gap2"></div><div class="c">NO ONE WANTS TO TRADE TODAY.</div>'+
+      '<div class="c dim">THE TRAIL IS A SELLER\'S MARKET WITH NO SELLERS.</div>');
+    anyKey(travelScreen); return;
+  }
+  const offers=[];
+  if(G.food>=60) offers.push({give:"100 LBS OF FOOD",take:"1 YOKE OF OXEN",can:()=>G.food>=100,do:()=>{G.food-=100;G.oxen++;}});
+  if(G.bullets>=40) offers.push({give:"40 BULLETS",take:"30 LBS OF FOOD",can:()=>G.bullets>=40,do:()=>{G.bullets-=40;G.food+=30;}});
+  if(G.clothing>=2) offers.push({give:"2 SETS OF CLOTHING",take:"A SPARE WHEEL",can:()=>G.clothing>=2,do:()=>{G.clothing-=2;G.parts.wheel++;}});
+  if(G.oxen>=2) offers.push({give:"1 YOKE OF OXEN",take:"150 LBS OF FOOD",can:()=>G.oxen>=2,do:()=>{G.oxen--;G.food+=150;}});
+  offers.push({give:"$25",take:"40 LBS OF FOOD",can:()=>G.cash>=25,do:()=>{G.cash-=25;G.food+=40;}});
+  const o=pick(offers);
+  if(!o.can()){
+    show('<div class="gap2"></div><div class="c">A LOCAL LOOKS AT YOUR WAGON AND DECIDES AGAINST IT.</div>');
+    anyKey(travelScreen); return;
+  }
+  show('<div class="gap"></div><div class="med w">A LOCAL OFFERS A TRADE</div>'+
+    '<div class="gap"></div>YOUR '+o.give+' FOR THEIR '+o.take+'.<br>'+
+    '<span class="dim">THEY MAINTAIN UNBROKEN EYE CONTACT THROUGHOUT.</span>');
+  menu([
+    {k:"1",t:"ACCEPT",fn:()=>{o.do();advanceDate();consumeFood();
+      show('<div class="gap2"></div><div class="c">THE TRADE IS DONE. A NOD IS EXCHANGED. NOTHING MORE.</div>');
+      anyKey(travelScreen);}},
+    {k:"2",t:"DECLINE",fn:()=>{advanceDate();consumeFood();
+      show('<div class="gap2"></div><div class="c">YOU DECLINE. THE LOCAL RESPECTS THIS. THE DAY IS GONE EITHER WAY.</div>');
+      anyKey(travelScreen);}}
+  ]);
+}
+
+/* ============ LANDMARKS ============ */
+const LOCAL_LINES=[
+  "DAVENPORT? WORLD FAMOUS. EVERYBODY KNOWS THAT.",
+  "THE WI-FI HAS BEEN DOWN SINCE THE FLOOD. NOBODY REMEMBERS THE FLOOD.",
+  "A MAN CAME THROUGH SELLING PODCASTS. WE RAN HIM OFF.",
+  "WE'VE BEEN OUT OF BEANS SINCE TUESDAY. WHICH TUESDAY IS NOT YOUR BUSINESS.",
+  "MY COUSIN CROSSED THE MISSISSIPPI ONCE. HE STILL TALKS ABOUT IT. WE WISH HE WOULDN'T.",
+  "THE OXEN KNOW MORE THAN THEY LET ON.",
+  "I'D RIDE ALONG BUT MY SHOW DROPS THURSDAY AT 8.",
+  "FOLKS HEADED TO DAVENPORT HAVE A LOOK ABOUT THEM. YOU HAVE THE LOOK.",
+  "STREAMING? OUT HERE WE JUST LOOK AT THE RIVER.",
+  "A WOMAN PASSED THROUGH ASKING FOR THE ALGORITHM. WE POINTED AT THE SKY. SHE SEEMED SATISFIED.",
+  "WATCH FOR SNAKES. THEY DO NOT WATCH FOR YOU.",
+  "THE LAST WAGON THROUGH HERE HAD A BUMPER STICKER. NOBODY ASKED WHAT A BUMPER WAS.",
+  "YOU CAN CHARGE YOUR DEVICE AT THE CHURCH. DON'T ASK THE PASTOR HOW.",
+  "PROTECT YOUR PEACE. AND YOUR AXLES.",
+  "THE FERRYMAN HAS NEVER ONCE DROWNED. THINK ABOUT THAT.",
+  "MY GRANDFATHER SAID DAVENPORT GLOWS AT NIGHT. HE SAID IT LIKE A WARNING. HE MEANT IT LIKE A PROMISE."
+];
+const VOID_LINES=[
+  "THERE IS NO ONE HERE. SOMETHING ANSWERS ANYWAY.",
+  "A VOICE SAYS: KEEP GOING. IT DOES NOT SAY WHERE FROM.",
+  "THE SIGN SAYS POPULATION. JUST THAT. POPULATION.",
+  "YOU FEEL WATCHED. THE FEELING FEELS WATCHED TOO.",
+  "STATIC ON THE RADIO ARRANGES ITSELF INTO A TRAFFIC REPORT. ROADS CLEAR."
+];
+function landmarkArrive(lm){
+  G.lmIdx++;
+  if(lm.type==="river"){ riverScreen(lm); return; }
+  const title=lm.type==="fort"? lm.name : lm.name;
+  show('<div class="gap"></div><div class="c med w">'+esc(title)+'</div>'+
+    '<div class="c dim">'+MONTHS[G.month]+' '+G.day+' — '+G.miles+' MILES TRAVELED</div>'+
+    '<hr class="rule">'+statusBar());
+  const opts=[
+    {k:"1",t:"CONTINUE ON TRAIL",fn:checkpointOrContinue2},
+    {k:"2",t:"TALK TO LOCALS",fn:()=>{
+      const line=lm.voidTown? pick(VOID_LINES) : pick(LOCAL_LINES);
+      show('<div class="gap2"></div><div class="c med w">'+esc(lm.name)+'</div>'+
+        '<div class="gap"></div><div class="c">"'+line+'"</div>');
+      anyKey(()=>landmarkMenuAgain(lm));
+    }},
+    {k:"3",t:"BUY SUPPLIES",fn:()=>storeScreen(false,()=>landmarkMenuAgain(lm))},
+    {k:"4",t:"REST HERE",fn:restScreen}
+  ];
+  menu(opts,null);
+}
+function landmarkMenuAgain(lm){ G.lmIdx--; landmarkArrive(lm); }
+function checkpointOrContinue2(){
+  if(G.miles>=G.route){ arrivalScreen(); } else travelScreen();
+}
+
+/* ============ RIVERS ============ */
+function riverScreen(lm){
+  show('<div class="gap"></div><div class="c med w">'+esc(lm.name)+'</div>'+
+    '<div class="c dim">'+MONTHS[G.month]+' '+G.day+'</div><hr class="rule">'+
+    '<pre class="c">'+riverArt(lm)+'</pre>'+
+    '<div class="c">THE RIVER IS '+lm.depth+' FEET DEEP AND '+lm.width+' FEET ACROSS.</div>'+
+    '<div class="c dim">IT HAS BEEN HERE LONGER THAN YOUR PLANS.</div>');
+  const ferryCost=lm.width>1000? 12: 8;
+  menu([
+    {k:"1",t:"FORD THE RIVER",fn:()=>fordRiver(lm)},
+    {k:"2",t:"CAULK THE WAGON AND FLOAT IT ACROSS",fn:()=>caulkRiver(lm)},
+    {k:"3",t:"TAKE THE FERRY ($"+ferryCost+")",fn:()=>ferryRiver(lm,ferryCost)},
+    {k:"4",t:"WAIT A DAY AND SEE IF CONDITIONS IMPROVE",fn:()=>waitRiver(lm)}
+  ]);
+}
+function riverArt(lm){
+  const w=Math.min(46,Math.max(18,Math.round(lm.width/60)));
+  let a="";
+  for(let r=0;r<3;r++){
+    a+=" ".repeat(3)+"~".repeat(w)+"\n";
+  }
+  return a;
+}
+function crossedOk(lm,msg){
+  show('<div class="gap2"></div><div class="c">'+msg+'</div>'+
+    '<div class="c dim">'+lm.name+' IS BEHIND YOU. IT DOES NOT WAVE.</div>');
+  advanceDate();consumeFood();
+  anyKey(checkpointOrContinue2);
+}
+function riverDisaster(lm,how){
+  // supply loss, possible drowning
+  const foodLoss=ri(20,Math.max(25,Math.round(G.food*0.4)));
+  const bulletLoss=ri(0,Math.min(60,G.bullets));
+  G.food=Math.max(0,G.food-foodLoss);
+  G.bullets=Math.max(0,G.bullets-bulletLoss);
+  const clothLoss=ri(0,Math.min(3,G.clothing));
+  if(clothLoss)G.clothing-=clothLoss;
+  const lost=[foodLoss+" LBS OF FOOD"];
+  if(bulletLoss)lost.push(bulletLoss+" BULLETS");
+  if(clothLoss)lost.push(clothLoss+" SET"+(clothLoss>1?"S":"")+" OF CLOTHING");
+  let msg="THE WAGON "+how+".<br>LOST "+lost.join(", ")+".";
+  const drownP = lm.depth>10?0.35: lm.depth>6?0.2: 0.1;
+  advanceDate();consumeFood();
+  if(chance(drownP)&&aliveCount()>0){
+    const victim=pick(G.party.filter(p=>p.alive));
+    victim.alive=false;
+    if(aliveCount()===0){ gameOverScreen({p:victim,cause:"DROWNING"}); return; }
+    deathScreen([{p:victim,cause:"DROWNING"}],()=>{
+      show('<div class="gap2"></div><div class="c">'+msg+'</div>');
+      anyKey(checkpointOrContinue2);
+    });
+    return;
+  }
+  show('<div class="gap2"></div><div class="c">'+msg+'</div>'+
+    '<div class="c dim">THE RIVER KEEPS WHAT IT TAKES.</div>');
+  anyKey(checkpointOrContinue2);
+}
+function fordRiver(lm){
+  if(lm.depth<=3){
+    if(chance(0.9)){ crossedOk(lm,"YOU WALK THE OXEN ACROSS. COLD, WET, UNEVENTFUL. THE GOOD KIND OF CROSSING."); }
+    else riverDisaster(lm,"HIT A HOLE AND TIPPED");
+  }else if(lm.depth<=6){
+    if(chance(0.45)) crossedOk(lm,"SOMEHOW, THE WAGON MAKES IT. THE OXEN DO NOT ACKNOWLEDGE YOUR CHEERING.");
+    else riverDisaster(lm,"SWAMPED IN THE CURRENT");
+  }else{
+    riverDisaster(lm,"WENT UNDER ALMOST IMMEDIATELY");
+  }
+}
+function caulkRiver(lm){
+  let p = lm.depth<=8? 0.75 : lm.depth<=14? 0.55 : 0.4;
+  if(G.weather==="THUNDERSTORM"||G.weather==="RAIN"||G.weather==="COLD RAIN") p-=0.15;
+  if(lm.width>1200) p-=0.1;
+  if(chance(p)) crossedOk(lm,"THE WAGON FLOATS. PHYSICS ALLOWS IT, THIS ONCE.");
+  else riverDisaster(lm,"TOOK ON WATER AND ROLLED");
+}
+function ferryRiver(lm,cost){
+  if(G.cash<cost){
+    show('<div class="gap2"></div><div class="c">THE FERRYMAN COUNTS YOUR MONEY FROM A DISTANCE AND SHAKES HIS HEAD.</div>'+
+      '<div class="c dim">NO TOUCHY FOR FREE.</div>');
+    anyKey(()=>{G.lmIdx--;landmarkArrive(lm);});
+    return;
+  }
+  G.cash-=cost;
+  const wait=ri(0,2);
+  for(let i=0;i<wait;i++){advanceDate();consumeFood();}
+  crossedOk(lm,"THE FERRY TAKES YOU ACROSS."+(wait?" YOU WAITED "+wait+" DAY"+(wait>1?"S":"")+" FOR THE PRIVILEGE.":"")+
+    "<br>THE FERRYMAN SAYS NOTHING. IT IS INCLUDED IN THE PRICE.");
+}
+function waitRiver(lm){
+  advanceDate();consumeFood();
+  if(chance(0.5)&&lm.depth>2){ lm.depth=Math.max(2,lm.depth-ri(1,3)); }
+  show('<div class="gap2"></div><div class="c">YOU WAIT A DAY. THE RIVER IS NOW '+lm.depth+' FEET DEEP.</div>'+
+    '<div class="c dim">THE RIVER DID NOT NOTICE YOU WAITING.</div>');
+  anyKey(()=>{G.lmIdx--;landmarkArrive(lm);});
+}
+
+/* ============ HUNTING ============ */
+const ANIMALS=[
+  {n:"SQUIRREL",lbs:2, sp:190, w:10,h:6,  p:0.30},
+  {n:"RABBIT",  lbs:3, sp:160, w:12,h:7,  p:0.30},
+  {n:"DEER",    lbs:35,sp:110, w:26,h:16, p:0.22},
+  {n:"ELK",     lbs:70,sp:90,  w:32,h:20, p:0.12},
+  {n:"BUFFALO", lbs:350,sp:55, w:46,h:26, p:0.06}
+];
+function startHunt(backFn){
+  if(G.bullets<=0){
+    show('<div class="gap2"></div><div class="c">YOU HAVE NO BULLETS.</div>'+
+      '<div class="c dim">THE ANIMALS SOMEHOW KNOW THIS. THEY ARE EVERYWHERE TODAY.</div>');
+    anyKey(backFn); return;
+  }
+  stopAnim();
+  show('<div class="med w c" style="margin-top:6px">HUNTING</div>'+
+    '<div class="c dim">CLICK OR TAP TO SHOOT. EACH SHOT IS ONE BULLET. 30 SECONDS.</div>');
+  const cv=document.createElement("canvas");
+  cv.width=640;cv.height=340;cv.style.width="min(640px,96%)";cv.style.cursor="none";
+  SCR.appendChild(cv);
+  const hud=document.createElement("div");
+  hud.className="c";
+  SCR.appendChild(hud);
+  const cx=cv.getContext("2d");
+  let mx=320,my=170,tLeft=30,meat=0,shots=0,hits=0,ended=false;
+  let beasts=[];
+  const t0=performance.now();
+  let lastSpawn=0;
+  function spawn(now){
+    const r=rnd(); let acc=0, a=ANIMALS[0];
+    for(const an of ANIMALS){acc+=an.p;if(r<=acc){a=an;break;}}
+    const dir=chance(0.5)?1:-1;
+    beasts.push({a,x:dir>0?-50:cv.width+50,y:40+rnd()*240,dir,
+      sp:a.sp*(0.8+rnd()*0.5)});
+  }
+  function pos(e){
+    const r=cv.getBoundingClientRect();
+    const sx=cv.width/r.width, sy=cv.height/r.height;
+    const px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const py=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    return {x:px*sx,y:py*sy};
+  }
+  cv.addEventListener("mousemove",e=>{const p=pos(e);mx=p.x;my=p.y;});
+  cv.addEventListener("touchmove",e=>{e.preventDefault();const p=pos(e);mx=p.x;my=p.y;},{passive:false});
+  function shoot(e){
+    if(ended)return;
+    const p=pos(e);mx=p.x;my=p.y;
+    if(G.bullets<=0)return;
+    G.bullets--;shots++;
+    for(let i=beasts.length-1;i>=0;i--){
+      const b=beasts[i];
+      if(Math.abs(p.x-b.x)<b.a.w && Math.abs(p.y-b.y)<b.a.h+5){
+        meat+=b.a.lbs;hits++;beasts.splice(i,1);break;
+      }
+    }
+  }
+  cv.addEventListener("mousedown",shoot);
+  cv.addEventListener("touchstart",e=>{e.preventDefault();shoot(e);},{passive:false});
+  let prev=performance.now();
+  function frame(now){
+    if(ended)return;
+    const dt=(now-prev)/1000;prev=now;
+    tLeft=30-(now-t0)/1000;
+    if(tLeft<=0||G.bullets<=0&&beasts.length===0){end();return;}
+    if(now-lastSpawn> (600+rnd()*900)){spawn(now);lastSpawn=now;}
+    for(let i=beasts.length-1;i>=0;i--){
+      const b=beasts[i];b.x+=b.dir*b.sp*dt;
+      if(b.x<-80||b.x>cv.width+80)beasts.splice(i,1);
+    }
+    cx.fillStyle="#000";cx.fillRect(0,0,cv.width,cv.height);
+    cx.fillStyle="#00FFC6";
+    for(let x=0;x<cv.width;x+=16)cx.fillRect(x,320,9,2);
+    for(const b of beasts){
+      cx.fillRect(b.x-b.a.w/2,b.y-b.a.h/2,b.a.w,b.a.h);
+      cx.fillRect(b.x+(b.dir>0?b.a.w/2:-b.a.w/2-6),b.y-b.a.h/2-4,6,6);
+      const lp=((now>>7)%2)?2:-2;
+      cx.fillRect(b.x-b.a.w/4+lp,b.y+b.a.h/2,3,6);
+      cx.fillRect(b.x+b.a.w/4-lp,b.y+b.a.h/2,3,6);
+    }
+    // crosshair (white)
+    cx.strokeStyle="#FFFFFF";cx.lineWidth=1.5;
+    cx.beginPath();cx.arc(mx,my,10,0,7);cx.stroke();
+    cx.beginPath();
+    cx.moveTo(mx-16,my);cx.lineTo(mx-4,my);cx.moveTo(mx+4,my);cx.lineTo(mx+16,my);
+    cx.moveTo(mx,my-16);cx.lineTo(mx,my-4);cx.moveTo(mx,my+4);cx.lineTo(mx,my+16);
+    cx.stroke();
+    hud.innerHTML="TIME: <span class='w'>"+Math.ceil(tLeft)+"</span>&nbsp;&nbsp;BULLETS: <span class='w'>"+G.bullets+
+      "</span>&nbsp;&nbsp;MEAT SHOT: <span class='w'>"+meat+" LBS</span>";
+    anim=requestAnimationFrame(frame);
+  }
+  function end(){
+    ended=true;stopAnim();
+    advanceDate();consumeFood();
+    const carried=Math.min(100,meat);
+    G.food+=carried;
+    show('<div class="gap2"></div><div class="c med w">THE HUNT IS OVER</div><hr class="rule">'+
+      '<div class="c">SHOTS FIRED: '+shots+' &nbsp; HITS: '+hits+'</div>'+
+      '<div class="gap"></div>'+
+      '<div class="c">YOU SHOT <span class="w">'+meat+' POUNDS</span> OF MEAT.</div>'+
+      '<div class="c">YOU CARRY <span class="w">'+carried+' POUNDS</span> BACK TO THE WAGON.</div>'+
+      (meat>100?'<div class="c dim">THE REST STAYS WHERE IT FELL. THIS IS THE LAW. IT PREDATES YOU.</div>':'')+
+      '<hr class="rule">');
+    anyKey(backFn);
+  }
+  anim=requestAnimationFrame(frame);
+}
+
+/* ============ DEATH ============ */
+function deathScreen(deaths,after){
+  SND.duck();
+  const d=deaths[0];
+  show('<div class="gap2"></div>'+
+    '<div class="c med deathscreen">'+esc(d.p.name)+' HAS DIED OF '+esc(d.cause)+'.</div>'+
+    '<div class="gap"></div><div class="c deathscreen dim">THE TRAIL CONTINUES. IT ALWAYS DOES.</div>'+
+    '<div class="gap"></div>');
+  menu([
+    {k:"1",t:"WRITE A TOMBSTONE",fn:()=>{
+      show('<div class="gap2"></div><div class="c med deathscreen">HERE LIES '+esc(d.p.name)+'</div>'+
+        '<div class="gap"></div>');
+      askText("WHAT SHOULD THE TOMBSTONE SAY?",txt=>{
+        show('<div class="gap2"></div><div class="c deathscreen med">HERE LIES '+esc(d.p.name)+'</div>'+
+          '<div class="c deathscreen">"'+esc(txt||"...")+'"</div>'+
+          '<div class="gap"></div><div class="c dim">YOUR WORDS ARE CARVED INTO WOOD.<br>NO ONE WILL PASS THIS WAY. THE GAME IS TELLING YOU THIS DIRECTLY.</div>');
+        anyKey(()=>{SND.unduck();nextDeath(deaths,after);});
+      },40);
+    }},
+    {k:"2",t:"KEEP MOVING",fn:()=>{SND.unduck();nextDeath(deaths,after);}}
+  ]);
+}
+function nextDeath(deaths,after){
+  deaths.shift();
+  if(deaths.length) deathScreen(deaths,after);
+  else after();
+}
+function gameOverScreen(last){
+  SND.duck();
+  const cause=last?last.cause:"THE TRAIL";
+  show('<div class="gap2"></div>'+
+    '<div class="c big deathscreen">EVERYONE HAS DIED.</div>'+
+    '<div class="gap"></div><div class="c deathscreen">THE LAST OF YOUR PARTY WAS TAKEN BY '+esc(cause)+'.</div>'+
+    '<div class="gap"></div><div class="c deathscreen dim">'+G.miles+' MILES DOWN. '+(G.route-G.miles)+' MILES SHORT OF DAVENPORT.<br>DAVENPORT REMAINS WORLD FAMOUS WITHOUT YOU.</div>'+
+    '<div class="gap"></div>');
+  askText("WRITE AN EPITAPH FOR THE WAGON:",txt=>{
+    show('<div class="gap2"></div><div class="c deathscreen med">"'+esc(txt||"THEY SET OUT.")+'"</div>'+
+      '<div class="gap"></div><div class="c deathscreen dim">CARVED WHERE THE TRAIL CAN READ IT.</div>'+
+      '<div class="gap"></div><div class="c dim">TRAIL SEED: '+seedStr()+'</div>');
+    anyKey(()=>{SND.unduck();titleScreen();},"PRESS ANY KEY TO TRY THE TRAIL AGAIN");
+  },48);
+}
+
+/* ============ ARRIVAL ============ */
+function calcScore(){
+  const hw=G.health>75?500:G.health>50?400:G.health>25?300:200;
+  const people=aliveCount()*hw;
+  const supplies=G.oxen*20 + Math.round(G.food/25) + G.clothing*2 + Math.round(G.bullets/20) +
+    (G.parts.wheel+G.parts.axle+G.parts.tongue)*2;
+  const cash=Math.round(G.cash/5);
+  return {people,supplies,cash,total:(people+supplies+cash)*G.mult};
+}
+function arrivalScreen(){
+  stopAnim();
+  G.done=true;
+  show('<div class="gap2"></div>'+
+    '<div class="c">THE WAGON CRESTS A FINAL HILL.</div>'+
+    '<div class="c">BELOW: THE RIVER. THE CITY. THE FAME, VISIBLE FROM HERE.</div>');
+  anyKey(()=>{
+    const sc=calcScore();
+    show('<div class="gap"></div>'+
+      '<div class="c big o">YOU HAVE ARRIVED AT<br>THE WORLD FAMOUS<br>DAVENPORT, IA.</div>'+
+      '<div class="gap"></div>'+
+      '<div class="c dim">'+MONTHS[G.month]+' '+G.day+' — '+G.miles+' MILES — '+aliveCount()+' OF 5 SURVIVED</div>'+
+      '<hr class="rule"><pre>'+
+      'SURVIVORS ('+aliveCount()+' x '+(sc.people/Math.max(1,aliveCount()))+')........ '+String(sc.people).padStart(6," ")+"\n"+
+      'SUPPLIES.................. '+String(sc.supplies).padStart(6," ")+"\n"+
+      'CASH...................... '+String(sc.cash).padStart(6," ")+"\n"+
+      'OCCUPATION MULTIPLIER..... x'+G.mult+"\n"+
+      '-----------------------------------\n'+
+      'FINAL SCORE............... '+String(sc.total).padStart(6," ")+'</pre><hr class="rule">');
+    anyKey(()=>creditsScreen(sc));
+  });
+}
+function creditsScreen(sc){
+  show('<div class="gap2"></div><div class="c med w">THE STOOPID TRAIL</div>'+
+    '<div class="gap"></div><div class="c">'+
+    'PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET<br>'+
+    'QUESTIONABLE INPUT FROM THE VOID<br>'+
+    'WHATEVER DEVICE WAS CHARGED<br>'+
+    'THE ALGORITHM (BARELY)<br>'+
+    'HATERS (FUEL) / SUPPORTERS (EVERYTHING)</div>'+
+    '<div class="gap2"></div><div class="c dim">TRAIL SEED: '+seedStr()+'</div>'+
+    '<div class="gap"></div>');
+  askText("ENTER YOUR NAME FOR THE TOP TEN:",name=>{
+    TOPTEN.push({n:(name||"UNNAMED WAGON").toUpperCase().slice(0,26),s:sc.total});
+    TOPTEN.sort((a,b)=>b.s-a.s);
+    TOPTEN=TOPTEN.slice(0,10);
+    finalScreen();
+  },26);
+}
+function finalScreen(){
+  let rows=TOPTEN.map((e,i)=>('  '+(i+1)).slice(-2)+'. '+(e.n+"                          ").slice(0,26)+String(e.s).padStart(6," ")).join("\n");
+  show('<div class="gap"></div><div class="c med w">TOP TEN</div><hr class="rule"><pre>'+esc(rows)+'</pre>'+
+    '<hr class="rule"><div class="c dim">SCORES ARE NOT SAVED. NOTHING IS.</div>'+
+    '<div class="gap2"></div>');
+  menu([{k:"1",t:"RETURN TO TITLE",fn:titleScreen}]);
+  const sig=document.createElement("div");
+  sig.className="c dim"; sig.style.marginTop="3em"; sig.style.fontSize=".85em";
+  sig.textContent="SIGNAL RECEIVED.";
+  SCR.appendChild(sig);
+}
+
+/* ============ BOOT ============ */
+titleScreen();
+
+
+
+
+</script>
+</body>
+</html>
