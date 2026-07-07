@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID CLASH — THE STOOPID SHOW</title>
+<meta property="og:title" content="STOOPID CLASH">
+<meta property="og:description" content="Build the base. Wait the wait. Raid the void. The timers are the product. — THE STOOPID SHOW">
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:22px 12px 30px;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0; z-index:999;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px);}
+  header{text-align:center; margin-bottom:6px;}
+  .brackets{display:inline-block; position:relative; padding:10px 26px;}
+  .brackets::before,.brackets::after{content:""; position:absolute; width:14px; height:14px;}
+  .brackets::before{top:0; left:0; border-top:2px solid var(--teal); border-left:2px solid var(--teal);}
+  .brackets::after{bottom:0; right:0; border-bottom:2px solid var(--teal); border-right:2px solid var(--teal);}
+  h1{font-size:clamp(20px,5vw,30px); letter-spacing:4px; font-weight:bold;}
+  h1 span{color:var(--teal);}
+  .subtitle{color:var(--purple); font-size:12px; letter-spacing:2px; margin-top:6px; text-transform:uppercase;}
+  .hud{display:flex; gap:16px; justify-content:center; font-size:12px; letter-spacing:1px;
+    padding:10px 0 2px; text-transform:uppercase; flex-wrap:wrap;}
+  .hud b{color:var(--teal);}
+  .hud .tr b{color:var(--orange);}
+  .status{width:min(92vw,560px); margin:8px auto 0; font-size:13px; min-height:22px;
+    text-align:center; color:#888; letter-spacing:1px;}
+  .status.bad{color:var(--red);}
+  .status.good{color:var(--teal);}
+  .stage{position:relative; margin:14px auto 4px; width:min(92vw,560px);}
+  .stage .c{position:absolute; width:16px; height:16px; z-index:2; pointer-events:none;}
+  .stage .tl{top:-4px; left:-4px; border-top:2px solid var(--teal); border-left:2px solid var(--teal);}
+  .stage .tr{top:-4px; right:-4px; border-top:2px solid var(--teal); border-right:2px solid var(--teal);}
+  .stage .bl{bottom:-4px; left:-4px; border-bottom:2px solid var(--teal); border-left:2px solid var(--teal);}
+  .stage .br{bottom:-4px; right:-4px; border-bottom:2px solid var(--teal); border-right:2px solid var(--teal);}
+  canvas#game{display:block; width:100%; aspect-ratio:1; background:#000; border:1px solid #222; touch-action:manipulation;}
+  .controls{display:flex; gap:10px; align-items:center; justify-content:center; margin:14px 0 4px; flex-wrap:wrap;}
+  .btn{background:#000; border:1px solid var(--teal); color:var(--teal); font-family:inherit;
+    font-size:13px; letter-spacing:2px; padding:10px 18px; cursor:pointer; text-transform:uppercase;}
+  .btn:hover{background:var(--teal); color:#000;}
+  .btn.alt{border-color:var(--purple); color:var(--purple);}
+  .btn.alt:hover{background:var(--purple); color:#000;}
+  .btn.warn{border-color:var(--red); color:var(--red);}
+  .btn.warn:hover{background:var(--red); color:#000;}
+  .btn.flip{border-color:var(--orange); color:var(--orange);}
+  .btn.flip:hover{background:var(--orange); color:#000;}
+  .btn:disabled{border-color:#333; color:#444; cursor:not-allowed; background:#000;}
+  .btn.small{font-size:11px; padding:7px 12px;}
+  .help{font-size:11px; color:#555; letter-spacing:2px; text-align:center; width:100%;}
+  /* info / training panel */
+  .panel{display:none; width:min(92vw,560px); margin:10px auto 0; border:1px solid #333; padding:14px 14px 16px; position:relative;}
+  .panel.show{display:block;}
+  .panel h3{font-size:14px; letter-spacing:2px; color:var(--teal);}
+  .panel .plvl{color:var(--purple); font-size:11px; letter-spacing:2px; margin:2px 0 6px;}
+  .panel .pdesc{font-size:12px; color:#888; line-height:1.5; margin-bottom:10px;}
+  .panel .pstats{font-size:12px; color:#ccc; line-height:1.7; margin-bottom:10px;}
+  .panel .pstats b{color:var(--teal);}
+  .panel .btnrow{display:flex; gap:8px; flex-wrap:wrap;}
+  .troopgrid{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0;}
+  .tbtn{background:#000; border:1px solid #333; color:#ccc; font-family:inherit; padding:8px 10px;
+    font-size:11px; letter-spacing:1px; cursor:pointer; text-align:left; min-width:150px;}
+  .tbtn:hover{border-color:var(--teal);}
+  .tbtn:disabled{color:#444; cursor:not-allowed; border-color:#222;}
+  .tbtn .tc{color:var(--teal);}
+  .tbtn .tcost{color:var(--purple);}
+  .queue{font-size:11px; color:#888; letter-spacing:1px; margin-top:8px; line-height:1.7;}
+  .queue b{color:var(--teal);}
+  /* raid troop tray */
+  .tray{display:none; width:min(92vw,560px); margin:10px auto 0; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .tray.show{display:flex;}
+  .traybtn{background:#000; border:1px solid #333; color:#ccc; font-family:inherit; padding:9px 12px;
+    font-size:12px; letter-spacing:1px; cursor:pointer;}
+  .traybtn.sel{border-color:var(--teal); color:var(--teal);}
+  .traybtn:disabled{color:#333; border-color:#1a1a1a; cursor:not-allowed;}
+  /* modal */
+  .modal{display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.86);
+    align-items:center; justify-content:center; padding:16px;}
+  .modal.show{display:flex;}
+  .card{width:min(94vw,520px); max-height:88vh; overflow-y:auto; background:#000; border:2px solid var(--teal);
+    padding:22px 20px; position:relative;}
+  .card::before,.card::after{content:""; position:absolute; width:18px; height:18px;}
+  .card::before{top:6px; left:6px; border-top:2px solid var(--purple); border-left:2px solid var(--purple);}
+  .card::after{bottom:6px; right:6px; border-bottom:2px solid var(--purple); border-right:2px solid var(--purple);}
+  .card .label{font-size:10px; letter-spacing:3px; color:var(--purple); text-transform:uppercase;}
+  .card h2{font-size:clamp(18px,5vw,24px); letter-spacing:3px; margin:10px 0 4px;}
+  .card .sub{font-size:12px; color:#888; line-height:1.6; margin-bottom:12px;}
+  .card .btnrow{display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;}
+  .shopgrid{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .shopitem{display:flex; justify-content:space-between; align-items:center; gap:10px;
+    border:1px solid #222; padding:10px 12px;}
+  .shopitem .si-n{font-size:12px; letter-spacing:1px;}
+  .shopitem .si-d{font-size:10px; color:#666; letter-spacing:1px; margin-top:3px;}
+  .shopitem .si-c{font-size:11px; color:var(--orange); white-space:nowrap;}
+  /* invoice */
+  .card.invoice{border-color:var(--red);}
+  .inv-head{display:flex; justify-content:space-between; font-size:10px; letter-spacing:2px; color:#888; margin-bottom:14px;}
+  .inv-title{font-size:clamp(17px,4.5vw,22px); letter-spacing:2px; color:var(--red); margin-bottom:14px;}
+  .inv-line{display:flex; justify-content:space-between; font-size:12px; border-bottom:1px dashed #333;
+    padding:8px 0; color:#ccc;}
+  .inv-total{display:flex; justify-content:space-between; font-size:15px; font-weight:bold; padding:12px 0 4px;
+    color:var(--teal); letter-spacing:2px;}
+  .inv-stamp{margin:14px auto 4px; width:max-content; border:3px solid var(--red); color:var(--red);
+    font-size:17px; letter-spacing:4px; padding:6px 16px; transform:rotate(-7deg); font-weight:bold;}
+  .inv-terms{font-size:10px; color:#555; letter-spacing:1px; text-align:center; margin-top:12px; line-height:1.7;}
+  /* match card */
+  .m-name{font-size:clamp(17px,4.6vw,22px); letter-spacing:2px; color:var(--teal); margin:8px 0 2px; word-break:break-all;}
+  .m-lvl{font-size:11px; color:#888; letter-spacing:2px; margin-bottom:10px;}
+  .m-loot{font-size:13px; line-height:1.9; letter-spacing:1px; margin-bottom:8px;}
+  .m-loot b{color:var(--orange);}
+  .m-algo{font-size:12px; color:var(--purple); font-style:italic; line-height:1.6; border-left:2px solid var(--purple);
+    padding-left:10px; margin:12px 0 2px;}
+  .m-algo::before{content:"THE ALGORITHM: "; font-style:normal; font-size:10px; letter-spacing:2px;}
+  /* result */
+  .r-stars{font-size:34px; letter-spacing:10px; margin:8px 0 2px; color:var(--orange);}
+  .r-verdict{font-size:clamp(22px,6vw,30px); font-weight:bold; letter-spacing:3px; margin:8px 0 4px;}
+  .r-verdict.stoopid{color:var(--teal);}
+  .r-verdict.stupid{color:var(--red);}
+  .r-ruling{font-size:12px; color:var(--orange); font-style:italic; margin-bottom:12px; line-height:1.5;}
+  .r-stats{font-size:13px; line-height:1.9; letter-spacing:1px;}
+  .r-stats b{color:var(--teal);}
+  .signoff{font-size:11px; color:var(--purple); letter-spacing:2px; margin-top:12px;}
+  footer{font-size:10px; color:#444; letter-spacing:2px; margin-top:20px; text-align:center; line-height:1.8;}
+  footer a{color:#666;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brackets">
+    <h1>ST<span>OO</span>PID CLASH</h1>
+    <div class="subtitle">build the base · wait the wait · raid the void</div>
+  </div>
+</header>
+
+<div class="hud">
+  <span>BEANS <b id="hudBeans">0</b></span>
+  <span>SIGNAL <b id="hudSignal">0</b></span>
+  <span class="tr">TROPHIES <b id="hudTrophy">0</b></span>
+  <span>LEAGUE <b id="hudLeague" style="color:var(--purple)">CARDBOARD</b></span>
+</div>
+<div class="status" id="statusBox">welcome to the village. the timers are the product.</div>
+
+<div class="stage">
+  <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+  <canvas id="game" width="572" height="572" aria-label="Stoopid Clash village"></canvas>
+</div>
+
+<div class="controls" id="villageControls">
+  <button class="btn" id="shopBtn">BUILD</button>
+  <button class="btn warn" id="raidBtn">RAID →</button>
+  <span class="help" id="armyLine">army: nobody. train some guys in the garage.</span>
+</div>
+
+<div class="controls" id="raidControls" style="display:none">
+  <button class="btn small alt" id="speedBtn">SPEED x1</button>
+  <button class="btn small warn" id="endRaidBtn">END RAID</button>
+  <span class="help">tap a troop, then tap the outer edge to deploy. no take-backs. that's the game.</span>
+</div>
+
+<div class="tray" id="tray"></div>
+
+<!-- building / training panel -->
+<div class="panel" id="panel">
+  <h3 id="pName"></h3>
+  <div class="plvl" id="pLvl"></div>
+  <div class="pdesc" id="pDesc"></div>
+  <div class="pstats" id="pStats"></div>
+  <div id="pTrain"></div>
+  <div class="btnrow" id="pBtns"></div>
+</div>
+
+<!-- shop modal -->
+<div class="modal" id="shopModal">
+  <div class="card">
+    <div class="label">The Catalog</div>
+    <h2>BUILD <span style="color:var(--teal)">SOMETHING</span></h2>
+    <div class="sub">beans build buildings. signal trains guys. the wait builds character.</div>
+    <div class="shopgrid" id="shopGrid"></div>
+    <div class="btnrow"><button class="btn alt" id="shopClose">CLOSE THE CATALOG</button></div>
+  </div>
+</div>
+
+<!-- invoice modal -->
+<div class="modal" id="invModal">
+  <div class="card invoice">
+    <div class="inv-head"><span>NO TOUCHY FOR FREE&trade;</span><span id="invNo">INV-0000</span></div>
+    <div class="inv-title">INVOICE — SKIPPED WAIT</div>
+    <div class="inv-line"><span id="invItem">remainder of one (1) wait</span><span id="invTime">0:00</span></div>
+    <div class="inv-line"><span>convenience</span><span>priceless</span></div>
+    <div class="inv-line"><span>your patience</span><span>not found</span></div>
+    <div class="inv-total"><span>TOTAL DUE</span><span>$0.00</span></div>
+    <div class="inv-stamp">PAST DUE</div>
+    <div class="inv-terms">terms: net 0 — due at the door · the wait was free · so is skipping it · that's the bit<br>you now owe nothing. you will feel this anyway.</div>
+    <div class="btnrow"><button class="btn warn" id="invAck">ACKNOWLEDGE THE BILL</button></div>
+  </div>
+</div>
+
+<!-- matchmaking modal -->
+<div class="modal" id="matchModal">
+  <div class="card">
+    <div class="label">Matchmaking</div>
+    <div class="m-name" id="mName">???</div>
+    <div class="m-lvl" id="mLvl"></div>
+    <div class="m-loot">
+      available beans: <b id="mBeans">0</b><br>
+      available signal: <b id="mSignal">0</b>
+    </div>
+    <div class="m-algo" id="mAlgo"></div>
+    <div class="btnrow">
+      <button class="btn warn" id="mAttack">ATTACK</button>
+      <button class="btn alt" id="mNext">NEXT (20 BEANS)</button>
+      <button class="btn" id="mHome">GO HOME</button>
+    </div>
+  </div>
+</div>
+
+<!-- result modal -->
+<div class="modal" id="resultModal">
+  <div class="card">
+    <div class="label">Official Raid Report</div>
+    <div class="r-stars" id="rStars">★★★</div>
+    <div class="r-verdict" id="rVerdict"></div>
+    <div class="r-ruling" id="rRuling"></div>
+    <div class="r-stats">
+      target: <b id="rTarget"></b><br>
+      destruction: <b id="rDestr"></b><br>
+      beans taken: <b id="rBeans"></b><br>
+      signal taken: <b id="rSignal"></b><br>
+      trophies: <b id="rTrophy"></b>
+    </div>
+    <div class="signoff">SIGNAL RECEIVED — @stoopidshow</div>
+    <div class="btnrow">
+      <button class="btn flip" id="rPost">POST IT →</button>
+      <button class="btn" id="rHome">RETURN TO VILLAGE</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  STOOPID CLASH — a monument to the wait — THE STOOPID SHOW — @stoopidshow<br>
+  no gems were sold in the making of this village. reality is user generated.
+</footer>
+
+<script>
+'use strict';
+/* ============================== DATA ============================== */
+const COL = {teal:'#00FFC6', purple:'#8A2BE2', red:'#FF2D2D', orange:'#CC5500', white:'#FFFFFF', grey:'#777777'};
+const T = 26;                 // tiles per side
+const HALL_MAX = 4;
+const WALL_COST = 26;         // A* cost of stepping into a wall (base step = 1)
+const RAID_TIME = 75;
+
+// per-level arrays are 0-indexed by (level-1). cost[i] = cost to BUILD level i+1 (cost[0] = initial build).
+const B = {
+  hall:    {n:'SIGNAL TOWER', ch:'◈', w:3, cat:'core',  col:COL.orange, hp:[500,750,1050,1400], cost:[0,1500,4000,10000], time:[0,120,300,600], max:[1,1,1,1],
+            d:'the whole operation. lose this, lose a star. also holds emergency beans.'},
+  beanfarm:{n:'BEAN FARM',    ch:'b', w:2, cat:'gen', res:'beans',  col:COL.teal, rate:[1.5,3,6], hp:[140,200,280], cost:[100,400,1600], time:[10,60,180], max:[1,2,3,3],
+            d:'grows beans out of the void. tap to collect. the beans do not judge you.'},
+  dish:    {n:'SIGNAL DISH',  ch:'s', w:2, cat:'gen', res:'signal', col:COL.teal, rate:[1.5,3,6], hp:[140,200,280], cost:[100,400,1600], time:[10,60,180], max:[1,2,3,3],
+            d:'harvests raw signal from the air. tap to collect. signal received.'},
+  silo:    {n:'BEAN SILO',    ch:'B', w:2, cat:'store', res:'beans',  col:COL.purple, cap:[1500,4000,10000], hp:[300,450,650], cost:[150,600,2400], time:[15,90,240], max:[1,1,2,2],
+            d:'holds the beans. raiders can smell it.'},
+  bank:    {n:'SIGNAL BANK',  ch:'S', w:2, cat:'store', res:'signal', col:COL.purple, cap:[1500,4000,10000], hp:[300,450,650], cost:[150,600,2400], time:[15,90,240], max:[1,1,2,2],
+            d:'holds the signal. interest rate: vibes.'},
+  yeet:    {n:'YEET CANNON',  ch:'Y', w:2, cat:'def', col:COL.red, hp:[250,380,520], dps:[12,18,26], rng:5.5, cd:0.8, cost:[120,500,2000], time:[15,90,240], max:[1,2,3,4],
+            d:'yeets. that is the whole design document.'},
+  ratio:   {n:'RATIO TOWER',  ch:'R', w:2, cat:'def', col:COL.red, hp:[200,300,420], dps:[9,14,20], rng:7, cd:0.5, cost:[300,900,3000], time:[30,120,300], max:[0,1,2,2],
+            d:'long range. fast. deeply unpleasant. like getting ratio\'d.'},
+  lobber:  {n:'SLOP LOBBER',  ch:'L', w:2, cat:'def', col:COL.red, hp:[220,330,460], shot:[45,70,100], rng:9, minr:3.5, splash:1.6, cd:3, cost:[800,2400,6000], time:[60,180,420], max:[0,0,1,2],
+            d:'lobs slop across the whole map. cannot hit anything standing next to it. classic.'},
+  garage:  {n:'THE GARAGE',   ch:'G', w:2, cat:'army', col:COL.white, hp:[220,320,440], cost:[200,800,2400], time:[15,90,240], max:[1,1,1,1],
+            d:'built it anyway. trains the guys. upgrade to unlock better guys.'},
+  camp:    {n:'THE PIT',      ch:'P', w:2, cat:'army', col:COL.white, cap:[15,25,35], hp:[180,260,360], cost:[200,700,2000], time:[15,90,240], max:[1,1,2,2],
+            d:'where the guys wait. they are fine. they said they are fine.'},
+  wall:    {n:'WALL',         ch:'',  w:1, cat:'wall', col:COL.grey, hp:[200], cost:[30], time:[0], max:[30,60,100,140],
+            d:'the walls are not free.'}
+};
+const BUILD_ORDER = ['beanfarm','dish','silo','bank','yeet','ratio','lobber','garage','camp','wall','hall'];
+
+const TR = {
+  guy:      {n:'STOOPID GUY',  ch:'g', col:COL.teal,   hp:95,  dps:16, spd:2.2, rng:0,   space:1, cost:25,  time:6,  unlock:1, pref:null,
+             d:'walks at the nearest thing. commits.'},
+  goblin:   {n:'BEAN GOBLIN',  ch:'o', col:COL.orange, hp:60,  dps:20, spd:3.4, rng:0,   space:1, cost:30,  time:7,  unlock:1, pref:'loot',
+             d:'2x damage to anything holding beans. takes notes.'},
+  reply:    {n:'REPLY GUY',    ch:'r', col:COL.purple, hp:45,  dps:12, spd:2.4, rng:3.5, space:1, cost:40,  time:8,  unlock:2, pref:null,
+             d:'attacks from a distance. never been outside.'},
+  locksmith:{n:'THE LOCKSMITH',ch:'x', col:COL.white,  hp:70,  dps:0,  spd:3.0, rng:0,   space:2, cost:120, time:18, unlock:2, pref:'wall',
+             d:'touches walls for free. once.'},
+  unit:     {n:'THE UNIT',     ch:'U', col:COL.red,    hp:620, dps:26, spd:1.4, rng:0,   space:5, cost:180, time:30, unlock:3, pref:'def',
+             d:'huge. calm. only respects defenses.'}
+};
+const TROOP_ORDER = ['guy','goblin','reply','locksmith','unit'];
+
+const ENEMY_NAMES = ['xX_BeanLord_Xx','SigmaGrindset2012','ratio_enjoyer','slopfarmer_prime','TheAlgorithmsNephew',
+  'guy_from_spaces','certified_wall_owner','NoLifeKing_88','aunt_from_facebook','BUCKLEY_THUNDER_MEAT',
+  'dave_holding_it_wrong','engagement_farmer_04','main_character_tues','wall_salesman','hustle_uncle',
+  'BeanBaron_2012','posts_through_it','xX_ShieldMaxxer_Xx'];
+const ALGO_LINES = [
+  'this base has been offline for four days. the beans are just sitting there.',
+  'he bought those walls with his allowance. show no mercy. or some mercy. i do not care.',
+  'metrics indicate this one posts through it. the village reflects that.',
+  'no shield. no plan. no idea. a perfect match. you are welcome.',
+  'i matched you on vibes. the vibes are: undefended beans.',
+  'this one skips every timer. the invoices are stacked to the ceiling.',
+  'i have seen this layout before. it did not work then either.',
+  'the defenses are decorative. like most defenses. like most things.',
+  'he calls it a compound. it is four walls and a bean farm.',
+  'statistically, someone has to lose. i have selected someone.'
+];
+const RULINGS = {
+  s3: ['flawless. the algorithm is uncomfortable.','one hundred percent. the beans never stood a chance. neither did the guy.','total collapse. somewhere, an invoice prints itself in your honor.'],
+  s2: ['a professional visit. you left one thing standing. probably on purpose. sure.','strong raid. the walls were, in fact, not free. you made them pay anyway.','two stars. the village will speak of this quietly.'],
+  s1: ['barely. but a star is a star. put it on the fridge.','messy. loud. profitable-ish. one star, no refunds.','you got in, you got some beans, you got out. journalism.'],
+  s0: ['the walls won. the walls always win when you do not bring the locksmith.','your guys walked in like they owned the place. they did not own the place.','zero stars. the defenses send their regards. the beans remain unbothered.']
+};
+const LEAGUES = [[600,'VOID'],[300,'SIGNAL'],[100,'BEAN'],[0,'CARDBOARD']];
+
+/* ============================== STATE ============================== */
+const SAVE_KEY = 'stoopid_clash_v1';
+const now = () => Date.now()/1000;
+let S = null;          // persistent save
+let R = null;          // active raid (null in village)
+let sel = null;        // selected building (village)
+let placing = null;    // {t, x, y, moving: bld|null}
+let trayPick = null;   // selected troop type during raid
+let statusT = 0;
+
+function newGame(){
+  const t = now();
+  const s = {v:1, res:{beans:400, signal:400}, b:[], army:{}, q:[], troph:0, shield:0, last:t, invSeq:0,
+    stats:{raids:0, stars:0, inv:0, lootB:0, awayLost:0}};
+  const mk = (type,x,y,lvl)=>s.b.push({t:type,lvl:lvl,x:x,y:y,up:0,pend:0,stored:0});
+  mk('hall',11,11,1); mk('beanfarm',7,12,1); mk('dish',17,12,1);
+  return s;
+}
+function save(){ if(S){ S.last = now(); try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} } }
+function load(){
+  try{ const raw = localStorage.getItem(SAVE_KEY); if(raw){ const s = JSON.parse(raw); if(s && s.v===1) return s; } }catch(e){}
+  return null;
+}
+
+/* ============================== HELPERS ============================== */
+const hallLvl = () => { const h = S.b.find(b=>b.t==='hall'); return h ? Math.max(1,h.lvl) : 1; };
+const active = b => b.lvl >= 1;                    // built at least once
+const upgrading = b => b.up > 0;
+function countType(t){ return S.b.filter(b=>b.t===t).length; }
+function capOf(res){
+  let c = 600; // hall pocket
+  for(const b of S.b) if(active(b) && B[b.t].cat==='store' && B[b.t].res===res) c += B[b.t].cap[b.lvl-1];
+  return c;
+}
+function campCap(){ let c=0; for(const b of S.b) if(active(b)&&b.t==='camp') c+=B.camp.cap[b.lvl-1]; return c; }
+function garageLvl(){ const g=S.b.find(b=>b.t==='garage'&&active(b)); return g?g.lvl:0; }
+function armySpace(){ let u=0; for(const k in S.army) u+=S.army[k]*TR[k].space; for(const it of S.q) u+=TR[it.t].space; return u; }
+function armyCount(){ let n=0; for(const k in S.army) n+=S.army[k]; return n; }
+function fmtT(sec){ sec=Math.max(0,Math.ceil(sec)); const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+function league(tr){ for(const [min,name] of LEAGUES) if(tr>=min) return name; return 'CARDBOARD'; }
+function setStatus(msg, cls){ statusBox.textContent = msg; statusBox.className = 'status'+(cls?' '+cls:''); statusT = now(); }
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const ri = (a,b)=>Math.floor(rnd(a,b+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+/* occupancy map: null | building ref. list = array of buildings */
+function occMap(list){
+  const m = Array.from({length:T},()=>Array(T).fill(null));
+  for(const b of list){ if(b.dead) continue; const w=B[b.t].w;
+    for(let dx=0;dx<w;dx++) for(let dy=0;dy<w;dy++){ const x=b.x+dx,y=b.y+dy; if(x>=0&&x<T&&y>=0&&y<T) m[y][x]=b; } }
+  return m;
+}
+function canPlace(t,x,y,list,ignore){
+  const w=B[t].w, lo=1, hi=T-1-w; // keep 1-tile margin in village
+  if(x<lo||y<lo||x>hi||y>hi) return false;
+  const m = occMap(list.filter(b=>b!==ignore));
+  for(let dx=0;dx<w;dx++) for(let dy=0;dy<w;dy++) if(m[y+dy][x+dx]) return false;
+  return true;
+}
+
+/* ============================== VILLAGE TICK ============================== */
+function tickVillage(dt){
+  const t = now();
+  // construction / upgrades
+  for(const b of S.b){
+    if(b.up>0 && t>=b.up){ b.lvl=b.pend; b.up=0; b.pend=0; setStatus(B[b.t].n.toLowerCase()+' finished. it was worth the wait. probably.','good'); refreshPanel(); }
+  }
+  // generators
+  for(const b of S.b){
+    if(active(b) && B[b.t].cat==='gen'){
+      const r = B[b.t].rate[b.lvl-1], hold = r*600;
+      b.stored = Math.min(hold, (b.stored||0) + r*dt);
+    }
+  }
+  // training queue
+  tickQueue(t);
+}
+function tickQueue(t){
+  while(S.q.length){
+    const it = S.q[0];
+    if(!it.end) it.end = t + TR[it.t].time;
+    if(it.end <= t){ S.army[it.t]=(S.army[it.t]||0)+1; S.q.shift(); if(S.q.length&&!S.q[0].end) S.q[0].end = it.end + TR[S.q[0].t].time; refreshPanel(); updateArmyLine(); }
+    else break;
+  }
+}
+function offlineCatchup(){
+  const t = now(), away = Math.max(0, t - (S.last||t));
+  if(away < 2) return;
+  for(const b of S.b){
+    if(active(b) && B[b.t].cat==='gen'){ const r=B[b.t].rate[b.lvl-1]; b.stored = Math.min(r*600,(b.stored||0)+r*away); }
+  }
+  // queue: give elapsed time credit sequentially
+  let cursor = S.last||t;
+  while(S.q.length){
+    const it=S.q[0]; const end=(it.end||cursor+TR[it.t].time);
+    if(end<=t){ S.army[it.t]=(S.army[it.t]||0)+1; S.q.shift(); cursor=end; if(S.q.length) S.q[0].end=end+TR[S.q[0].t].time; }
+    else { it.end=end; break; }
+  }
+  // fake away-raid
+  if(away>600 && t>S.shield && Math.random()<0.5){
+    let defScore=0; for(const b of S.b) if(active(b)&&B[b.t].cat==='def') defScore+=b.lvl;
+    const raider = pick(ENEMY_NAMES);
+    const loss = Math.max(0, Math.round(Math.min(S.res.beans*0.15, 120*hallLvl()) - defScore*15));
+    if(loss>0){
+      S.res.beans-=loss; S.stats.awayLost+=loss; S.shield = t+8*3600;
+      setStatus('while you were gone: '+raider+' took '+loss+' beans. he said nothing. shield up 8h.','bad');
+    } else {
+      setStatus('while you were gone: '+raider+' attacked and got nothing. the defenses said you’re welcome.','good');
+    }
+  } else if(away>600){
+    setStatus('you were gone '+Math.floor(away/60)+' minutes. the beans waited. the beans always wait.');
+  }
+}
+
+/* ============================== BUILD / UPGRADE / TRAIN ============================== */
+function tryBuy(t){
+  const def=B[t], hl=hallLvl();
+  if(countType(t)>=def.max[hl-1]){ setStatus('limit reached. the signal tower says no.','bad'); return; }
+  const cost=def.cost[0];
+  if(S.res.beans<cost){ setStatus('not enough beans. the farm is trying its best.','bad'); return; }
+  placing={t:t, x:Math.floor(T/2), y:Math.floor(T/2), moving:null};
+  shopModal.classList.remove('show');
+  setStatus('tap a spot for the '+def.n.toLowerCase()+'. green means yes.');
+  closePanel();
+}
+function confirmPlace(){
+  if(!placing) return;
+  const {t,x,y,moving}=placing;
+  if(!canPlace(t,x,y,S.b,moving)){ setStatus('not there. the tiles object.','bad'); return; }
+  if(moving){ moving.x=x; moving.y=y; setStatus('relocated. the feng shui is restored.','good'); }
+  else{
+    const def=B[t]; S.res.beans-=def.cost[0];
+    const b={t:t,lvl:0,pend:1,up: def.time[0]>0? now()+def.time[0] : 0, x:x,y:y,stored:0};
+    if(def.time[0]===0){ b.lvl=1; b.pend=0; }
+    S.b.push(b);
+    setStatus(def.n.toLowerCase()+(def.time[0]>0?' under construction. the wait begins.':' built. instantly. suspicious.'),'good');
+  }
+  placing=null; save(); updateHUD();
+}
+function startUpgrade(b){
+  const def=B[b.t];
+  if(b.t==='wall'){ setStatus('walls are already perfect. that’s canon.','bad'); return; }
+  if(upgrading(b)){ setStatus('already upgrading. one wait at a time.','bad'); return; }
+  const maxL = def.cost.length;
+  if(b.lvl>=maxL){ setStatus('max level. it has peaked. let it rest.','bad'); return; }
+  const cost=def.cost[b.lvl];
+  if(S.res.beans<cost){ setStatus('need '+cost+' beans. the silo laughs.','bad'); return; }
+  S.res.beans-=cost; b.pend=b.lvl+1; b.up=now()+def.time[b.lvl];
+  setStatus('upgrade started. estimated wait: '+fmtT(def.time[b.lvl])+'. or skip it. for free. after paperwork.');
+  save(); refreshPanel(); updateHUD();
+}
+function skipWait(b){
+  if(!upgrading(b)) return;
+  const remain=b.up-now();
+  S.invSeq++; S.stats.inv++;
+  invNo.textContent='INV-'+String(S.invSeq).padStart(4,'0');
+  invItem.textContent='remainder of one (1) wait — '+B[b.t].n.toLowerCase();
+  invTime.textContent=fmtT(remain);
+  invModal.classList.add('show');
+  invModal._target=b;
+}
+function trainTroop(t){
+  const tr=TR[t];
+  if(garageLvl()<tr.unlock){ setStatus('the garage isn’t ready for '+tr.n.toLowerCase()+'. upgrade it.','bad'); return; }
+  if(S.res.signal<tr.cost){ setStatus('not enough signal. the dish is doing what it can.','bad'); return; }
+  if(armySpace()+tr.space>campCap()){ setStatus('the pit is full. the guys need a bigger pit.','bad'); return; }
+  S.res.signal-=tr.cost; S.q.push({t:t,end:0});
+  tickQueue(now()); save(); refreshPanel(); updateHUD(); updateArmyLine();
+}
+function collect(b){
+  const def=B[b.t]; if(def.cat!=='gen'||!active(b)) return false;
+  const amt=Math.floor(b.stored||0); if(amt<1) return false;
+  const res=def.res, cap=capOf(res), room=cap-S.res[res];
+  if(room<=0){ setStatus('storage full. the '+res+' have nowhere to go. build a bigger box.','bad'); return true; }
+  const got=Math.min(amt,room); S.res[res]+=got; b.stored-=got;
+  setStatus('+'+got+' '+res+(got<amt?' (storage full — the rest stays in the ground)':''),'good');
+  save(); updateHUD(); return true;
+}
+
+/* ============================== ENEMY GENERATION ============================== */
+function genEnemy(){
+  const h = clamp(hallLvl() + (Math.random()<0.3?1:0) - (Math.random()<0.2?1:0), 1, HALL_MAX);
+  const list=[];
+  const add=(t,lvl,x,y)=>{ const def=B[t];
+    const hp=def.hp[Math.min(lvl,def.hp.length)-1];
+    list.push({t:t,lvl:lvl,x:x,y:y,hp:hp,maxhp:hp,dead:false,cd:rnd(0,1),lootB:0,lootS:0}); };
+  const fits=(t,x,y)=>{ const w=B[t].w; if(x<3||y<3||x>T-3-w||y>T-3-w) return false;
+    const m=occMap(list); for(let dx=0;dx<w;dx++) for(let dy=0;dy<w;dy++){ if(m[y+dy][x+dx]) return false; } return true; };
+  const scatter=(t,lvl,rMin,rMax)=>{ for(let i=0;i<200;i++){ const a=rnd(0,Math.PI*2), r=rnd(rMin,rMax);
+      const x=Math.round(T/2-B[t].w/2 + Math.cos(a)*r), y=Math.round(T/2-B[t].w/2 + Math.sin(a)*r);
+      if(fits(t,x,y)){ add(t,lvl,x,y); return true; } } return false; };
+  const bl = t => clamp(h - (Math.random()<0.4?1:0), 1, B[t].hp.length); // building level near hall level
+
+  add('hall',h,11,11);
+  // core: defenses + storages near hall
+  const core=[];
+  const defPlan=[['yeet',h>=1],['yeet',h>=1],['ratio',h>=2],['yeet',h>=3],['lobber',h>=3],['ratio',h>=4],['yeet',h>=4],['lobber',h>=4]];
+  for(const [t,ok] of defPlan) if(ok) core.push([t,bl(t)]);
+  core.push(['silo',bl('silo')],['bank',bl('bank')]);
+  if(h>=3){ core.push(['silo',bl('silo')],['bank',bl('bank')]); }
+  for(const [t,lvl] of core) scatter(t,lvl,2.5,5.5);
+  // wall box around the core bounding area
+  let minX=T,minY=T,maxX=0,maxY=0;
+  for(const b of list){ const w=B[b.t].w; minX=Math.min(minX,b.x); minY=Math.min(minY,b.y); maxX=Math.max(maxX,b.x+w-1); maxY=Math.max(maxY,b.y+w-1); }
+  minX=Math.max(3,minX-1); minY=Math.max(3,minY-1); maxX=Math.min(T-4,maxX+1); maxY=Math.min(T-4,maxY+1);
+  const m0=occMap(list);
+  const wallGaps = h>=3 ? 0 : ri(1,2); let gapsLeft=wallGaps;
+  const perim=[];
+  for(let x=minX;x<=maxX;x++){ perim.push([x,minY],[x,maxY]); }
+  for(let y=minY+1;y<maxY;y++){ perim.push([minX,y],[maxX,y]); }
+  for(const [x,y] of perim){ if(!m0[y][x]) add('wall',1,x,y); }
+  if(gapsLeft>0){ const walls=list.filter(b=>b.t==='wall');
+    for(let i=0;i<gapsLeft&&walls.length;i++){ const w=pick(walls); w.dead=true; list.splice(list.indexOf(w),1); } }
+  // outer buildings
+  const outer=[['beanfarm',2],['dish',2],['garage',1],['camp',1]];
+  if(h>=2) outer.push(['beanfarm',1],['dish',1]);
+  for(const [t,n] of outer) for(let i=0;i<n;i++) scatter(t,bl(t),7.5,10.5);
+  // loot
+  const lootB = Math.round(200*h + rnd(0,250*h)), lootS = Math.round(200*h + rnd(0,250*h));
+  const holders = list.filter(b=>['hall','silo','bank','beanfarm','dish'].includes(b.t));
+  const hallB = list.find(b=>b.t==='hall');
+  hallB.lootB=Math.round(lootB*0.35); hallB.lootS=Math.round(lootS*0.35);
+  const rest=holders.filter(b=>b!==hallB);
+  for(const b of rest){ b.lootB=Math.round(lootB*0.65/rest.length); b.lootS=Math.round(lootS*0.65/rest.length); }
+  return {name:pick(ENEMY_NAMES), hall:h, list:list, lootB:lootB, lootS:lootS, algo:pick(ALGO_LINES)};
+}
+
+/* ============================== A* ============================== */
+function astar(sx,sy,goals,grid){
+  // grid[y][x]: 0 open, 1 blocked, 2 wall (passable, +WALL_COST). goals: Set('x,y')
+  if(goals.size===0) return null;
+  const g=new Float32Array(T*T).fill(Infinity), from=new Int16Array(T*T).fill(-1);
+  const closed=new Uint8Array(T*T);
+  sx=clamp(Math.round(sx),0,T-1); sy=clamp(Math.round(sy),0,T-1);
+  const si=sy*T+sx; g[si]=0;
+  const open=[si];
+  const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  let goalIdx=-1;
+  while(open.length){
+    let bi=0; for(let i=1;i<open.length;i++) if(g[open[i]]<g[open[bi]]) bi=i;
+    const cur=open.splice(bi,1)[0];
+    if(closed[cur]) continue; closed[cur]=1;
+    const cx=cur%T, cy=(cur-cx)/T;
+    if(goals.has(cx+','+cy)){ goalIdx=cur; break; }
+    for(const [dx,dy] of DIRS){
+      const nx=cx+dx, ny=cy+dy;
+      if(nx<0||ny<0||nx>=T||ny>=T) continue;
+      const cell=grid[ny][nx];
+      if(cell===1 && !goals.has(nx+','+ny)) continue;
+      const step= cell===2 ? 1+WALL_COST : 1;
+      const ni=ny*T+nx, ng=g[cur]+step;
+      if(ng<g[ni]){ g[ni]=ng; from[ni]=cur; if(!closed[ni]) open.push(ni); }
+    }
+  }
+  if(goalIdx<0) return null;
+  const path=[]; let c=goalIdx;
+  while(c!==si && c>=0){ path.push([c%T, Math.floor(c/T)]); c=from[c]; }
+  path.reverse(); return path;
+}
+
+/* ============================== RAID ============================== */
+function startMatch(free){
+  if(armyCount()<1){ setStatus('no army. the garage awaits your signal.','bad'); return; }
+  if(!free){ if(S.res.beans<20){ setStatus('matchmaking costs 20 beans. the algorithm has a fee schedule.','bad'); return; } S.res.beans-=20; updateHUD(); }
+  const e=genEnemy();
+  matchModal._enemy=e;
+  mName.textContent=e.name;
+  mLvl.textContent='SIGNAL TOWER LEVEL '+e.hall+' · '+e.list.filter(b=>b.t==='wall').length+' walls (not free)';
+  mBeans.textContent=e.lootB; mSignal.textContent=e.lootS;
+  mAlgo.textContent=e.algo;
+  matchModal.classList.add('show');
+}
+function beginRaid(){
+  const e=matchModal._enemy; matchModal.classList.remove('show');
+  R={phase:'deploy', E:e.list, name:e.name, hall:e.hall, t:RAID_TIME, started:false,
+     troops:[], projs:[], loot:{b:0,s:0}, lootAvail:{b:e.lootB,s:e.lootS},
+     totalNW:e.list.filter(b=>b.t!=='wall').length, destroyed:0, hallDead:false,
+     armyLeft:Object.assign({},S.army), speed:1};
+  trayPick=null; sel=null; placing=null; closePanel();
+  villageControls.style.display='none'; raidControls.style.display='flex';
+  buildTray();
+  setStatus('scout complete. deploy on the outer edge. the guys are ready. the guys are always ready.');
+}
+function raidGrid(){
+  const grid=Array.from({length:T},()=>new Uint8Array(T));
+  for(const b of R.E){ if(b.dead) continue; const w=B[b.t].w;
+    for(let dx=0;dx<w;dx++) for(let dy=0;dy<w;dy++) grid[b.y+dy][b.x+dx]= b.t==='wall'?2:1; }
+  return grid;
+}
+function goalTiles(bld){
+  const g=new Set(), w=B[bld.t].w;
+  for(let dx=-1;dx<=w;dx++) for(let dy=-1;dy<=w;dy++){
+    if(dx>=0&&dx<w&&dy>=0&&dy<w) continue;
+    const x=bld.x+dx,y=bld.y+dy;
+    if(x>=0&&x<T&&y>=0&&y<T) g.add(x+','+y);
+  }
+  return g;
+}
+function distToBld(x,y,bld){
+  // building occupies continuous rect [x, x+w] × [y, y+w]
+  const w=B[bld.t].w;
+  const cx=clamp(x,bld.x,bld.x+w), cy=clamp(y,bld.y,bld.y+w);
+  return Math.hypot(x-cx,y-cy);
+}
+function pickTarget(tr){
+  const alive=R.E.filter(b=>!b.dead);
+  const nonWall=alive.filter(b=>b.t!=='wall');
+  if(nonWall.length===0 && tr.def.pref!=='wall') return null;
+  let pool=null;
+  const near=arr=>{ let best=null,bd=1e9; for(const b of arr){ const d=distToBld(tr.x,tr.y,b); if(d<bd){bd=d;best=b;} } return best; };
+  if(tr.def.pref==='loot'){ pool=nonWall.filter(b=>['hall','silo','bank','beanfarm','dish'].includes(b.t)); }
+  else if(tr.def.pref==='def'){ pool=nonWall.filter(b=>B[b.t].cat==='def'); }
+  else if(tr.def.pref==='wall'){ const walls=alive.filter(b=>b.t==='wall'); if(walls.length) return near(walls); pool=null; }
+  if(pool&&pool.length) return near(pool);
+  return near(nonWall);
+}
+function deploy(t,tx,ty){
+  if(!R||R.phase==='done') return;
+  if((R.armyLeft[t]||0)<1) return;
+  const edge = tx<2||ty<2||tx>=T-2||ty>=T-2;
+  if(!edge){ setStatus('deploy zone is the outer edge. the middle is their whole thing.','bad'); return; }
+  const m=occMap(R.E); if(m[ty][tx]){ setStatus('occupied. even the edge has landlords.','bad'); return; }
+  R.armyLeft[t]--; S.army[t]--; if(S.army[t]<=0) delete S.army[t];
+  const def=TR[t];
+  R.troops.push({type:t,def:def,x:tx+0.5,y:ty+0.5,hp:def.hp,target:null,path:null,pi:0,sub:null,cd:0,dead:false});
+  if(!R.started){ R.started=true; R.phase='live'; }
+  buildTray(); updateArmyLine(); save();
+}
+function tickRaid(dt){
+  if(!R||R.phase!=='live') return;
+  dt*=R.speed;
+  R.t-=dt;
+  const grid=raidGrid();
+  // troops
+  for(const tr of R.troops){
+    if(tr.dead) continue;
+    // acquire target
+    if(!tr.target||tr.target.dead){
+      tr.target=pickTarget(tr); tr.path=null; tr.sub=null;
+      if(!tr.target){ continue; }
+    }
+    const tgt=tr.target;
+    // locksmith: explode when close to wall target
+    if(tr.def.pref==='wall' && tgt.t==='wall'){
+      if(distToBld(tr.x,tr.y,tgt)<=1.1){ boom(tr); continue; }
+    }
+    const inRange = tr.def.rng>0 ? distToBld(tr.x,tr.y,tgt)<=tr.def.rng : distToBld(tr.x,tr.y,tgt)<=0.9;
+    // wall subtarget in the way
+    if(tr.sub && tr.sub.dead) tr.sub=null;
+    if(tr.sub){
+      if(distToBld(tr.x,tr.y,tr.sub)<=0.9){ hit(tr,tr.sub,dt); continue; }
+    }
+    if(inRange && !tr.sub){
+      if(tr.def.pref==='wall'){ boom(tr); continue; }  // locksmith fallback vs building
+      hit(tr,tgt,dt); continue;
+    }
+    // need path
+    if(!tr.path){
+      tr.path=astar(tr.x-0.5,tr.y-0.5,goalTiles(tgt),grid); tr.pi=0;
+      if(!tr.path){ tr.dead=false; tr.target=null; continue; }
+    }
+    // follow path
+    if(tr.pi>=tr.path.length){ tr.path=null; continue; }
+    const [nx,ny]=tr.path[tr.pi];
+    // wall blocking next step?
+    const m=occMap(R.E);
+    const blk=m[ny]&&m[ny][nx];
+    if(blk && blk.t==='wall' && !blk.dead){ tr.sub=blk; continue; }
+    const px=nx+0.5, py=ny+0.5, dx=px-tr.x, dy=py-tr.y, d=Math.hypot(dx,dy);
+    const step=tr.def.spd*dt;
+    if(d<=step){ tr.x=px; tr.y=py; tr.pi++; }
+    else { tr.x+=dx/d*step; tr.y+=dy/d*step; }
+  }
+  // defenses
+  for(const b of R.E){
+    if(b.dead||B[b.t].cat!=='def'||b.lvl<1) continue;
+    const def=B[b.t]; b.cd-=dt;
+    if(b.cd>0) continue;
+    const cx=b.x+def.w/2, cy=b.y+def.w/2;
+    let best=null,bd=1e9;
+    for(const tr of R.troops){ if(tr.dead) continue; const d=Math.hypot(tr.x-cx,tr.y-cy);
+      if(d<=def.rng && (!def.minr||d>=def.minr) && d<bd){bd=d;best=tr;} }
+    if(!best) continue;
+    b.cd=def.cd;
+    if(b.t==='lobber'){
+      R.projs.push({kind:'lob',x:cx,y:cy,tx:best.x,ty:best.y,t:1.0,dmg:def.shot[b.lvl-1],splash:def.splash});
+    } else {
+      best.hp-=def.dps[b.lvl-1]*def.cd;
+      R.projs.push({kind:'zap',x:cx,y:cy,tx:best.x,ty:best.y,t:0.12});
+      if(best.hp<=0) best.dead=true;
+    }
+  }
+  // projectiles
+  for(const p of R.projs){
+    p.t-=dt;
+    if(p.kind==='lob'&&p.t<=0&&!p.done){ p.done=true;
+      for(const tr of R.troops){ if(tr.dead) continue;
+        if(Math.hypot(tr.x-p.tx,tr.y-p.ty)<=p.splash){ tr.hp-=p.dmg; if(tr.hp<=0) tr.dead=true; } } }
+  }
+  R.projs=R.projs.filter(p=>p.t>-0.2);
+  // end conditions
+  const anyAlive=R.troops.some(t=>!t.dead), anyLeft=Object.values(R.armyLeft).some(n=>n>0);
+  const destrPct=R.totalNW? (R.destroyed/R.totalNW*100) : 0;
+  if(destrPct>=100){ endRaid(); return; }
+  if(R.t<=0){ endRaid(); return; }
+  if(!anyAlive && !anyLeft){
+    R.graceT=(R.graceT||1.5)-dt; if(R.graceT<=0) endRaid();
+  }
+}
+function hit(tr,bld,dt){
+  let dps=tr.def.dps;
+  if(tr.type==='goblin' && ['hall','silo','bank','beanfarm','dish'].includes(bld.t)) dps*=2;
+  bld.hp-=dps*dt;
+  if(bld.hp<=0) killBld(bld);
+}
+function boom(tr){
+  tr.dead=true;
+  for(const b of R.E){ if(b.dead) continue;
+    const d=distToBld(tr.x,tr.y,b);
+    if(d<=1.6){ b.hp -= (b.t==='wall'?320:40); if(b.hp<=0) killBld(b); } }
+  R.projs.push({kind:'boomfx',x:tr.x,y:tr.y,t:0.3});
+}
+function killBld(b){
+  if(b.dead) return; b.dead=true; b.hp=0;
+  if(b.t!=='wall'){ R.destroyed++;
+    if(b.lootB){ R.loot.b+=b.lootB; } if(b.lootS){ R.loot.s+=b.lootS; }
+    if(b.t==='hall') R.hallDead=true;
+  }
+  for(const tr of R.troops){ if(tr.target===b){ tr.target=null; tr.path=null; } if(tr.sub===b) tr.sub=null; }
+}
+function endRaid(){
+  if(!R||R.phase==='done') return;
+  R.phase='done';
+  const destr=R.totalNW? Math.round(R.destroyed/R.totalNW*100):0;
+  let stars=0; if(destr>=50) stars++; if(R.hallDead) stars++; if(destr>=100) stars++;
+  const dTr = stars>0 ? 5+5*stars : -10;
+  S.troph=Math.max(0,S.troph+dTr);
+  const gotB=Math.max(0, Math.min(R.loot.b, capOf('beans')-S.res.beans));
+  const gotS=Math.max(0, Math.min(R.loot.s, capOf('signal')-S.res.signal));
+  S.res.beans+=gotB; S.res.signal+=gotS;
+  S.stats.raids++; S.stats.stars+=stars; S.stats.lootB+=gotB;
+  save(); updateHUD();
+  // card
+  rStars.textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
+  rVerdict.textContent = stars>0?'STOOPID':'STUPID';
+  rVerdict.className = 'r-verdict '+(stars>0?'stoopid':'stupid');
+  rRuling.textContent = pick(RULINGS['s'+stars]);
+  rTarget.textContent = R.name;
+  rDestr.textContent = destr+'%';
+  rBeans.textContent = gotB + (gotB<R.loot.b?' (storage full, the rest fell off the truck)':'');
+  rSignal.textContent = gotS;
+  rTrophy.textContent = (dTr>=0?'+':'')+dTr;
+  resultModal._share = 'STOOPID CLASH raid report: '+'★'.repeat(stars)+'☆'.repeat(3-stars)+' '+destr+'% — took '+gotB+' beans off '+R.name+'. the walls were not free.\n\nhttps://devinrasche-hub.github.io/stoopid-toolkit/stoopid_clash.html';
+  resultModal.classList.add('show');
+}
+function exitRaid(){
+  R=null; trayPick=null;
+  raidControls.style.display='none'; villageControls.style.display='flex';
+  tray.classList.remove('show');
+  resultModal.classList.remove('show');
+  updateArmyLine(); updateHUD();
+  setStatus('home again. the farms kept farming. loyalty.');
+}
+
+/* ============================== RENDER ============================== */
+const cv=document.getElementById('game'), cx2=cv.getContext('2d');
+let ts=cv.width/T;
+function draw(){
+  const w=cv.width; ts=w/T;
+  cx2.clearRect(0,0,w,w);
+  // grid
+  cx2.strokeStyle='#101010'; cx2.lineWidth=1;
+  cx2.beginPath();
+  for(let i=0;i<=T;i++){ cx2.moveTo(i*ts,0); cx2.lineTo(i*ts,w); cx2.moveTo(0,i*ts); cx2.lineTo(w,i*ts); }
+  cx2.stroke();
+  if(R) drawRaid(); else drawVillage();
+}
+function drawBld(b,list,dim){
+  const def=B[b.t], px=b.x*ts, py=b.y*ts, s=def.w*ts;
+  if(b.t==='wall'){
+    cx2.fillStyle=dim?'#1a1a1a':'#2a2a2a'; cx2.fillRect(px+1,py+1,s-2,s-2);
+    cx2.strokeStyle=dim?'#333':COL.grey; cx2.strokeRect(px+1.5,py+1.5,s-3,s-3);
+    return;
+  }
+  cx2.fillStyle='#050505'; cx2.fillRect(px+2,py+2,s-4,s-4);
+  cx2.strokeStyle=dim?'#333':def.col; cx2.lineWidth=1.5;
+  if(b.up>0||b.lvl<1) cx2.setLineDash([4,3]);
+  cx2.strokeRect(px+2,py+2,s-4,s-4);
+  cx2.setLineDash([]);
+  cx2.fillStyle=dim?'#444':def.col;
+  cx2.font='bold '+Math.floor(ts*def.w*0.42)+'px Courier New';
+  cx2.textAlign='center'; cx2.textBaseline='middle';
+  cx2.fillText(def.ch, px+s/2, py+s/2+1);
+  // level pips
+  const lvl=b.lvl||b.pend;
+  cx2.fillStyle=dim?'#333':'#888';
+  for(let i=0;i<lvl;i++) cx2.fillRect(px+5+i*5, py+s-7, 3,3);
+}
+function drawVillage(){
+  for(const b of S.b) drawBld(b,S.b,false);
+  const t=now();
+  for(const b of S.b){
+    const def=B[b.t], px=b.x*ts, py=b.y*ts, s=def.w*ts;
+    if(b.up>0){ // countdown
+      cx2.fillStyle='#000'; cx2.fillRect(px+2,py+s/2-8,s-4,15);
+      cx2.fillStyle=COL.orange; cx2.font='bold '+Math.floor(ts*0.55)+'px Courier New';
+      cx2.textAlign='center'; cx2.textBaseline='middle';
+      cx2.fillText(fmtT(b.up-t), px+s/2, py+s/2);
+    }
+    if(def.cat==='gen'&&active(b)&&(b.stored||0)>=25){ // collect pip
+      cx2.fillStyle=COL.teal; cx2.beginPath();
+      cx2.arc(px+s-6,py+6,3.5,0,7); cx2.fill();
+    }
+    if(b===sel){ cx2.strokeStyle=COL.white; cx2.lineWidth=1; cx2.setLineDash([3,3]);
+      cx2.strokeRect(px+0.5,py+0.5,s-1,s-1); cx2.setLineDash([]); }
+  }
+  if(placing){
+    const def=B[placing.t], px=placing.x*ts, py=placing.y*ts, s=def.w*ts;
+    const ok=canPlace(placing.t,placing.x,placing.y,S.b,placing.moving);
+    cx2.fillStyle= ok?'rgba(0,255,198,0.15)':'rgba(255,45,45,0.18)';
+    cx2.fillRect(px,py,s,s);
+    cx2.strokeStyle= ok?COL.teal:COL.red; cx2.setLineDash([4,3]);
+    cx2.strokeRect(px+1,py+1,s-2,s-2); cx2.setLineDash([]);
+  }
+  if(t>0&&S.shield>t){
+    cx2.fillStyle='#555'; cx2.font='10px Courier New'; cx2.textAlign='left'; cx2.textBaseline='top';
+    cx2.fillText('SHIELD '+fmtT(S.shield-t), 6, 6);
+  }
+}
+function drawRaid(){
+  // deploy zone
+  if(R.phase!=='done'&&trayPick){
+    cx2.fillStyle='rgba(0,255,198,0.06)';
+    cx2.fillRect(0,0,cv.width,2*ts); cx2.fillRect(0,cv.width-2*ts,cv.width,2*ts);
+    cx2.fillRect(0,2*ts,2*ts,cv.width-4*ts); cx2.fillRect(cv.width-2*ts,2*ts,2*ts,cv.width-4*ts);
+  }
+  for(const b of R.E){ if(!b.dead) drawBld(b,R.E,false); }
+  // hp bars
+  for(const b of R.E){
+    if(b.dead||b.hp>=b.maxhp) continue;
+    const def=B[b.t], px=b.x*ts, py=b.y*ts, s=def.w*ts;
+    cx2.fillStyle='#222'; cx2.fillRect(px+2,py-4,s-4,3);
+    cx2.fillStyle=COL.red; cx2.fillRect(px+2,py-4,(s-4)*Math.max(0,b.hp/b.maxhp),3);
+  }
+  // rubble
+  for(const b of R.E){ if(b.dead&&b.t!=='wall'){ const px=b.x*ts,py=b.y*ts,s=B[b.t].w*ts;
+    cx2.strokeStyle='#222'; cx2.beginPath();
+    cx2.moveTo(px+4,py+4); cx2.lineTo(px+s-4,py+s-4); cx2.moveTo(px+s-4,py+4); cx2.lineTo(px+4,py+s-4); cx2.stroke(); } }
+  // troops
+  for(const tr of R.troops){
+    if(tr.dead) continue;
+    const px=tr.x*ts, py=tr.y*ts, r=ts*(tr.type==='unit'?0.42:0.3);
+    cx2.fillStyle=tr.def.col; cx2.beginPath(); cx2.arc(px,py,r,0,7); cx2.fill();
+    cx2.fillStyle='#000'; cx2.font='bold '+Math.floor(ts*0.42)+'px Courier New';
+    cx2.textAlign='center'; cx2.textBaseline='middle';
+    cx2.fillText(tr.def.ch,px,py+0.5);
+    if(tr.hp<tr.def.hp){ cx2.fillStyle='#222'; cx2.fillRect(px-r,py-r-5,r*2,2);
+      cx2.fillStyle=COL.teal; cx2.fillRect(px-r,py-r-5,r*2*Math.max(0,tr.hp/tr.def.hp),2); }
+  }
+  // projectiles
+  for(const p of R.projs){
+    if(p.kind==='zap'){ cx2.strokeStyle=COL.red; cx2.lineWidth=1;
+      cx2.beginPath(); cx2.moveTo(p.x*ts,p.y*ts); cx2.lineTo(p.tx*ts,p.ty*ts); cx2.stroke(); }
+    else if(p.kind==='lob'){ const k=1-Math.max(0,p.t); const x=p.x+(p.tx-p.x)*k, y=p.y+(p.ty-p.y)*k - Math.sin(k*Math.PI)*2;
+      cx2.fillStyle=COL.red; cx2.beginPath(); cx2.arc(x*ts,y*ts,3,0,7); cx2.fill(); }
+    else if(p.kind==='boomfx'){ cx2.strokeStyle=COL.white;
+      cx2.beginPath(); cx2.arc(p.x*ts,p.y*ts,(0.3-p.t)*ts*5,0,7); cx2.stroke(); }
+  }
+  // HUD in-canvas
+  const destr=R.totalNW?Math.round(R.destroyed/R.totalNW*100):0;
+  let stars=0; if(destr>=50)stars++; if(R.hallDead)stars++; if(destr>=100)stars++;
+  cx2.fillStyle='#000'; cx2.fillRect(0,0,cv.width,16);
+  cx2.font='11px Courier New'; cx2.textBaseline='top';
+  cx2.textAlign='left'; cx2.fillStyle=COL.teal;
+  cx2.fillText(' '+(R.started?fmtT(R.t):'--:--')+'  '+destr+'%  '+'★'.repeat(stars)+'☆'.repeat(3-stars), 2,3);
+  cx2.textAlign='right'; cx2.fillStyle=COL.orange;
+  cx2.fillText('loot '+R.loot.b+'b '+R.loot.s+'s  vs '+R.name+' ',cv.width-2,3);
+}
+
+/* ============================== UI ============================== */
+const $=id=>document.getElementById(id);
+const statusBox=$('statusBox'), villageControls=$('villageControls'), raidControls=$('raidControls'),
+  tray=$('tray'), panel=$('panel'), pName=$('pName'), pLvl=$('pLvl'), pDesc=$('pDesc'), pStats=$('pStats'),
+  pTrain=$('pTrain'), pBtns=$('pBtns'),
+  shopModal=$('shopModal'), shopGrid=$('shopGrid'),
+  invModal=$('invModal'), invNo=$('invNo'), invItem=$('invItem'), invTime=$('invTime'),
+  matchModal=$('matchModal'), mName=$('mName'), mLvl=$('mLvl'), mBeans=$('mBeans'), mSignal=$('mSignal'), mAlgo=$('mAlgo'),
+  resultModal=$('resultModal'), rStars=$('rStars'), rVerdict=$('rVerdict'), rRuling=$('rRuling'),
+  rTarget=$('rTarget'), rDestr=$('rDestr'), rBeans=$('rBeans'), rSignal=$('rSignal'), rTrophy=$('rTrophy');
+
+function updateHUD(){
+  $('hudBeans').textContent=Math.floor(S.res.beans)+'/'+capOf('beans');
+  $('hudSignal').textContent=Math.floor(S.res.signal)+'/'+capOf('signal');
+  $('hudTrophy').textContent=S.troph;
+  $('hudLeague').textContent=league(S.troph);
+}
+function updateArmyLine(){
+  const parts=[]; for(const k of TROOP_ORDER){ if(S.army[k]) parts.push(S.army[k]+' '+TR[k].n.toLowerCase()); }
+  $('armyLine').textContent = parts.length? 'army: '+parts.join(', ') : 'army: nobody. train some guys in the garage.';
+}
+function openPanel(b){
+  sel=b; const def=B[b.t];
+  pName.textContent=def.n;
+  pLvl.textContent = b.lvl<1 ? 'UNDER CONSTRUCTION' : 'LEVEL '+b.lvl+(b.up>0?' → '+b.pend+' ('+fmtT(b.up-now())+')':'');
+  pDesc.textContent=def.d||'';
+  let st='';
+  if(def.cat==='gen'&&active(b)) st+='rate: <b>'+def.rate[b.lvl-1]+'/s</b> · stored: <b>'+Math.floor(b.stored||0)+'</b> (tap building to collect)<br>';
+  if(def.cat==='store'&&active(b)) st+='capacity: <b>'+def.cap[b.lvl-1]+'</b><br>';
+  if(def.cat==='def'&&active(b)) st+= (def.dps?('dps: <b>'+def.dps[b.lvl-1]+'</b>'):('shot: <b>'+def.shot[b.lvl-1]+'</b>'))+' · range: <b>'+def.rng+'</b><br>';
+  if(b.t==='camp'&&active(b)) st+='pit space: <b>'+def.cap[b.lvl-1]+'</b> (total: '+campCap()+')<br>';
+  if(b.t==='garage'&&active(b)) st+='unlocked: <b>'+TROOP_ORDER.filter(k=>TR[k].unlock<=b.lvl).map(k=>TR[k].n.toLowerCase()).join(', ')+'</b><br>';
+  if(active(b)&&def.hp) st+='hp: <b>'+def.hp[Math.min(b.lvl,def.hp.length)-1]+'</b>';
+  pStats.innerHTML=st;
+  // training UI
+  pTrain.innerHTML='';
+  if(b.t==='garage'&&active(b)){
+    const grid=document.createElement('div'); grid.className='troopgrid';
+    for(const k of TROOP_ORDER){
+      const tr=TR[k], locked=tr.unlock>b.lvl;
+      const btn=document.createElement('button'); btn.className='tbtn';
+      btn.innerHTML='<span class="tc">'+tr.n+'</span> <span class="tcost">'+tr.cost+' signal</span><br>'+
+        (locked?('locked — garage lvl '+tr.unlock):(tr.d+'<br>space '+tr.space+' · '+tr.time+'s'));
+      btn.disabled=locked;
+      btn.onclick=()=>trainTroop(k);
+      grid.appendChild(btn);
+    }
+    pTrain.appendChild(grid);
+    const q=document.createElement('div'); q.className='queue'; q.id='queueLine'; pTrain.appendChild(q);
+    updateQueueLine();
+  }
+  // buttons
+  pBtns.innerHTML='';
+  const addBtn=(txt,cls,fn,dis)=>{ const x=document.createElement('button'); x.className='btn small '+(cls||''); x.textContent=txt; x.disabled=!!dis; x.onclick=fn; pBtns.appendChild(x); };
+  if(b.up>0) addBtn('SKIP THE WAIT (FREE*)','warn',()=>skipWait(b));
+  else if(b.t!=='wall'&&b.lvl>=1&&b.lvl<B[b.t].cost.length)
+    addBtn('UPGRADE — '+def.cost[b.lvl]+' BEANS · '+fmtT(def.time[b.lvl]),'',()=>startUpgrade(b), S.res.beans<def.cost[b.lvl]);
+  addBtn('MOVE','alt',()=>{ placing={t:b.t,x:b.x,y:b.y,moving:b}; closePanel(); setStatus('tap a new spot. confirm with the button.'); });
+  addBtn('CLOSE','',()=>closePanel());
+  panel.classList.add('show');
+}
+function updateQueueLine(){
+  const el=$('queueLine'); if(!el) return;
+  const t=now();
+  if(!S.q.length){ el.innerHTML='queue: empty. the pit: '+armySpace()+'/'+campCap()+' space used.'; return; }
+  const cur=S.q[0];
+  el.innerHTML='training: <b>'+TR[cur.t].n.toLowerCase()+'</b> ('+fmtT((cur.end||t)-t)+') · queued: '+S.q.length+' · pit: '+armySpace()+'/'+campCap();
+}
+function refreshPanel(){ if(sel&&!R) openPanel(sel); }
+function closePanel(){ sel=null; panel.classList.remove('show'); }
+function openShop(){
+  shopGrid.innerHTML='';
+  const hl=hallLvl();
+  for(const t of BUILD_ORDER){
+    if(t==='hall') continue;
+    const def=B[t], have=countType(t), mx=def.max[hl-1];
+    const item=document.createElement('div'); item.className='shopitem';
+    const left=document.createElement('div');
+    left.innerHTML='<div class="si-n" style="color:'+def.col+'">'+def.n+' <span style="color:#555">'+have+'/'+mx+'</span></div><div class="si-d">'+def.d+'</div>';
+    const right=document.createElement('div');
+    const can = have<mx && S.res.beans>=def.cost[0];
+    right.innerHTML='<div class="si-c">'+def.cost[0]+' beans</div>';
+    const btn=document.createElement('button'); btn.className='btn small'; btn.textContent= have>=mx?'MAXED':'BUILD';
+    btn.disabled=!can; btn.onclick=()=>tryBuy(t);
+    right.appendChild(btn);
+    item.appendChild(left); item.appendChild(right);
+    shopGrid.appendChild(item);
+  }
+  shopModal.classList.add('show');
+}
+function buildTray(){
+  tray.innerHTML='';
+  for(const k of TROOP_ORDER){
+    const btn=document.createElement('button'); btn.className='traybtn'+(trayPick===k?' sel':'');
+    btn.textContent=TR[k].n+' ×'+(R?(R.armyLeft[k]||0):0);
+    btn.disabled=!R||(R.armyLeft[k]||0)<1||R.phase==='done';
+    btn.onclick=()=>{ trayPick=k; buildTray(); };
+    tray.appendChild(btn);
+  }
+  tray.classList.add('show');
+}
+
+/* input */
+function canvasTile(ev){
+  const rect=cv.getBoundingClientRect();
+  const x=(ev.clientX-rect.left)/rect.width*T, y=(ev.clientY-rect.top)/rect.height*T;
+  return [Math.floor(x),Math.floor(y)];
+}
+cv.addEventListener('pointermove',ev=>{
+  if(placing){ const [tx,ty]=canvasTile(ev); const w=B[placing.t].w;
+    placing.x=clamp(tx-Math.floor(w/2),1,T-1-w); placing.y=clamp(ty-Math.floor(w/2),1,T-1-w); }
+});
+cv.addEventListener('click',ev=>{
+  const [tx,ty]=canvasTile(ev);
+  if(R){ if(trayPick&&R.phase!=='done') deploy(trayPick,tx,ty); return; }
+  if(placing){ const w=B[placing.t].w;
+    placing.x=clamp(tx-Math.floor(w/2),1,T-1-w); placing.y=clamp(ty-Math.floor(w/2),1,T-1-w);
+    confirmPlace(); return; }
+  const m=occMap(S.b), b=(m[ty]&&m[ty][tx])||null;
+  if(b){ if(!collect(b)) openPanel(b); else refreshPanel(); }
+  else closePanel();
+});
+
+/* buttons */
+$('shopBtn').onclick=openShop;
+$('shopClose').onclick=()=>shopModal.classList.remove('show');
+$('raidBtn').onclick=()=>startMatch(true);
+$('invAck').onclick=()=>{
+  const b=invModal._target;
+  if(b&&b.up>0){ b.lvl=b.pend; b.up=0; b.pend=0; }
+  invModal.classList.remove('show');
+  setStatus('invoice acknowledged. the wait is gone. the guilt is permanent.','good');
+  save(); refreshPanel(); updateHUD();
+};
+$('mAttack').onclick=beginRaid;
+$('mNext').onclick=()=>{ matchModal.classList.remove('show'); startMatch(false); };
+$('mHome').onclick=()=>matchModal.classList.remove('show');
+$('endRaidBtn').onclick=()=>{ if(R&&R.phase!=='done') endRaid(); };
+$('speedBtn').onclick=()=>{ if(R){ R.speed=R.speed===1?2:1; $('speedBtn').textContent='SPEED x'+R.speed; } };
+$('rHome').onclick=exitRaid;
+$('rPost').onclick=()=>{
+  const text=resultModal._share||'STOOPID CLASH. the walls were not free.';
+  window.open('https://x.com/intent/post?text='+encodeURIComponent(text),'_blank');
+};
+
+/* ============================== MAIN LOOP ============================== */
+let lastF=0;
+function loop(ms){
+  const t=ms/1000; let dt=lastF?t-lastF:0.016; lastF=t; dt=Math.min(dt,0.1);
+  if(R) tickRaid(dt); else tickVillage(dt);
+  draw();
+  // live panel refreshes
+  if(!R&&sel&&sel.up>0) pLvl.textContent='LEVEL '+Math.max(1,sel.lvl)+' → '+sel.pend+' ('+fmtT(sel.up-now())+')';
+  if(!R) updateQueueLine();
+  requestAnimationFrame(loop);
+}
+setInterval(save,5000);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+
+/* boot */
+S = load() || newGame();
+offlineCatchup();
+updateHUD(); updateArmyLine();
+if(!S.stats.raids && S.b.length<=3) setStatus('welcome. build a garage, train some guys, go take someone’s beans.');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
