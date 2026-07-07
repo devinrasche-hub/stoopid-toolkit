@@ -1,0 +1,8 @@
+name = "stoopid-signal-registry"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stoopid_defense_scores"
+database_id = "5aebdce9-f93d-41ad-8381-837031d1fbf6"

@@ -95,6 +95,20 @@
   .result .stats b{color:var(--teal);}
   .result .stats b.hi{color:var(--orange);}
   .result .signoff{font-size:11px; color:var(--purple); letter-spacing:2px; margin-top:12px;}
+  .registry{margin-top:16px; border-top:1px dashed #333; padding-top:14px;}
+  .reg-title{font-size:11px; letter-spacing:3px; color:var(--teal);}
+  .reg-joke{font-size:10px; color:#555; letter-spacing:1px; margin:4px 0 10px; font-style:italic;}
+  .reg-form{display:flex; gap:8px; justify-content:center; margin-bottom:8px;}
+  .reg-form input{width:74px; background:#000; border:1px solid var(--teal); color:var(--teal);
+    font-family:inherit; font-size:16px; letter-spacing:6px; text-align:center; text-transform:uppercase; padding:7px 0 7px 6px;}
+  .reg-form input:focus{outline:1px solid var(--teal);}
+  .reg-status{font-size:11px; color:var(--orange); letter-spacing:1px; min-height:15px; margin-bottom:6px;}
+  .reg-list{list-style:none; font-size:12px; letter-spacing:1px; line-height:1.9; text-align:center; counter-reset:reg;}
+  .reg-list li{counter-increment:reg;}
+  .reg-list li::before{content:counter(reg,decimal-leading-zero) " "; color:#555;}
+  .reg-list li b{color:var(--teal);}
+  .reg-list li .rw{color:#888;}
+  .reg-list li.you b{color:var(--orange);}
   .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
   footer{font-size:10px; color:#444; letter-spacing:2px; margin-top:20px; text-align:center;}
 </style>
@@ -161,6 +175,16 @@
     perfect waves: <b id="resPerfect"></b><br>
     towers built: <b id="resBuilt"></b><br>
     cause of collapse: <span id="resCause" style="color:var(--red)"></span>
+  </div>
+  <div class="registry" id="registry" style="display:none">
+    <div class="reg-title">GLOBAL SIGNAL REGISTRY</div>
+    <div class="reg-joke">all scores are self-reported. like engagement.</div>
+    <div class="reg-form" id="regForm">
+      <input id="regName" maxlength="3" placeholder="AAA" autocomplete="off" spellcheck="false" aria-label="three initials">
+      <button class="btn mini flip" id="regBtn">REGISTER SIGNAL</button>
+    </div>
+    <div class="reg-status" id="regStatus"></div>
+    <ol class="reg-list" id="regList"></ol>
   </div>
   <div class="signoff">SIGNAL RECEIVED — @stoopidshow</div>
   <div class="btnrow">
@@ -550,7 +574,55 @@
     $("resCause").textContent=cause;
     $("resultCard").classList.add("show");
     $("resultCard").scrollIntoView({behavior:"smooth", block:"center"});
+    regSubmitted=false; $("regBtn").disabled=false;
+    $("regForm").style.display=""; $("regStatus").textContent="";
+    $("regName").value=localStorage.getItem("stoopid_defense_initials")||"";
+    regLoad();
   }
+
+  /* ---------- GLOBAL SIGNAL REGISTRY (all scores self-reported. like engagement.) ---------- */
+  const REG_URL="https://stoopid-signal-registry.stoopidshow.workers.dev";
+  let regSubmitted=false;
+  const escHtml=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  async function regLoad(hl){
+    $("registry").style.display="";
+    try{
+      const r=await fetch(REG_URL+"/top?n=10",{cache:"no-store"});
+      const j=await r.json();
+      if(!j.ok) throw 0;
+      $("regList").innerHTML = j.top.map(e=>
+        "<li"+(hl&&e.name===hl.name&&e.score===hl.score?' class="you"':"")+"><b>"+escHtml(e.name)+"</b> "
+        +Math.floor(e.score)+' <span class="rw">w'+Math.floor(e.wave)+"</span></li>").join("")
+        || '<li class="rw">the registry is empty. be first. be STOOPID.</li>';
+    }catch(e){
+      $("regList").innerHTML='<li class="rw">registry unreachable. the void is quiet.</li>';
+    }
+  }
+  $("regBtn").addEventListener("click", async ()=>{
+    if(regSubmitted) return;
+    const nm=($("regName").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
+    if(!nm){ $("regStatus").textContent="three letters. any letters. even wrong ones."; return; }
+    localStorage.setItem("stoopid_defense_initials",nm);
+    $("regBtn").disabled=true; $("regStatus").textContent="transmitting…";
+    try{
+      const r=await fetch(REG_URL+"/submit",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({name:nm,score:score,wave:wave})});
+      const j=await r.json();
+      if(j.ok){
+        regSubmitted=true;
+        $("regStatus").textContent="SIGNAL REGISTERED — GLOBAL RANK #"+j.rank;
+        $("regForm").style.display="none";
+        regLoad({name:nm,score:score});
+      } else {
+        $("regStatus").textContent=j.error||"the registry declined.";
+        $("regBtn").disabled=false;
+      }
+    }catch(e){
+      $("regStatus").textContent="transmission failed. the void has opinions.";
+      $("regBtn").disabled=false;
+    }
+  });
+  $("regName").addEventListener("keydown",e=>{ if(e.key==="Enter") $("regBtn").click(); });
 
   /* ---------- SHARE CARD ---------- */
   function makeCard(){
@@ -674,6 +746,7 @@
   });
   cv.addEventListener("contextmenu",e=>{ e.preventDefault(); armed=null; selected=null; syncBar(); syncPanel(); });
   window.addEventListener("keydown",e=>{
+    if(e.target && e.target.tagName==="INPUT") return; // initials box owns its keys
     if(e.key==="Escape"){ armed=null; selected=null; syncBar(); syncPanel(); }
     else if(e.key===" "){ e.preventDefault(); if(!waveBtn.disabled) startWave(); }
     else if(e.key==="f"||e.key==="F"){ cycleSpeed(); }
