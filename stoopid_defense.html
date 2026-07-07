@@ -109,11 +109,29 @@
   .reg-list li b{color:var(--teal);}
   .reg-list li .rw{color:#888;}
   .reg-list li.you b{color:var(--orange);}
+  .topboard{position:fixed; top:16px; right:16px; z-index:50; display:none;
+    background:#000; border:1px solid #222; padding:12px 16px 10px; min-width:150px;}
+  .topboard::before,.topboard::after{content:""; position:absolute; width:10px; height:10px;}
+  .topboard::before{top:-1px; left:-1px; border-top:2px solid var(--purple); border-left:2px solid var(--purple);}
+  .topboard::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--purple); border-right:2px solid var(--purple);}
+  .topboard .tb-title{font-size:9px; letter-spacing:2px; color:var(--purple); margin-bottom:7px;}
+  .topboard ol{list-style:none; font-size:11px; letter-spacing:1px; line-height:1.9; counter-reset:tb;}
+  .topboard li{counter-increment:tb; white-space:nowrap;}
+  .topboard li::before{content:counter(tb) " "; color:#555;}
+  .topboard li b{color:var(--teal);}
+  .topboard li:first-child b{color:var(--orange);}
+  .topboard li .rw{color:#666;}
+  @media (max-width:1020px){ .topboard{display:none !important;} }
   .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
   footer{font-size:10px; color:#444; letter-spacing:2px; margin-top:20px; text-align:center;}
 </style>
 </head>
 <body>
+
+<div class="topboard" id="topBoard" aria-label="global top three">
+  <div class="tb-title">SIGNAL REGISTRY &middot; TOP 3</div>
+  <ol id="topBoardList"></ol>
+</div>
 
 <header>
   <div class="brackets">
@@ -613,6 +631,7 @@
         $("regStatus").textContent="SIGNAL REGISTERED — GLOBAL RANK #"+j.rank;
         $("regForm").style.display="none";
         regLoad({name:nm,score:score});
+        syncTopBoard();
       } else {
         $("regStatus").textContent=j.error||"the registry declined.";
         $("regBtn").disabled=false;
@@ -623,6 +642,20 @@
     }
   });
   $("regName").addEventListener("keydown",e=>{ if(e.key==="Enter") $("regBtn").click(); });
+
+  // persistent top-3 — the podium watches you play
+  async function syncTopBoard(){
+    try{
+      const r=await fetch(REG_URL+"/top?n=3",{cache:"no-store"});
+      const j=await r.json();
+      if(!j.ok || !j.top.length){ $("topBoard").style.display="none"; return; }
+      $("topBoardList").innerHTML=j.top.map(e=>
+        "<li><b>"+escHtml(e.name)+"</b> "+Math.floor(e.score)+' <span class="rw">w'+Math.floor(e.wave)+"</span></li>").join("");
+      $("topBoard").style.display="block";
+    }catch(e){ $("topBoard").style.display="none"; }
+  }
+  syncTopBoard();
+  setInterval(syncTopBoard, 90000);
 
   /* ---------- SHARE CARD ---------- */
   function makeCard(){
