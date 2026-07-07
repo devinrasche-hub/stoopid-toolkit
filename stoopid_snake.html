@@ -65,6 +65,37 @@
   .result .stats b{color:var(--teal);}
   .result .signoff{font-size:11px; color:var(--purple); letter-spacing:2px; margin-top:12px;}
   .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  /* ── log-your-signal row (initials capture on the result card) ── */
+  .logrow{display:none; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    margin-top:16px; padding-top:16px; border-top:1px dashed #333;}
+  .logrow.show{display:flex;}
+  .logrow .lbl{font-size:10px; letter-spacing:3px; color:var(--orange);}
+  #initials{width:88px; background:#000; border:1px solid var(--teal); color:var(--teal);
+    font-family:inherit; font-size:20px; letter-spacing:8px; text-align:center; text-transform:uppercase;
+    padding:8px 4px 8px 12px; outline:none;}
+  #initials::placeholder{color:#2a5f52;}
+  /* ── leaderboard panel ── */
+  .board{width:min(92vw,440px); margin:22px auto 4px; border:1px solid #222; position:relative;
+    padding:16px 16px 12px;}
+  .board::before,.board::after{content:""; position:absolute; width:14px; height:14px;}
+  .board::before{top:-1px; left:-1px; border-top:2px solid var(--purple); border-left:2px solid var(--purple);}
+  .board::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--purple); border-right:2px solid var(--purple);}
+  .board-title{text-align:center; font-size:13px; letter-spacing:4px; color:var(--purple);
+    text-transform:uppercase; margin-bottom:12px;}
+  .board-table{width:100%; border-collapse:collapse; font-size:13px; letter-spacing:1px;}
+  .board-table td{padding:5px 4px; border-bottom:1px solid #161616;}
+  .board-table tr:last-child td{border-bottom:none;}
+  .board-table .rk{color:#555; width:34px;}
+  .board-table .nm{color:#fff;}
+  .board-table .bn{color:var(--orange); text-align:right; width:78px; font-size:11px; white-space:nowrap;}
+  .board-table .sc{color:var(--teal); text-align:right; width:56px; font-weight:bold;}
+  .board-table tr.fresh .nm{color:var(--teal);}
+  .board-table tr.fresh .rk{color:var(--teal);}
+  .board-empty{text-align:center; color:#555; font-size:12px; letter-spacing:1px; padding:8px 0;}
+  .board-foot{text-align:center; margin-top:12px;}
+  .board-clear{background:none; border:none; color:#3a3a3a; font-family:inherit; font-size:10px;
+    letter-spacing:2px; cursor:pointer; text-transform:uppercase;}
+  .board-clear:hover{color:var(--red);}
   footer{font-size:10px; color:#444; letter-spacing:2px; margin-top:20px; text-align:center;}
 </style>
 </head>
@@ -113,11 +144,23 @@
     cause of death: <span id="resCause" style="color:var(--red)"></span>
   </div>
   <div class="signoff">SIGNAL RECEIVED — @stoopidshow</div>
+  <div class="logrow" id="logRow">
+    <span class="lbl">LOG YOUR SIGNAL</span>
+    <input id="initials" maxlength="3" placeholder="STO" spellcheck="false" aria-label="Your initials">
+    <button class="btn alt" id="logBtn">LOG IT</button>
+  </div>
   <div class="btnrow">
     <button class="btn" id="dlBtn">DOWNLOAD PNG</button>
     <button class="btn flip" id="postBtn">POST IT →</button>
     <button class="btn alt" id="againBtn">RE-TRANSMIT</button>
   </div>
+</div>
+
+<div class="board" id="board">
+  <div class="board-title">TOP SIGNALS</div>
+  <table class="board-table"><tbody id="boardBody"></tbody></table>
+  <div class="board-empty" id="boardEmpty">no signals logged yet. transmit something.</div>
+  <div class="board-foot"><button class="board-clear" id="clearBoard">wipe the rankings</button></div>
 </div>
 
 <footer>THE STOOPID SHOW · STOOPID BUT TRUE · the snake was paid in beans</footer>
@@ -134,6 +177,8 @@
   const tileSize=21, tileCount=canvas.width/tileSize;
   const BASE_SPEED=120, MIN_SPEED=70;
   const bestKey="stoopid-snake-best-score";
+  const boardKey="stoopid-snake-leaderboard";
+  const BOARD_MAX=10;
 
   const QUIPS=[
     "bean acquired. the signal grows.",
@@ -172,12 +217,68 @@
 
   function say(msg, cls){ statusBox.textContent=msg; statusBox.className="status"+(cls?" "+cls:""); }
 
+  // ── leaderboard (local top-10, stored in localStorage) ─────────
+  const boardBody=document.getElementById("boardBody");
+  const boardEmpty=document.getElementById("boardEmpty");
+  let logged=false; // guard: one run logs at most once
+
+  function loadBoard(){
+    try{ const a=JSON.parse(localStorage.getItem(boardKey)); return Array.isArray(a)?a:[]; }
+    catch(e){ return []; }
+  }
+  function saveBoard(a){ localStorage.setItem(boardKey, JSON.stringify(a)); }
+
+  // a run earns a slot if it scored and either the board has room or it beats the weakest
+  function qualifies(sc){
+    if(sc<=0) return false;
+    const b=loadBoard();
+    return b.length<BOARD_MAX || sc>b[b.length-1].score;
+  }
+
+  function addToBoard(name, sc, bn, cz){
+    const b=loadBoard();
+    const entry={name, score:sc, beans:bn, cause:cz, t:Date.now()};
+    b.push(entry);
+    b.sort((x,y)=> y.score-x.score || x.t-y.t); // higher score first; earlier run wins ties
+    const trimmed=b.slice(0, BOARD_MAX);
+    saveBoard(trimmed);
+    return entry;
+  }
+
+  function renderBoard(freshEntry){
+    const b=loadBoard();
+    boardBody.innerHTML="";
+    boardEmpty.style.display = b.length ? "none" : "block";
+    b.forEach((e,i)=>{
+      const tr=document.createElement("tr");
+      if(freshEntry && e.t===freshEntry.t && e.score===freshEntry.score) tr.className="fresh";
+      tr.innerHTML =
+        '<td class="rk">'+String(i+1).padStart(2,"0")+'</td>'+
+        '<td class="nm">'+esc(e.name)+'</td>'+
+        '<td class="bn">'+e.beans+' beans</td>'+
+        '<td class="sc">'+e.score+'</td>';
+      boardBody.appendChild(tr);
+    });
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  document.getElementById("logBtn").addEventListener("click", logSignal);
+  document.getElementById("initials").addEventListener("keydown", e=>{ if(e.key==="Enter") logSignal(); });
+  document.getElementById("clearBoard").addEventListener("click", ()=>{
+    if(!loadBoard().length) return;
+    if(confirm("Wipe the local rankings? The signal forgets everything.")){
+      localStorage.removeItem(boardKey); renderBoard();
+    }
+  });
+
   function startGame(){
     snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];
     direction={x:1,y:0}; nextDirection={x:1,y:0};
-    score=0; beans=0; cause=""; glitching=false;
+    score=0; beans=0; cause=""; glitching=false; logged=false;
     hudScore.textContent="0";
     resultCard.classList.remove("show");
+    logRow.classList.remove("show");
     spawnFood();
     draw();
     if(timer)clearInterval(timer);
@@ -318,6 +419,21 @@
     };
   }
 
+  const logRow=document.getElementById("logRow");
+  const initialsInput=document.getElementById("initials");
+
+  function logSignal(){
+    if(logged) return;
+    let name=initialsInput.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
+    if(!name) name="STO";
+    logged=true;
+    const entry=addToBoard(name, score, beans, cause);
+    logRow.classList.remove("show");
+    renderBoard(entry);
+    say("signal logged as "+name+". the rankings remember.", "good");
+    document.getElementById("board").scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
   let lastVerdict=null;
   function showResult(){
     lastVerdict=verdictFor();
@@ -328,6 +444,13 @@
     document.getElementById("resBeans").textContent=beans;
     document.getElementById("resBest").textContent=best;
     document.getElementById("resCause").textContent=cause==="wall"?"WALL (NO TOUCHY)":"SELF (THE OBSTACLE)";
+    // offer to log the run only if it earns a spot on the board
+    if(qualifies(score)){
+      initialsInput.value="";
+      logRow.classList.add("show");
+    } else {
+      logRow.classList.remove("show");
+    }
     setTimeout(()=>{
       resultCard.classList.add("show");
       resultCard.scrollIntoView({behavior:"smooth", block:"center"});
@@ -433,6 +556,7 @@
   });
 
   draw();
+  renderBoard();
 })();
 </script>
 </body>
