@@ -56,6 +56,13 @@
   .twr.armed.t-flip{background:var(--orange); color:#000;}
   .twr.armed small{color:#000;}
   .twr.broke{opacity:.35; cursor:not-allowed;}
+  .twr.locked{opacity:.32; cursor:not-allowed; filter:grayscale(1);}
+  .twr.capped{opacity:.55; cursor:not-allowed;}
+  .twr .tflav{color:#555;}
+  .twr .tinfo{font-size:9px; letter-spacing:.06em; margin-top:2px; color:#8a8a8a;}
+  .twr.locked .tinfo{color:#c94; opacity:.85;}
+  .twr.capped .tinfo{color:var(--red);}
+  .twr.armed .tinfo,.twr.armed .tflav{color:#000;}
   .twr .ticon{width:54px; height:54px; display:block; margin:0 auto 5px; image-rendering:pixelated; pointer-events:none;}
   #pImg{width:84px; height:84px; image-rendering:pixelated; display:none; margin:0 auto 8px;}
   .controls{display:flex; gap:12px; align-items:center; justify-content:center; margin:12px 0 4px; flex-wrap:wrap;}
@@ -157,10 +164,10 @@
 </div>
 
 <div class="buildbar" id="buildBar">
-  <button class="twr t-pulse" data-type="pulse">[1] PULSE LASER<small>90 &middot; fast &middot; loyal</small></button>
-  <button class="twr t-beam" data-type="beam">[2] PHILOSOPHY BEAM<small>170 &middot; long range truths</small></button>
-  <button class="twr t-nova" data-type="nova">[3] URGENCY NOVA<small>230 &middot; area panic</small></button>
-  <button class="twr t-flip" data-type="flip">[4] FLIP FIELD<small>140 &middot; slows slop until it turns true</small></button>
+  <button class="twr t-pulse" data-type="pulse">[1] PULSE LASER<small class="tflav">fast &middot; loyal</small><small class="tinfo"></small></button>
+  <button class="twr t-beam" data-type="beam">[2] PHILOSOPHY BEAM<small class="tflav">long range truths</small><small class="tinfo"></small></button>
+  <button class="twr t-nova" data-type="nova">[3] URGENCY NOVA<small class="tflav">area panic</small><small class="tinfo"></small></button>
+  <button class="twr t-flip" data-type="flip">[4] FLIP FIELD<small class="tflav">slows slop &middot; no damage</small><small class="tinfo"></small></button>
 </div>
 
 <div class="panel" id="towerPanel">
@@ -276,6 +283,26 @@
     };
   }
   function upCost(t){ return Math.round(TOWERS[t.type].cost*[0.9,1.5,2.4,3.8][t.lvl-1]); }
+
+  /* ---------- LEVEL GATING (a new tower every 5 waves; caps grow with the grid) ----------
+     the grid earns its arsenal. pulse holds the line from wave 1; the heavy hitters
+     unlock as you survive. each type has a placement cap that raises one slot every
+     5 waves past its unlock — so the early game can't be steamrolled by a wall of beams. */
+  const GATE={
+    pulse:{unlock:1,  cap0:4, capEvery:5},  // cheap & loyal — the workhorse, generous cap
+    beam: {unlock:5,  cap0:2, capEvery:5},  // philosophy beam — the OP one, kept scarce
+    nova: {unlock:10, cap0:2, capEvery:5},  // urgency nova — area panic, mid unlock
+    flip: {unlock:15, cap0:2, capEvery:5}   // flip field — utility, arrives last
+  };
+  // the wave you're currently arming for: mid-wave it's this wave, in build it's the next one.
+  function levelNow(){ return state==="wave" ? wave : Math.min(wave+1, 999); }
+  function towerUnlocked(type){ return levelNow() >= GATE[type].unlock; }
+  function towerCap(type){
+    const g=GATE[type];
+    return g.cap0 + Math.max(0, Math.floor((levelNow()-g.unlock)/g.capEvery));
+  }
+  function towerCount(type){ let n=0; for(const t of towers) if(t.type===type) n++; return n; }
+  function canBuild(type){ return towerUnlocked(type) && towerCount(type) < towerCap(type); }
 
   /* ---------- THE SLOP ---------- */
   const FOES={
@@ -439,8 +466,17 @@
   function syncBar(){
     document.querySelectorAll(".twr").forEach(btn=>{
       const t=btn.dataset.type;
+      const unlocked=towerUnlocked(t), cap=towerCap(t), n=towerCount(t);
+      const capped=unlocked && n>=cap;
       btn.classList.toggle("armed", armed===t);
-      btn.classList.toggle("broke", cash<TOWERS[t].cost);
+      btn.classList.toggle("locked", !unlocked);
+      btn.classList.toggle("capped", capped);
+      btn.classList.toggle("broke", unlocked && !capped && cash<TOWERS[t].cost);
+      const info=btn.querySelector(".tinfo");
+      if(info){
+        if(!unlocked) info.textContent="LOCKED — WAVE "+GATE[t].unlock;
+        else info.textContent=TOWERS[t].cost+" · "+n+"/"+cap+" built";
+      }
     });
   }
   function syncPanel(){
@@ -551,8 +587,19 @@
     if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
     waveBtn.disabled=false; waveBtn.classList.remove("early");
     waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
+    // a new tower type unlocks the moment you're arming for its unlock wave
+    const nextLvl=wave+1;
+    for(const type in GATE){
+      if(GATE[type].unlock===nextLvl){
+        setBanner(TOWERS[type].name+" UNLOCKED", TOWERS[type].col, "new arsenal online — press "+(["pulse","beam","nova","flip"].indexOf(type)+1)+" to arm");
+        setStatus("the grid earned the "+TOWERS[type].name.toLowerCase()+". it unlocks now. use it wisely — the cap is "+towerCapAt(type,nextLvl)+".","flip");
+        sfx.streakup();
+      }
+    }
     sfx.kill(); syncHud(); syncForecast();
   }
+  // cap a type would have at a given level (for unlock announcements)
+  function towerCapAt(type,lvl){ const g=GATE[type]; return g.cap0 + Math.max(0, Math.floor((lvl-g.unlock)/g.capEvery)); }
   function spawn(type,dOverride,hpMul,wv){
     const f=FOES[type], hs=hpScale(wave)*(hpMul||1);
     const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
@@ -749,7 +796,11 @@
     return c>=0&&c<COLS&&r>=0&&r<ROWS && !pathCells.has(c+","+r) && !towers.some(t=>t.c===c&&t.r===r);
   }
   function armType(t){
-    if(cash<TOWERS[t].cost && armed!==t){ setStatus("insufficient signal. the "+TOWERS[t].name.toLowerCase()+" costs "+TOWERS[t].cost+".","bad"); return; }
+    if(armed!==t){
+      if(!towerUnlocked(t)){ setStatus("the "+TOWERS[t].name.toLowerCase()+" is locked. it unlocks at wave "+GATE[t].unlock+". survive to earn it.","bad"); return; }
+      if(towerCount(t)>=towerCap(t)){ const cap=towerCap(t); setStatus("grid limit: "+cap+" "+TOWERS[t].name.toLowerCase()+(cap===1?"":"s")+" at this level. clear waves to raise the cap.","bad"); return; }
+      if(cash<TOWERS[t].cost){ setStatus("insufficient signal. the "+TOWERS[t].name.toLowerCase()+" costs "+TOWERS[t].cost+".","bad"); return; }
+    }
     armed = armed===t ? null : t;
     selected=null; syncBar(); syncPanel();
     if(armed) setStatus(TOWERS[t].name.toLowerCase()+" armed. click the grid. not the path. the path belongs to the slop.","");
@@ -766,12 +817,14 @@
     if(hit){ selected=hit; armed=null; syncBar(); syncPanel(); return; }
     if(armed){
       const cost=TOWERS[armed].cost;
+      if(!towerUnlocked(armed)){ setStatus("that tower is locked until wave "+GATE[armed].unlock+".","bad"); armed=null; syncBar(); return; }
       if(!buildable(p.c,p.r)){ setStatus("can't build there. the path belongs to the slop.","bad"); return; }
+      if(towerCount(armed)>=towerCap(armed)){ const cap=towerCap(armed); setStatus("grid limit reached: "+cap+" "+TOWERS[armed].name.toLowerCase()+(cap===1?"":"s")+" max at this level.","bad"); armed=null; syncBar(); return; }
       if(cash<cost){ setStatus("insufficient signal.","bad"); return; }
       cash-=cost; spent+=cost; built++;
       towers.push({type:armed, c:p.c, r:p.r, lvl:1, cd:0, angle:0, invested:cost, fx:0, tgt:0});
       sfx.build(); syncHud();
-      if(cash<cost) armed=null;
+      if(cash<cost || towerCount(armed)>=towerCap(armed)) armed=null;
       syncBar();
     } else {
       selected=null; syncPanel();
