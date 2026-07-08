@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMPRESS HEAVY · Launch</title>
+  <style>
+    :root {
+      --bg: #02050b;
+      --panel: #070c16;
+      --border: #1a3355;
+      --text: #d4e8ff;
+      --dim: #5a7a9a;
+      --accent: #4aa8ff;
+      --fire: #ff7a1a;
+      --fire2: #ffd24a;
+      --steel: #d8e4f4;
+      --pink: #ff6bcb;
+      --gold: #ffd24a;
+      --cyan: #5ef0ff;
+      --violet: #b388ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse 100% 55% at 50% -12%, #0c1a38 0%, transparent 50%),
+        radial-gradient(ellipse 40% 30% at 80% 100%, #0a1020 0%, transparent 45%),
+        var(--bg);
+      color: var(--text);
+      font-family: "Cascadia Code", "Consolas", "SF Mono", "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 1.2rem 1.4rem;
+    }
+
+    .brand { text-align: center; margin-bottom: 0.85rem; }
+
+    h1 {
+      font-size: clamp(0.78rem, 2.1vw, 1rem);
+      letter-spacing: 0.42em;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      text-shadow: 0 0 28px rgba(74, 168, 255, 0.4);
+    }
+
+    .sub {
+      font-size: 0.62rem;
+      color: var(--dim);
+      letter-spacing: 0.22em;
+      margin-top: 0.3rem;
+      text-transform: uppercase;
+    }
+
+    .stage-wrap {
+      position: relative;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow:
+        0 0 0 1px rgba(74, 168, 255, 0.06),
+        0 28px 80px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+      width: min(960px, 100%);
+    }
+
+    .stage-wrap.shake { animation: shake 0.4s ease-out; }
+    .stage-wrap.shake-hard { animation: shake-hard 0.55s ease-out; }
+
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-2px, 1px); }
+      50% { transform: translate(2px, -1px); }
+      75% { transform: translate(-1px, 1px); }
+    }
+
+    @keyframes shake-hard {
+      0%, 100% { transform: translate(0, 0); }
+      15% { transform: translate(-5px, 2px); }
+      30% { transform: translate(5px, -3px); }
+      45% { transform: translate(-4px, -1px); }
+      60% { transform: translate(3px, 2px); }
+      75% { transform: translate(-2px, 1px); }
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.66rem;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      background: linear-gradient(180deg, #0a1220, #070c16);
+    }
+
+    .hud-item { display: flex; flex-direction: column; gap: 0.12rem; }
+    .hud-item .label { font-size: 0.55rem; opacity: 0.7; }
+    .hud strong {
+      color: var(--text);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.84rem;
+    }
+
+    .status-idle { color: var(--dim) !important; }
+    .status-boost { color: var(--accent) !important; }
+    .status-flight { color: var(--fire2) !important; }
+    .status-celebrate { color: var(--pink) !important; text-shadow: 0 0 14px rgba(255, 107, 203, 0.5); }
+
+    #stage {
+      position: relative;
+      height: min(72vh, 620px);
+      min-height: 480px;
+      overflow: hidden;
+    }
+
+    .sky {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        #010207 0%,
+        #040a16 25%,
+        #0a1528 52%,
+        #0e2030 75%,
+        #0a1a16 100%
+      );
+      transition: filter 0.5s;
+    }
+
+    .sky.high { filter: brightness(0.55) saturate(0.7); }
+    .sky.space { filter: brightness(0.3) saturate(0.4); }
+
+    .stars { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 3px rgba(200, 220, 255, 0.8);
+      animation: twinkle var(--d, 3s) ease-in-out infinite alternate;
+      animation-delay: var(--delay, 0s);
+    }
+
+    .star.dim { width: 1px; height: 1px; opacity: 0.45; box-shadow: none; }
+    .star.bright {
+      width: 2.5px;
+      height: 2.5px;
+      box-shadow: 0 0 6px rgba(160, 210, 255, 0.95);
+    }
+
+    @keyframes twinkle {
+      from { opacity: 0.2; }
+      to { opacity: 1; }
+    }
+
+    .horizon {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 24%;
+      background: linear-gradient(180deg, transparent, rgba(12, 40, 32, 0.25));
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 9;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 45%, transparent 48%, rgba(0, 0, 0, 0.35) 100%);
+    }
+
+    .fx-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 8;
+      overflow: hidden;
+    }
+
+    /* Fireworks particles */
+    .fw-burst {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .fw-spark {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      box-shadow: 0 0 6px currentColor;
+      animation: fw-fly var(--dur, 1s) ease-out forwards;
+      color: var(--c, #fff);
+      background: currentColor;
+    }
+
+    .fw-spark.long {
+      width: 2px;
+      height: 8px;
+      border-radius: 1px;
+    }
+
+    @keyframes fw-fly {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      70% { opacity: 1; }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0.2);
+        opacity: 0;
+      }
+    }
+
+    /* Banner text in sky */
+    .banner {
+      position: absolute;
+      left: 50%;
+      top: 18%;
+      transform: translateX(-50%) scale(0.6);
+      z-index: 10;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: none;
+    }
+
+    .banner.show {
+      animation: banner-in 1.1s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
+    }
+
+    @keyframes banner-in {
+      0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px) scale(0.5);
+      }
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1.05);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+    }
+
+    .banner-line {
+      font-size: clamp(0.95rem, 3.2vw, 1.65rem);
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      line-height: 1.45;
+      background: linear-gradient(
+        90deg,
+        var(--gold),
+        var(--pink),
+        var(--cyan),
+        var(--violet),
+        var(--gold)
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shimmer 2.5s linear infinite;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 74, 0.45))
+              drop-shadow(0 0 28px rgba(255, 107, 203, 0.25));
+      white-space: nowrap;
+    }
+
+    .banner-line.sub {
+      font-size: clamp(0.7rem, 2.2vw, 1.1rem);
+      letter-spacing: 0.35em;
+      margin-top: 0.35rem;
+      animation-delay: 0.15s;
+    }
+
+    @keyframes shimmer {
+      to { background-position: 200% center; }
+    }
+
+    .banner-sparkle {
+      font-size: clamp(0.65rem, 1.8vw, 0.9rem);
+      color: var(--gold);
+      letter-spacing: 0.5em;
+      margin-top: 0.6rem;
+      opacity: 0.9;
+      text-shadow: 0 0 16px rgba(255, 210, 74, 0.7);
+      animation: sparkle-blink 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes sparkle-blink {
+      from { opacity: 0.5; }
+      to { opacity: 1; }
+    }
+
+    .world {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 36ch;
+      height: 100%;
+      transform: translateX(-50%);
+      font-size: clamp(11px, 1.55vw, 15px);
+      line-height: 1.1;
+      white-space: pre;
+      user-select: none;
+      z-index: 3;
+    }
+
+    .tower {
+      position: absolute;
+      left: 2ch;
+      bottom: 2em;
+      color: #7aa8c8;
+      z-index: 2;
+      text-shadow: 0 0 12px rgba(122, 168, 200, 0.2);
+      opacity: 0.85;
+    }
+
+    .pad {
+      position: absolute;
+      left: 4ch;
+      bottom: 0;
+      color: #4a6070;
+      z-index: 2;
+    }
+
+    .rocket-wrap {
+      position: absolute;
+      left: 11ch;
+      bottom: 2em;
+      z-index: 5;
+      will-change: transform, opacity, filter;
+      transform-origin: 50% 40%;
+    }
+
+    .rocket {
+      color: var(--steel);
+      text-shadow:
+        0 0 1px rgba(255, 255, 255, 0.15),
+        0 0 14px rgba(180, 205, 235, 0.12);
+      transition: filter 0.2s, color 0.3s, text-shadow 0.3s;
+    }
+
+    .rocket.boosting {
+      filter: drop-shadow(0 4px 12px rgba(255, 130, 30, 0.5));
+    }
+
+    .rocket.distant {
+      color: #eef6ff;
+      text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.5),
+        0 0 16px rgba(180, 220, 255, 0.45);
+    }
+
+    /* Final star-shine vanish at the tip of the climb */
+    .star-shine {
+      position: absolute;
+      left: 50%;
+      top: 8%;
+      width: 0;
+      height: 0;
+      z-index: 11;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .star-shine.show {
+      opacity: 1;
+      animation: star-vanish 1.6s ease-out forwards;
+    }
+
+    .star-shine::before,
+    .star-shine::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+    }
+
+    /* Core flash */
+    .star-shine::before {
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      box-shadow:
+        0 0 12px 4px rgba(255, 255, 255, 0.95),
+        0 0 40px 12px rgba(180, 220, 255, 0.7),
+        0 0 80px 24px rgba(120, 180, 255, 0.35);
+    }
+
+    /* Cross rays */
+    .star-shine::after {
+      width: 4px;
+      height: 4px;
+      background: transparent;
+      box-shadow:
+        0 0 0 0 transparent;
+      background:
+        linear-gradient(90deg, transparent 0%, #fff 45%, #fff 55%, transparent 100%),
+        linear-gradient(0deg, transparent 0%, #fff 45%, #fff 55%, transparent 100%);
+      background-size: 120px 2px, 2px 120px;
+      background-position: center;
+      background-repeat: no-repeat;
+      width: 120px;
+      height: 120px;
+      opacity: 0.95;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+    }
+
+    .star-shine .ray {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 2px;
+      height: 70px;
+      margin-left: -1px;
+      margin-top: -35px;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        rgba(255, 255, 255, 0.95) 40%,
+        rgba(180, 220, 255, 0.6) 70%,
+        transparent
+      );
+      transform-origin: center center;
+      opacity: 0.85;
+    }
+
+    @keyframes star-vanish {
+      0% {
+        opacity: 0;
+        transform: scale(0.15);
+        filter: brightness(2.5);
+      }
+      15% {
+        opacity: 1;
+        transform: scale(1.5);
+        filter: brightness(2.8);
+      }
+      40% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1.8);
+      }
+      75% {
+        opacity: 0.55;
+        transform: scale(0.4);
+        filter: brightness(1.1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.02);
+        filter: brightness(0.6);
+      }
+    }
+
+    /* Credits — bottom right, after fireworks */
+    .credits {
+      position: absolute;
+      right: 1rem;
+      bottom: 0.85rem;
+      z-index: 14;
+      text-align: right;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.22, 1.1, 0.36, 1);
+    }
+
+    .credits.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .credits .handle {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--text);
+      text-shadow: 0 0 12px rgba(74, 168, 255, 0.35);
+      line-height: 1.55;
+    }
+
+    .credits .handle a,
+    .credits .handle span {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .credits .co {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .credits .co em {
+      font-style: normal;
+      color: #9ec4e8;
+    }
+
+    .engine-glow {
+      position: absolute;
+      left: 50%;
+      bottom: -0.4em;
+      width: 6em;
+      height: 5em;
+      transform: translateX(-50%);
+      background: radial-gradient(
+        ellipse at 50% 0%,
+        rgba(255, 190, 50, 0.7) 0%,
+        rgba(255, 80, 15, 0.32) 42%,
+        transparent 72%
+      );
+      opacity: 0;
+      pointer-events: none;
+      filter: blur(5px);
+      z-index: -1;
+    }
+
+    .engine-glow.on {
+      opacity: 1;
+      animation: glow-pulse 0.1s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow-pulse {
+      from { opacity: 0.7; transform: translateX(-50%) scaleY(0.9); }
+      to { opacity: 1; transform: translateX(-50%) scaleY(1.15); }
+    }
+
+    .exhaust {
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      transform: translateX(-50%);
+      margin-top: -0.15em;
+      color: var(--fire);
+      pointer-events: none;
+      opacity: 0;
+      white-space: pre;
+      text-align: center;
+      text-shadow:
+        0 0 8px rgba(255, 120, 30, 0.85),
+        0 0 18px rgba(255, 80, 20, 0.45);
+      z-index: -1;
+    }
+
+    .exhaust.on {
+      opacity: 1;
+      animation: flicker 0.065s steps(2) infinite;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.82; transform: translateX(-50%) scaleY(1); }
+      50% { opacity: 1; transform: translateX(calc(-50% + 0.4px)) scaleY(1.12); }
+      100% { opacity: 0.78; transform: translateX(calc(-50% - 0.4px)) scaleY(0.9); }
+    }
+
+    .smoke {
+      position: absolute;
+      left: 6ch;
+      bottom: 1.4em;
+      z-index: 3;
+      color: #6a7c8c;
+      opacity: 0;
+      white-space: pre;
+      pointer-events: none;
+      text-shadow: 0 0 10px rgba(140, 160, 180, 0.25);
+    }
+
+    .smoke.on { animation: smoke-out 2.4s ease-out forwards; }
+
+    @keyframes smoke-out {
+      0% { opacity: 0.9; transform: translateY(0) scaleX(1); }
+      35% { opacity: 0.55; }
+      100% { opacity: 0; transform: translateY(-5em) scaleX(1.5); }
+    }
+
+    .trail-dot {
+      position: absolute;
+      width: 2px;
+      height: 10px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(255, 160, 50, 0.8), transparent);
+      animation: trail-fade 0.55s ease-out forwards;
+    }
+
+    @keyframes trail-fade {
+      to { opacity: 0; transform: translateY(8px) scaleY(0.2); }
+    }
+
+    .countdown {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 12;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(circle, rgba(4, 10, 22, 0.45) 0%, transparent 55%);
+      transition: opacity 0.15s;
+    }
+
+    .countdown.show { opacity: 1; }
+
+    .countdown-num {
+      font-size: clamp(2.8rem, 11vw, 5rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-shadow: 0 0 48px rgba(74, 168, 255, 0.7);
+      animation: count-pop 0.8s ease-out;
+    }
+
+    @keyframes count-pop {
+      0% { transform: scale(1.7); opacity: 0; }
+      15% { opacity: 1; }
+      100% { transform: scale(1); opacity: 0.12; }
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0.9rem 1rem;
+      border-top: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.32);
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.7rem 1.4rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: #0a1528;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 22px rgba(74, 168, 255, 0.22);
+    }
+
+    button:active:not(:disabled) { transform: scale(0.97); }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    button.primary {
+      background: linear-gradient(180deg, #1c406f, #0e2244);
+      border-color: var(--accent);
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: linear-gradient(180deg, #2860a8, #153060);
+      box-shadow: 0 0 30px rgba(74, 168, 255, 0.4);
+    }
+
+    .hint {
+      margin-top: 0.8rem;
+      font-size: 0.64rem;
+      color: var(--dim);
+      letter-spacing: 0.05em;
+      text-align: center;
+      max-width: 40rem;
+      line-height: 1.55;
+    }
+
+    .hint kbd {
+      display: inline-block;
+      padding: 0.08em 0.38em;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.35);
+      font-size: 0.92em;
+    }
+
+    .log {
+      margin-top: 0.5rem;
+      font-size: 0.68rem;
+      color: var(--accent);
+      min-height: 1.3em;
+      letter-spacing: 0.06em;
+      text-align: center;
+      max-width: 44rem;
+      line-height: 1.4;
+      text-shadow: 0 0 18px rgba(74, 168, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <h1>Empress Heavy</h1>
+    <p class="sub">Launch pad · flight test</p>
+  </div>
+
+  <div class="stage-wrap" id="stageWrap">
+    <div class="hud">
+      <div class="hud-item">
+        <span class="label">ALTITUDE</span>
+        <strong><span id="alt">0</span> m</strong>
+      </div>
+      <div class="hud-item">
+        <span class="label">VELOCITY</span>
+        <strong><span id="vel">0</span> m/s</strong>
+      </div>
+      <div class="hud-item">
+        <span class="label">PHASE</span>
+        <strong id="phase" class="status-idle">PAD</strong>
+      </div>
+    </div>
+
+    <div id="stage">
+      <div class="sky" id="sky"></div>
+      <div class="stars" id="stars"></div>
+      <div class="horizon"></div>
+      <div class="vignette"></div>
+      <div class="fx-layer" id="fx"></div>
+
+      <div class="banner" id="banner">
+        <div class="banner-line">GOOD LUCK</div>
+        <div class="banner-line sub">EMPRESS HEAVY</div>
+        <div class="banner-sparkle">✦ · ✦ · ✦ · ✦ · ✦</div>
+      </div>
+
+      <div class="star-shine" id="starShine" aria-hidden="true">
+        <div class="ray" style="transform: rotate(0deg)"></div>
+        <div class="ray" style="transform: rotate(45deg)"></div>
+        <div class="ray" style="transform: rotate(90deg)"></div>
+        <div class="ray" style="transform: rotate(135deg)"></div>
+      </div>
+
+      <div class="credits" id="credits">
+        <span class="handle">@xbSTOOPID</span>
+        <span class="handle">@STOOPIDshow</span>
+        <span class="co">Co-Authored by <em>Grok 4.5</em></span>
+      </div>
+
+      <div class="countdown" id="countdown">
+        <div class="countdown-num" id="countdownNum">3</div>
+      </div>
+
+      <div class="world">
+<pre class="tower">  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+  ║
+══╩══
+║   ║
+╚═══╝</pre>
+
+<pre class="pad">    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+  ══╧════════════╧══
+ ░░   EMPRESS HEAVY  ░░
+ ██████████████████████</pre>
+
+        <div class="rocket-wrap" id="rocketWrap">
+          <div class="engine-glow" id="engineGlow"></div>
+<pre class="rocket" id="rocket">      /\
+     /  \
+    | ·· |
+    |    |
+    |████|
+    |    |
+    |····|
+    |    |
+    |████|
+    |    |
+    |····|
+    |    |
+    |████|
+    |    |
+    |····|
+   /|    |\
+  / |████| \
+ /  |    |  \
+/___|████|___\
+    |||||
+    |||||</pre>
+<pre class="exhaust" id="exhaust"></pre>
+        </div>
+
+<pre class="smoke" id="smoke">     ·  ···  ·  ···  ·
+  ·  ≈≈≈≈≈≈≈≈≈≈≈≈  ·
+ · · ··········· · ·
+·   ·  ······  ·   ·</pre>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button type="button" class="primary" id="btnLaunch">▶ Launch</button>
+      <button type="button" id="btnReset">reset</button>
+    </div>
+  </div>
+
+  <p class="hint">
+    Press launch and watch her climb.
+    Keys: <kbd>Space</kbd> launch · <kbd>R</kbd> reset
+  </p>
+  <p class="log" id="log">Systems go. Awaiting go for launch.</p>
+
+  <script>
+    const ROCKET = `      /\\
+     /  \\
+    | ·· |
+    |    |
+    |████|
+    |    |
+    |····|
+    |    |
+    |████|
+    |    |
+    |····|
+    |    |
+    |████|
+    |    |
+    |····|
+   /|    |\\
+  / |████| \\
+ /  |    |  \\
+/___|████|___\\
+    |||||
+    |||||`;
+
+    const EXHAUST = [
+`   |||||
+  (((((
+ )))))))
+  ░░░░░
+   ···`,
+`   |||||
+  )))))
+ ((((((
+  ░░░░░
+  · · ·`,
+`   |||||
+ (( (( (
+ )) )) )
+ ·░░░░░·
+   · ·`,
+`   |||||
+  (((((
+ )))))))
+  ▒▒▒▒▒
+   ···`,
+    ];
+
+    const COLORS = ["#ffd24a", "#ff6bcb", "#5ef0ff", "#b388ff", "#ff7a1a", "#7cffb2", "#fff"];
+
+    const stageWrap = document.getElementById("stageWrap");
+    const rocketWrap = document.getElementById("rocketWrap");
+    const rocketEl = document.getElementById("rocket");
+    const exhaustEl = document.getElementById("exhaust");
+    const engineGlow = document.getElementById("engineGlow");
+    const smokeEl = document.getElementById("smoke");
+    const skyEl = document.getElementById("sky");
+    const fxEl = document.getElementById("fx");
+    const bannerEl = document.getElementById("banner");
+    const starShineEl = document.getElementById("starShine");
+    const creditsEl = document.getElementById("credits");
+    const countdownEl = document.getElementById("countdown");
+    const countdownNum = document.getElementById("countdownNum");
+    const btnLaunch = document.getElementById("btnLaunch");
+    const btnReset = document.getElementById("btnReset");
+    const logEl = document.getElementById("log");
+    const altEl = document.getElementById("alt");
+    const velEl = document.getElementById("vel");
+    const phaseEl = document.getElementById("phase");
+    const starsEl = document.getElementById("stars");
+    const stageEl = document.getElementById("stage");
+
+    /*
+      Punchy ascent (the version that felt good) + shrink while climbing:
+      - Full-power climb through most of the sky
+      - Scale down mid-flight while still hauling upward
+      - Speck near the top → star-shine pop
+    */
+    const MAX_ALT = 380;
+    const FIREWORKS_ALT = 115;
+    const SHRINK_START = 0.32;
+    const VANISH_AT = 0.90;
+
+    let state = "idle";
+    let alt = 0, vel = 0, t = 0;
+    let raf = null, last = 0;
+    let exhaustFrame = 0, exhaustTimer = 0;
+    let trailTimer = 0;
+    let fireworksStarted = false;
+    let fwTimer = 0;
+    let vanished = false;
+    let creditsShown = false;
+    let creditsTimer = null;
+
+    function buildStars() {
+      let html = "";
+      for (let i = 0; i < 55; i++) {
+        const x = Math.random() * 100;
+        const y = Math.random() * 88;
+        const d = 2 + Math.random() * 4;
+        const delay = Math.random() * 3;
+        const cls = Math.random() > 0.88 ? "bright" : Math.random() > 0.5 ? "dim" : "";
+        html += `<div class="star ${cls}" style="left:${x}%;top:${y}%;--d:${d}s;--delay:${delay}s"></div>`;
+      }
+      starsEl.innerHTML = html;
+    }
+
+    function setPhase(label, cls) {
+      phaseEl.textContent = label;
+      phaseEl.className = cls;
+    }
+
+    function log(msg) { logEl.textContent = msg; }
+
+    function shake(hard = false) {
+      stageWrap.classList.remove("shake", "shake-hard");
+      void stageWrap.offsetWidth;
+      stageWrap.classList.add(hard ? "shake-hard" : "shake");
+    }
+
+    function updateHud() {
+      altEl.textContent = Math.max(0, Math.round(alt));
+      velEl.textContent = Math.round(vel);
+    }
+
+    function updateSky() {
+      skyEl.classList.remove("high", "space");
+      if (alt > MAX_ALT * 0.55) skyEl.classList.add("space");
+      else if (alt > MAX_ALT * 0.28) skyEl.classList.add("high");
+    }
+
+    /** progress 0 at pad → 1 at max alt */
+    function flightProgress() {
+      return Math.min(1, Math.max(0, alt / MAX_ALT));
+    }
+
+    /**
+     * Continuous hard climb + shrink-while-ascending.
+     * Ship stays readable as it gets small high up, then star-shines out.
+     */
+    function applyTransform() {
+      if (vanished) {
+        rocketWrap.style.opacity = "0";
+        return;
+      }
+
+      const p = flightProgress();
+      const stageH = stageEl.clientHeight || 500;
+      const fontSize = parseFloat(getComputedStyle(document.querySelector(".world")).fontSize) || 13;
+      const padBottomPx = 2 * fontSize;
+
+      // Rise from pad to just past the top of the stage (full exit)
+      // Peak visual travel — ship clears the frame when p is high
+      const exitPx = stageH - padBottomPx + fontSize * 22;
+      // Slight ease-out so early climb has punch, late climb is smoother
+      const ease = 1 - Math.pow(1 - p, 1.15);
+      const yPx = -(ease * exitPx);
+
+      // Shrink starts mid-sky WHILE still climbing hard (not a slow hover)
+      let scale = 1;
+      if (p > SHRINK_START) {
+        const sp = Math.min(1, (p - SHRINK_START) / (VANISH_AT - SHRINK_START));
+        // Smooth ease: 1 → ~0.1 — clear zoom-out, not instant speck
+        const se = sp * sp * (3 - 2 * sp); // smoothstep
+        scale = 1 - se * 0.9;
+        scale = Math.max(0.1, scale);
+      }
+
+      // Only soft-fade in the last beat into the star
+      let opacity = 1;
+      if (p > 0.86) {
+        opacity = Math.max(0.2, 1 - (p - 0.86) / (VANISH_AT - 0.86));
+      }
+      if (p >= VANISH_AT) opacity = 0;
+
+      let sway = 0;
+      if (state === "ascent" || state === "liftoff") {
+        sway = Math.sin(t * 0.0035) * 0.2 * Math.min(1, scale);
+      }
+
+      rocketEl.classList.toggle("distant", p > 0.5 && !vanished);
+      rocketWrap.style.opacity = String(opacity);
+      rocketWrap.style.transform =
+        `translate(${sway}ch, ${yPx}px) scale(${scale})`;
+
+      // Exhaust rides with the ship, fades as she becomes a speck
+      if (p > 0.55) {
+        const eOp = Math.max(0, 1.15 - p * 1.35);
+        exhaustEl.style.opacity = String(eOp);
+        engineGlow.style.opacity = String(eOp * 0.85);
+      } else {
+        exhaustEl.style.opacity = "";
+        engineGlow.style.opacity = "";
+      }
+    }
+
+    function triggerStarVanish() {
+      if (vanished) return;
+      vanished = true;
+      setExhaust(false);
+
+      // Capture last on-screen position BEFORE hiding
+      const rect = rocketWrap.getBoundingClientRect();
+      const stageRect = stageEl.getBoundingClientRect();
+      let x = rect.left + rect.width / 2 - stageRect.left;
+      let y = rect.top + rect.height * 0.3 - stageRect.top;
+      if (!isFinite(x) || x < 40 || x > stageRect.width - 40) x = stageRect.width * 0.5;
+      if (!isFinite(y) || y < 30 || y > stageRect.height * 0.55) y = stageRect.height * 0.18;
+
+      rocketWrap.style.opacity = "0";
+
+      starShineEl.style.left = x + "px";
+      starShineEl.style.top = y + "px";
+      starShineEl.classList.remove("show");
+      void starShineEl.offsetWidth;
+      starShineEl.classList.add("show");
+
+      // Soft glitter around the vanish point
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => {
+          fireworkBurst(
+            x + (Math.random() - 0.5) * 40,
+            y + (Math.random() - 0.5) * 30,
+            12 + Math.floor(Math.random() * 10)
+          );
+        }, i * 100);
+      }
+
+      setPhase("DEPARTED", "status-celebrate");
+      log("Empress Heavy — a star among stars. Good luck up there.");
+    }
+
+    function showCredits() {
+      if (creditsShown) return;
+      creditsShown = true;
+      creditsEl.classList.add("show");
+    }
+
+    function setExhaust(on) {
+      if (!on) {
+        exhaustEl.classList.remove("on");
+        exhaustEl.textContent = "";
+        engineGlow.classList.remove("on");
+        rocketEl.classList.remove("boosting");
+        return;
+      }
+      exhaustEl.classList.add("on");
+      engineGlow.classList.add("on");
+      rocketEl.classList.add("boosting");
+      exhaustEl.textContent = EXHAUST[exhaustFrame % EXHAUST.length];
+    }
+
+    function tickExhaust(dt) {
+      exhaustTimer += dt;
+      if (exhaustTimer > 65) {
+        exhaustTimer = 0;
+        exhaustFrame++;
+        if (exhaustEl.classList.contains("on")) {
+          exhaustEl.textContent = EXHAUST[exhaustFrame % EXHAUST.length];
+        }
+      }
+    }
+
+    function spawnTrail() {
+      if (!["ascent", "liftoff"].includes(state) || vanished) return;
+      const p = flightProgress();
+      if (p > VANISH_AT) return;
+      const rect = rocketWrap.getBoundingClientRect();
+      const stageRect = stageEl.getBoundingClientRect();
+      if (rect.bottom < stageRect.top - 10 || rect.top > stageRect.bottom) return;
+      const d = document.createElement("div");
+      d.className = "trail-dot";
+      const sc = p > SHRINK_START
+        ? Math.max(0.25, 1 - (p - SHRINK_START) / (VANISH_AT - SHRINK_START) * 0.85)
+        : 1;
+      d.style.left = (rect.left + rect.width / 2 - stageRect.left + (Math.random() - 0.5) * 10 * sc) + "px";
+      d.style.top = (rect.bottom - stageRect.top - 2) + "px";
+      d.style.transform = `scale(${sc})`;
+      fxEl.appendChild(d);
+      setTimeout(() => d.remove(), 550);
+    }
+
+    function fireworkBurst(x, y, count = 28) {
+      const burst = document.createElement("div");
+      burst.className = "fw-burst";
+      burst.style.left = x + "px";
+      burst.style.top = y + "px";
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+
+      for (let i = 0; i < count; i++) {
+        const spark = document.createElement("div");
+        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+        const dist = 40 + Math.random() * 90;
+        const dur = 0.7 + Math.random() * 0.7;
+        spark.className = "fw-spark" + (Math.random() > 0.6 ? " long" : "");
+        spark.style.setProperty("--tx", Math.cos(angle) * dist + "px");
+        spark.style.setProperty("--ty", Math.sin(angle) * dist + "px");
+        spark.style.setProperty("--dur", dur + "s");
+        spark.style.setProperty("--c", Math.random() > 0.3 ? color : COLORS[Math.floor(Math.random() * COLORS.length)]);
+        burst.appendChild(spark);
+      }
+      fxEl.appendChild(burst);
+      setTimeout(() => burst.remove(), 1600);
+    }
+
+    function startFireworks() {
+      if (fireworksStarted) return;
+      fireworksStarted = true;
+      setPhase("CELEBRATION", "status-celebrate");
+      log("GOOD LUCK EMPRESS HEAVY ✨");
+      bannerEl.classList.add("show");
+
+      const w = stageEl.clientWidth;
+      const h = stageEl.clientHeight;
+
+      // Big opening volley around the banner
+      const centers = [
+        [w * 0.5, h * 0.22],
+        [w * 0.28, h * 0.28],
+        [w * 0.72, h * 0.26],
+        [w * 0.4, h * 0.18],
+        [w * 0.6, h * 0.2],
+      ];
+      centers.forEach((c, i) => {
+        setTimeout(() => fireworkBurst(c[0], c[1], 32 + Math.floor(Math.random() * 12)), i * 180);
+      });
+
+      // Credits pop in after the opening volley settles
+      if (creditsTimer) clearTimeout(creditsTimer);
+      creditsTimer = setTimeout(showCredits, 2200);
+    }
+
+    function tickFireworks(dt) {
+      if (!fireworksStarted || state === "idle") return;
+      fwTimer += dt;
+      if (fwTimer > 380) {
+        fwTimer = 0;
+        const w = stageEl.clientWidth;
+        const h = stageEl.clientHeight;
+        const x = w * (0.15 + Math.random() * 0.7);
+        const y = h * (0.08 + Math.random() * 0.35);
+        fireworkBurst(x, y, 22 + Math.floor(Math.random() * 16));
+      }
+    }
+
+    function loop(now) {
+      if (!last) last = now;
+      const dt = Math.min(40, now - last);
+      last = now;
+      t += dt;
+
+      tickExhaust(dt);
+      trailTimer += dt;
+      if (trailTimer > 40) { trailTimer = 0; spawnTrail(); }
+      tickFireworks(dt);
+
+      if (state === "liftoff") {
+        setExhaust(true);
+        if (t > 450) {
+          state = "ascent";
+          setPhase("ASCENT", "status-boost");
+          log("Liftoff confirmed. Empress Heavy is climbing.");
+          shake(true);
+        }
+      }
+
+      if (state === "ascent") {
+        const p = flightProgress();
+
+        // Full-power continuous climb — punchy, not a slow drift
+        vel += 0.048 * dt;
+        if (vel > 125) vel = 125;
+        alt += vel * (dt / 1000) * 2.2;
+
+        if (p < 0.82) setExhaust(true);
+        else setExhaust(false);
+
+        if (alt >= FIREWORKS_ALT && !fireworksStarted) {
+          startFireworks();
+        }
+
+        if (p >= SHRINK_START && p < VANISH_AT && phaseEl.textContent === "ASCENT") {
+          setPhase("SPACEBOUND", "status-flight");
+          log("Empress Heavy shrinking into the black…");
+        }
+
+        if (p >= VANISH_AT && !vanished) {
+          triggerStarVanish();
+        }
+
+        if (alt >= MAX_ALT) {
+          alt = MAX_ALT;
+          vel = 0;
+          state = "orbit";
+          if (!vanished) triggerStarVanish();
+          setExhaust(false);
+          let extra = 0;
+          const fin = (n) => {
+            if (!last) last = n;
+            const d = Math.min(40, n - last);
+            last = n;
+            extra += d;
+            tickFireworks(d);
+            if (extra < 5000) {
+              raf = requestAnimationFrame(fin);
+            }
+          };
+          raf = requestAnimationFrame(fin);
+          applyTransform();
+          updateHud();
+          updateSky();
+          return;
+        }
+      }
+
+      applyTransform();
+      updateHud();
+      updateSky();
+
+      if (["liftoff", "ascent"].includes(state)) {
+        raf = requestAnimationFrame(loop);
+      }
+    }
+
+    function wait(ms) {
+      return new Promise((r) => setTimeout(r, ms));
+    }
+
+    async function launch() {
+      if (!["idle", "orbit"].includes(state)) return;
+      resetVisual(false);
+      state = "countdown";
+      btnLaunch.disabled = true;
+      setPhase("COUNTDOWN", "status-boost");
+
+      for (const n of ["3", "2", "1", "IGNITION"]) {
+        countdownNum.textContent = n;
+        countdownNum.style.animation = "none";
+        void countdownNum.offsetWidth;
+        countdownNum.style.animation = "";
+        countdownEl.classList.add("show");
+        log(n === "IGNITION" ? "Ignition sequence start." : `T-${n}…`);
+        await wait(n === "IGNITION" ? 650 : 800);
+      }
+      countdownEl.classList.remove("show");
+
+      state = "liftoff";
+      t = 0; last = 0; alt = 0; vel = 0;
+      fireworksStarted = false;
+      fwTimer = 0;
+      vanished = false;
+      creditsShown = false;
+      if (creditsTimer) clearTimeout(creditsTimer);
+      creditsEl.classList.remove("show");
+      setPhase("LIFTOFF", "status-boost");
+      log("T-0. Liftoff — Empress Heavy.");
+      smokeEl.classList.remove("on");
+      void smokeEl.offsetWidth;
+      smokeEl.classList.add("on");
+      setExhaust(true);
+      rocketEl.textContent = ROCKET;
+      rocketEl.classList.remove("distant");
+      rocketWrap.style.opacity = "1";
+      rocketWrap.style.transform = "translate(0, 0) scale(1)";
+      starShineEl.classList.remove("show");
+      shake(true);
+      raf = requestAnimationFrame(loop);
+    }
+
+    function resetVisual(full = true) {
+      if (raf) cancelAnimationFrame(raf);
+      raf = null; last = 0;
+      state = "idle";
+      alt = 0; vel = 0; t = 0;
+      fireworksStarted = false;
+      fwTimer = 0;
+      vanished = false;
+      creditsShown = false;
+      if (creditsTimer) clearTimeout(creditsTimer);
+      rocketEl.textContent = ROCKET;
+      rocketEl.classList.remove("boosting", "distant");
+      rocketWrap.style.transform = "translate(0, 0) scale(1)";
+      rocketWrap.style.opacity = "1";
+      exhaustEl.style.opacity = "";
+      engineGlow.style.opacity = "";
+      setExhaust(false);
+      smokeEl.classList.remove("on");
+      countdownEl.classList.remove("show");
+      bannerEl.classList.remove("show");
+      starShineEl.classList.remove("show");
+      creditsEl.classList.remove("show");
+      skyEl.classList.remove("high", "space");
+      fxEl.innerHTML = "";
+      btnLaunch.disabled = false;
+      setPhase("PAD", "status-idle");
+      updateHud();
+      if (full) log("Pad reset. Systems go. Awaiting go for launch.");
+    }
+
+    btnLaunch.addEventListener("click", launch);
+    btnReset.addEventListener("click", () => resetVisual(true));
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!btnLaunch.disabled && ["idle", "orbit"].includes(state)) launch();
+      }
+      if (e.key === "r" || e.key === "R") resetVisual(true);
+    });
+
+    buildStars();
+    rocketEl.textContent = ROCKET;
+    updateHud();
+  </script>
+</body>
+</html>

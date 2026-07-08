@@ -9,6 +9,7 @@ Public brand tools for **THE STOOPID SHOW** (@stoopidshow) — hosted free on Gi
 | [Verdict Card Generator](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_verdict_cards.html) | STOOPID vs STUPID — type the behavior on trial, pick the verdict, download a share-ready card |
 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
 | [Stoopid Defense](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_defense.html) | Neon laser tower defense — defend the signal from waves of slop; every collapse gets a verdict |
+| [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
