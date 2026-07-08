@@ -79,6 +79,20 @@
   .btn.early:hover{background:var(--orange); color:#000;}
   @keyframes earlyblink{50%{opacity:.55;}}
   .btn.mini{font-size:11px; padding:8px 12px; letter-spacing:2px;}
+  /* SIGNAL BOOSTS — active abilities spent mid-transmission */
+  .boostbar{display:flex; gap:8px; justify-content:center; margin:8px auto 2px; flex-wrap:wrap; width:min(94vw,640px);}
+  .boost{background:#000; border:1px solid #333; color:#888; font-family:inherit; font-size:11px;
+    letter-spacing:1px; padding:8px 11px; cursor:pointer; text-transform:uppercase; min-width:118px; text-align:center;}
+  .boost small{display:block; font-size:9px; margin-top:3px; color:#666; letter-spacing:.04em; text-transform:none;}
+  .boost.b-grass{border-color:var(--teal); color:var(--teal);}
+  .boost.b-mute{border-color:var(--purple); color:var(--purple);}
+  .boost.b-ratio{border-color:var(--red); color:var(--red);}
+  .boost.b-logoff{border-color:var(--orange); color:var(--orange);}
+  .boost.cool,.boost.cant{opacity:.35; cursor:not-allowed;}
+  .boost.ready{box-shadow:0 0 11px -2px currentColor;}
+  .btn.deal{border-color:var(--orange); color:var(--orange);}
+  .btn.deal:hover{background:var(--orange); color:#000;}
+  .btn.deal.on{background:var(--orange); color:#000; animation:earlyblink 1s steps(2) infinite;}
   .help{font-size:11px; color:#555; letter-spacing:2px; text-align:center; margin-top:6px;}
   .panel{display:none; width:min(94vw,640px); margin:10px auto 0; border:1px solid #333; padding:12px 14px;
     font-size:12px; letter-spacing:1px; text-align:center;}
@@ -181,13 +195,21 @@
   </div>
 </div>
 
+<div class="boostbar" id="boostBar" style="display:none">
+  <button class="boost b-grass" id="bstGrass" data-boost="grass">[Q] TOUCH GRASS<small class="binfo"></small></button>
+  <button class="boost b-mute" id="bstMute" data-boost="mute">[W] MUTE<small class="binfo"></small></button>
+  <button class="boost b-ratio" id="bstRatio" data-boost="ratio">[E] RATIO<small class="binfo"></small></button>
+  <button class="boost b-logoff" id="bstLogoff" data-boost="logoff">[R] LOG OFF<small class="binfo"></small></button>
+</div>
+
 <div class="controls">
   <button class="btn" id="waveBtn">TRANSMIT WAVE 1</button>
+  <button class="btn mini deal" id="dealBtn" style="display:none">DOUBLE OR NOTHING: OFF</button>
   <button class="btn mini flip" id="ocBtn" style="display:none">OVERCLOCK</button>
   <button class="btn mini alt" id="speedBtn">SPEED &times;1</button>
   <button class="btn mini alt" id="soundBtn">SOUND: ON</button>
 </div>
-<div class="help">1-4 ARM &middot; CLICK GRID TO BUILD &middot; CLICK TOWER TO UPGRADE &middot; SPACE TRANSMITS &middot; F = SPEED &middot; T = TARGETING &middot; ESC CANCELS</div>
+<div class="help">1-4 ARM &middot; CLICK GRID TO BUILD &middot; SPACE TRANSMITS &middot; G = DEAL &middot; Q W E R = BOOSTS &middot; F = SPEED &middot; T = TARGETING</div>
 
 <div class="result" id="resultCard">
   <div class="label">OFFICIAL GRID COLLAPSE REPORT</div>
@@ -219,7 +241,7 @@
   </div>
 </div>
 
-<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.35 &middot; the towers were paid in signal</footer>
+<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.36 &middot; the towers were paid in signal</footer>
 
 <script>
 (function(){
@@ -357,6 +379,7 @@
       spawnList, spawnTimer, kills, built, spent, shake, cause, lastVerdict,
       score, streak, perfect, waveMeta, banner, flash, earlyReady,
       ocLevel, ocCost,
+      freezeT, muteT, slowAllT, dealArmed, dealWave, dealStreak, waveHpMul, uiT,
       armed=null, selected=null, hoverCell=null, pulseT=0, speedMul=1;
   let best=+(localStorage.getItem("stoopid_defense_best")||0);
   let bestScore=+(localStorage.getItem("stoopid_defense_best_score")||0);
@@ -371,6 +394,10 @@
     spawnList=[]; spawnTimer=0; kills=0; built=0; spent=0; shake=0;
     score=0; streak=0; perfect=0; waveMeta={}; banner=null; flash=null; earlyReady=false;
     ocLevel=0; ocCost=400; syncOc();
+    freezeT=0; muteT=0; slowAllT=0; uiT=0;
+    dealArmed=false; dealWave=false; dealStreak=1; waveHpMul=1;
+    for(const id in BOOSTS){ boostState[id]={cost:BOOSTS[id].cost0, cd:0, uses:0}; }
+    syncBoosts(); syncDeal();
     cause="unmoderated slop"; lastVerdict=null; armed=null; selected=null;
     document.getElementById("resultCard").classList.remove("show");
     waveBtn.disabled=false; waveBtn.textContent="TRANSMIT WAVE 1"; waveBtn.classList.remove("early");
@@ -461,7 +488,7 @@
     $("hudScore").textContent=score;
     const st=$("hudStreak"); st.textContent=streak; st.className=streak>=2?"streaking":"";
     $("hudBest").textContent=bestScore;
-    syncBar(); syncOc();
+    syncBar(); syncOc(); syncBoosts(); syncDeal();
   }
   function syncBar(){
     document.querySelectorAll(".twr").forEach(btn=>{
@@ -544,16 +571,29 @@
       setStatus("early transmission. +"+b+" signal. reckless. respected.","flip");
     }
     wave++; state="wave"; earlyReady=false;
+    // did the player take the algorithm's deal on this wave?
+    dealWave = dealArmed && wave>=DEAL_UNLOCK;
+    waveHpMul = dealWave ? 1.55 : 1;
     // per-wave ledger — early transmits stack waves, each still gets its own streak credit
-    waveMeta[wave]={leaked:false, alive:0, doneSpawning:false, credited:false};
-    spawnList=buildSpawns(wave); spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
+    waveMeta[wave]={leaked:false, alive:0, doneSpawning:false, credited:false, deal:dealWave};
+    spawnList=buildSpawns(wave);
+    if(dealWave){ // double or nothing: it comes harder — +HP (above) and +count
+      const extra=[]; for(let i=0;i<spawnList.length;i+=2) extra.push({t:spawnList[i].t, g:spawnList[i].g});
+      spawnList=spawnList.concat(extra);
+    }
+    spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
     waveBtn.disabled=true; waveBtn.classList.remove("early");
     waveBtn.textContent="WAVE "+wave+" IN PROGRESS";
     const boss=wave%5===0;
     const line = WAVELINES[wave-1] || (boss ? "wave "+wave+". THE ALGORITHM has entered the grid."
       : "wave "+wave+". the slop no longer knocks.");
-    setStatus(line, boss?"bad":"");
-    setBanner("WAVE "+wave, boss?RED:TEAL, boss?"THE ALGORITHM APPROACHES":"");
+    if(dealWave){
+      setStatus("DEAL WAVE "+wave+". you took the deal. it comes bigger and meaner. leaks cost double. clear it clean.","flip");
+      setBanner("DOUBLE OR NOTHING", ORANGE, "clear it clean — win +"+dealJackpot(wave));
+    } else {
+      setStatus(line, boss?"bad":"");
+      setBanner("WAVE "+wave, boss?RED:TEAL, boss?"THE ALGORITHM APPROACHES":"");
+    }
     sfx.horn(); syncHud(); syncForecast();
   }
   // a wave is settled when it has fully spawned and its last foe is gone —
@@ -562,6 +602,25 @@
     const m=waveMeta[w];
     if(!m || m.credited || !m.doneSpawning || m.alive>0) return;
     m.credited=true;
+    // the algorithm's deal settles here — double, or nothing
+    if(m.deal){
+      if(!m.leaked){
+        streak++; perfect++;
+        const jack=dealJackpot(w);                                   // signal — big, feeds the boost loop
+        const jscore=Math.round((45+15*w)*Math.min(5,dealStreak));   // score — leaderboard-relevant but stays inside the registry guard (wave*3000+5000)
+        cash+=jack; score+=jscore;
+        setBanner("THE DEAL PAID", ORANGE, "+"+jack+" signal · let it ride?");
+        setStatus("the deal paid. +"+jack+" signal. double or nothing again? the algorithm dares you.","flip");
+        dealStreak=Math.min(8, dealStreak+1); // let it ride — stays armed, pot grows
+        sfx.streakup();
+      } else {
+        streak=0; dealStreak=1; dealArmed=false;
+        setBanner("THE DEAL COLLAPSED", RED, "you leaked. nothing.");
+        setStatus("you took the deal and leaked. nothing. the algorithm keeps its winnings and your dignity.","bad");
+      }
+      score+=w*10; syncHud(); syncDeal();
+      return;
+    }
     let bonus=30+w*5;
     if(!m.leaked){
       streak++; perfect++;
@@ -601,7 +660,7 @@
   // cap a type would have at a given level (for unlock announcements)
   function towerCapAt(type,lvl){ const g=GATE[type]; return g.cap0 + Math.max(0, Math.floor((lvl-g.unlock)/g.capEvery)); }
   function spawn(type,dOverride,hpMul,wv){
-    const f=FOES[type], hs=hpScale(wave)*(hpMul||1);
+    const f=FOES[type], hs=hpScale(wave)*(hpMul||1)*(waveHpMul||1);
     const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
     const w = wv===undefined ? wave : wv;
     if(waveMeta[w]) waveMeta[w].alive++;
@@ -623,7 +682,7 @@
     return {v:"STUPID", r:"insufficient nonsense. the grid was simply unattended."};
   }
   function gameOver(){
-    state="over"; sfx.over();
+    state="over"; sfx.over(); syncBoosts(); syncDeal();
     lastVerdict=verdictFor(wave);
     setStatus("signal lost. the slop is doing a victory podcast.","bad");
     waveBtn.disabled=true; waveBtn.classList.remove("early"); syncForecast();
@@ -837,6 +896,11 @@
     else if(e.key===" "){ e.preventDefault(); if(!waveBtn.disabled) startWave(); }
     else if(e.key==="f"||e.key==="F"){ cycleSpeed(); }
     else if(e.key==="t"||e.key==="T"){ cycleTarget(); }
+    else if(e.key==="q"||e.key==="Q"){ useBoost("grass"); }
+    else if(e.key==="w"||e.key==="W"){ useBoost("mute"); }
+    else if(e.key==="e"||e.key==="E"){ useBoost("ratio"); }
+    else if(e.key==="r"||e.key==="R"){ useBoost("logoff"); }
+    else if(e.key==="g"||e.key==="G"){ toggleDeal(); }
     else if(e.key>="1"&&e.key<="4"){ armType(["pulse","beam","nova","flip"][+e.key-1]); }
   });
   $("upBtn").addEventListener("click",()=>{
@@ -877,7 +941,8 @@
     return bestF;
   }
   function damage(f,dmg,col){
-    f.hp-=dmg*(1-Math.max(f.res||0, f.auraRes||0));
+    const resist = muteT>0 ? 0 : Math.max(f.res||0, f.auraRes||0); // MUTE strips all reach
+    f.hp-=dmg*(1-resist);
     if(f.hp<=0&&!f.dead){
       f.dead=true; kills++;
       cash+=f.bounty; score+=f.shape==="hex"?150:10;
@@ -924,6 +989,98 @@
     if(parts.length>380) parts.splice(0,parts.length-380);
   }
 
+  /* ---------- SIGNAL BOOSTS (spend the hoard mid-transmission) ----------
+     the build menu was the whole game; now the wave is a game too. four powers,
+     bought with signal, fired live. they are also the bottomless money sink the
+     late game was missing — every one costs more than the last. */
+  const BOOST_UNLOCK=3, DEAL_UNLOCK=3;
+  const BOOSTS={
+    grass: {name:"TOUCH GRASS", btn:"bstGrass",  col:TEAL,   cost0:100, mult:1.5, cool:10, dur:2.6, key:"q"},
+    mute:  {name:"MUTE",        btn:"bstMute",   col:PURPLE, cost0:130, mult:1.5, cool:12, dur:6,   key:"w"},
+    ratio: {name:"RATIO",       btn:"bstRatio",  col:RED,    cost0:160, mult:1.7, cool:15, dur:0,   key:"e"},
+    logoff:{name:"LOG OFF",     btn:"bstLogoff", col:ORANGE, cost0:120, mult:1.5, cool:11, dur:5,   key:"r"}
+  };
+  const boostState={};
+  function dealJackpot(w){ return Math.round((100 + 45*w) * dealStreak); }
+  function strongestFoe(){
+    let bf=null, bv=-1;
+    for(const f of foes){ if(f.hp<=0||f.d<0) continue; if(f.hp>bv){ bv=f.hp; bf=f; } }
+    return bf;
+  }
+  function useBoost(id){
+    if(state==="over"||wave<BOOST_UNLOCK) return;
+    const b=BOOSTS[id], st=boostState[id];
+    if(state!=="wave" || !foes.length){ setStatus("boosts fire mid-transmission. bring the slop first.","bad"); return; }
+    if(st.cd>0){ setStatus(b.name.toLowerCase()+" recharging — "+Math.ceil(st.cd)+"s.","bad"); return; }
+    if(id==="ratio" && !strongestFoe()){ setStatus("nothing loud enough to ratio yet.","bad"); return; }
+    if(cash<st.cost){ setStatus("insufficient signal. "+b.name.toLowerCase()+" costs "+st.cost+".","bad"); return; }
+    const paid=st.cost;
+    cash-=paid; spent+=paid; st.uses++; st.cd=b.cool; st.cost=Math.round(st.cost*b.mult);
+    texts.push({x:W/2,y:H/2-46,txt:b.name+" −"+paid,life:1.1,col:b.col});
+    if(id==="grass"){
+      freezeT=Math.max(freezeT,b.dur); flash={col:TEAL,life:0.14,max:0.14};
+      rings.push({x:W/2,y:H/2,r:20,maxr:360,col:TEAL,life:0.5});
+      setStatus("touch grass. the feed is frozen. breathe. it does not last.","good");
+    } else if(id==="mute"){
+      muteT=Math.max(muteT,b.dur); flash={col:PURPLE,life:0.14,max:0.14};
+      setStatus("muted. every sponsor and manager just lost their reach. hit them now.","good");
+    } else if(id==="logoff"){
+      slowAllT=Math.max(slowAllT,b.dur); flash={col:ORANGE,life:0.12,max:0.12};
+      rings.push({x:W/2,y:H/2,r:20,maxr:360,col:ORANGE,life:0.5});
+      setStatus("everyone log off. the whole grid crawls. use the quiet.","flip");
+    } else if(id==="ratio"){
+      const tgt=strongestFoe(), p=posAt(tgt.d);
+      rings.push({x:p.x,y:p.y,r:8,maxr:80,col:RED,life:0.45});
+      texts.push({x:p.x,y:p.y-16,txt:"RATIO'D",life:1.0,col:RED});
+      shake=Math.min(shake+5,12);
+      damage(tgt, tgt.hp+99999, RED); // delete the loudest thing on the grid
+      setStatus("ratio'd the loudest thing on the grid. you cannot argue with the algorithm. you can delete it.","good");
+    }
+    sfx.streakup(); syncHud();
+  }
+  function syncBoosts(){
+    const bar=$("boostBar");
+    if(state==="over" || wave<BOOST_UNLOCK){ bar.style.display="none"; return; }
+    bar.style.display="";
+    const inWave = state==="wave" && foes.length>0;
+    for(const id in BOOSTS){
+      const b=BOOSTS[id], st=boostState[id], el=$(b.btn); if(!st||!el) continue;
+      const usable = inWave && st.cd<=0 && cash>=st.cost && !(id==="ratio"&&!strongestFoe());
+      el.classList.toggle("cool", st.cd>0);
+      el.classList.toggle("cant", !usable && st.cd<=0);
+      el.classList.toggle("ready", usable);
+      const info=el.querySelector(".binfo");
+      if(info) info.textContent = st.cd>0 ? ("RECHARGE "+Math.ceil(st.cd)+"s") : (st.cost+" signal");
+    }
+  }
+  function toggleDeal(){
+    if(state==="over") return;
+    if(state!=="build"){ setStatus("the deal is struck between transmissions, not during one.","bad"); return; }
+    if(wave+1<DEAL_UNLOCK) return;
+    dealArmed=!dealArmed;
+    if(dealArmed) setStatus("double or nothing armed. wave "+(wave+1)+" comes bigger, meaner, leaks cost double — clear it clean, win +"+dealJackpot(wave+1)+".","flip");
+    else setStatus("deal's off. safe. the algorithm respects nothing about safe.","");
+    syncDeal();
+  }
+  function syncDeal(){
+    const el=$("dealBtn");
+    if(state==="build"){
+      if(wave+1<DEAL_UNLOCK){ el.style.display="none"; return; }
+      el.style.display=""; el.disabled=false;
+      el.classList.toggle("on", dealArmed);
+      el.textContent = dealArmed ? ("DEAL ON — WIN +"+dealJackpot(wave+1)) : "DOUBLE OR NOTHING: OFF";
+    } else if(state==="wave" && dealWave){
+      el.style.display=""; el.disabled=true; el.classList.add("on");
+      el.textContent="DEAL WAVE — +"+dealJackpot(wave)+" ON THE LINE";
+    } else {
+      el.style.display="none";
+    }
+  }
+  document.querySelectorAll(".boost").forEach(btn=>{
+    btn.addEventListener("click",()=>useBoost(btn.dataset.boost));
+  });
+  $("dealBtn").addEventListener("click", toggleDeal);
+
   /* ---------- UPDATE ---------- */
   function update(dt){
     pulseT+=dt;
@@ -958,6 +1115,8 @@
         }
       }
     }
+    // LOG OFF — the whole grid crawls
+    if(slowAllT>0){ for(const f of foes) f.slowF=Math.min(f.slowF,0.55); }
     // the manager's aura — nearby slop gets corporate protection
     for(const f of foes) f.auraRes=0;
     for(const m of foes){
@@ -973,7 +1132,7 @@
     for(const f of foes){
       if(f.hp<=0) continue;
       const rage = f.shape==="doom" ? 1+0.9*(1-Math.max(0,f.hp)/f.maxhp) : 1;
-      f.d+=f.sp*f.slowF*rage*dt;
+      if(freezeT<=0) f.d+=f.sp*f.slowF*rage*dt; // TOUCH GRASS freezes the feed
       // dart + boss leave trails
       if((f.shape==="dart"||f.shape==="hex") && Math.random()<dt*30){
         const p=posAt(f.d);
@@ -981,7 +1140,8 @@
       }
       if(f.d>=TOTAL){
         f.hp=0; f.dead=true;
-        lives-=f.leak; shake=Math.min(shake+6,10); sfx.leak();
+        const dealLeak = waveMeta[f.wv] && waveMeta[f.wv].deal;
+        lives-=f.leak*(dealLeak?2:1); shake=Math.min(shake+(dealLeak?9:6),12); sfx.leak();
         if(waveMeta[f.wv]){ waveMeta[f.wv].leaked=true; waveMeta[f.wv].alive--; }
         streak=0;
         cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
@@ -992,7 +1152,7 @@
               : "unmoderated slop";
         const e=PTS[PTS.length-1];
         rings.push({x:e.x-26,y:e.y,r:6,maxr:40,col:RED,life:0.35});
-        setStatus(FOES[f.type].label+" reached the signal core. integrity -"+f.leak+".","bad");
+        setStatus(FOES[f.type].label+" reached the signal core. integrity -"+(f.leak*(dealLeak?2:1))+(dealLeak?" (the deal collects double)":"")+".","bad");
         syncHud();
         if(lives<=0){ lives=0; syncHud(); gameOver(); return; }
         creditWave(f.wv);
@@ -1047,6 +1207,12 @@
     if(flash){ flash.life-=dt; if(flash.life<=0) flash=null; }
     for(const m of MOTES){ m.y-=m.s*dt; if(m.y<-4){ m.y=H+4; m.x=Math.random()*W; } }
     shake*=Math.pow(0.0018,dt);
+    // boost effect + cooldown clocks (game-time, so they scale with speed)
+    if(freezeT>0) freezeT=Math.max(0,freezeT-dt);
+    if(muteT>0) muteT=Math.max(0,muteT-dt);
+    if(slowAllT>0) slowAllT=Math.max(0,slowAllT-dt);
+    for(const id in boostState){ const st=boostState[id]; if(st.cd>0) st.cd=Math.max(0,st.cd-dt); }
+    uiT+=dt; if(uiT>=0.2){ uiT=0; syncBoosts(); }
   }
 
   /* ---------- RENDER ---------- */
@@ -1392,6 +1558,20 @@
       cx.save();
       cx.globalAlpha=0.1*(flash.life/flash.max);
       cx.fillStyle=flash.col; cx.fillRect(0,0,W,H);
+      cx.restore();
+    }
+
+    // active-boost overlay — the grid tints while a power runs
+    if(freezeT>0 || muteT>0 || slowAllT>0){
+      const eff = freezeT>0 ? {c:TEAL,t:">> FEED FROZEN <<"} : slowAllT>0 ? {c:ORANGE,t:">> EVERYONE LOGGED OFF <<"} : {c:PURPLE,t:">> MUTED <<"};
+      cx.save();
+      const pulse=0.5+0.5*Math.sin(pulseT*6);
+      cx.strokeStyle=eff.c; cx.globalAlpha=0.35+0.25*pulse; cx.lineWidth=4;
+      cx.strokeRect(2,2,W-4,H-4);
+      cx.globalAlpha=0.05; cx.fillStyle=eff.c; cx.fillRect(0,0,W,H);
+      cx.globalAlpha=0.8; cx.fillStyle=eff.c;
+      cx.font="bold 13px 'Courier New',monospace"; cx.textAlign="center";
+      cx.fillText(eff.t, W/2, 22);
       cx.restore();
     }
 
