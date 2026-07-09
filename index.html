@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STOOPID TOOLKIT</title>
 <style>
-  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 */
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; --pink:#FF40CD; } /* SIGNAL palette v2 */
   *{box-sizing:border-box; margin:0; padding:0;}
   body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:32px 24px; min-height:100vh;}
   body::after{content:""; pointer-events:none; position:fixed; inset:0;
@@ -34,6 +34,9 @@
   a.tool.clash:hover{border-color:var(--orange);}
   .tool.launch h2{color:#4aa8ff;}
   a.tool.launch:hover{border-color:#4aa8ff;}
+  .tool.signal h2{color:var(--pink);}
+  a.tool.signal:hover{border-color:var(--pink);}
+  .tool.signal .corner{border-color:var(--pink);}
   .tool p{font-size:12px; color:#888; line-height:1.5;}
   .footer{margin-top:48px; font-size:11px; color:#555; letter-spacing:2px;}
 </style>
@@ -87,6 +90,11 @@
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
     <h2>EMPRESS HEAVY</h2>
     <p>ASCII launch pad. Countdown, liftoff, fireworks &mdash; GOOD LUCK EMPRESS HEAVY &mdash; zoom into the black and vanish like a star.</p>
+  </a>
+  <a class="tool signal" href="stoopid_signal_ack.html">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <h2>SIGNAL ACKNOWLEDGED</h2>
+    <p>Subscriber shout-out generator. Paste your handles, watch the hot-pink name rain resolve into the roll, record the clip. No touchy for free &mdash; but the shout-out is on the house.</p>
   </a>
 </div>
 

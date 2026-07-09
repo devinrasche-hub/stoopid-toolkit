@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGNAL ACKNOWLEDGED — STOOPID</title>
+<style>
+  :root{
+    --pink:#FF40CD;        /* bright hot pink */
+    --pink-hot:#FFEBFA;    /* near-white leading edge */
+    --pink-dim:#DC2896;
+    --pink-dark:#6E0F46;
+    --teal:#00FFC6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace;
+    padding:28px 22px; min-height:100vh;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0; z-index:99;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);}
+  h1{font-size:26px; letter-spacing:4px;}
+  h1 span{color:var(--pink);}
+  .sub{color:#666; font-size:12px; letter-spacing:2px; margin:6px 0 26px;}
+
+  .wrap{display:flex; flex-wrap:wrap; gap:26px; align-items:flex-start; max-width:1320px;}
+
+  /* control panel */
+  .panel{width:320px; border:1px solid #333; padding:18px 16px; position:relative;}
+  .corner{position:absolute; width:12px; height:12px; border:2px solid var(--pink);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  .panel h2{font-size:14px; letter-spacing:2px; color:var(--pink); margin-bottom:14px;}
+  label{display:block; font-size:11px; letter-spacing:1px; color:#888; margin:14px 0 6px;}
+  textarea, input{width:100%; background:#0a0a0a; border:1px solid #333; color:#fff;
+    font-family:'Courier New',monospace; font-size:13px; padding:9px 10px; letter-spacing:1px;}
+  textarea{height:150px; resize:vertical; line-height:1.5;}
+  textarea:focus, input:focus{outline:none; border-color:var(--pink);}
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+  .count{font-size:11px; color:var(--pink-dim); margin-top:6px; letter-spacing:1px;}
+  .btns{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+  button{flex:1; min-width:90px; background:#000; color:#fff; border:1px solid var(--pink);
+    font-family:'Courier New',monospace; font-size:13px; letter-spacing:2px; padding:11px 8px;
+    cursor:pointer; text-transform:uppercase;}
+  button:hover:not(:disabled){background:var(--pink); color:#000;}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+  button.rec{border-color:var(--teal);}
+  button.rec:hover:not(:disabled){background:var(--teal); color:#000;}
+  .status{margin-top:14px; font-size:11px; letter-spacing:1px; color:#777; min-height:16px;}
+  .status b{color:var(--pink);}
+  .hint{margin-top:16px; font-size:10px; line-height:1.6; color:#555; letter-spacing:.5px;}
+
+  /* stage */
+  .stagewrap{flex:1; min-width:320px; max-width:960px;}
+  canvas{width:100%; height:auto; border:1px solid #222; display:block; background:#000;}
+  .stagefoot{font-size:11px; color:#555; letter-spacing:2px; margin-top:10px;}
+
+  .footer{margin-top:40px; font-size:11px; color:#555; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>SIGNAL <span>[ ACKNOWLEDGED ]</span></h1>
+<div class="sub">SUBSCRIBER SHOUT-OUT GENERATOR — @stoopidshow — SIGNAL RECEIVED</div>
+
+<div class="wrap">
+  <div class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <h2>// TRANSMISSION</h2>
+
+    <label>SUBSCRIBER HANDLES <span style="color:#555">(one per line or comma-separated)</span></label>
+    <textarea id="handles" spellcheck="false">@stoopidfan
+@teal_gremlin
+@beansforever
+@no_touchy
+@void_quality
+@signal_intact</textarea>
+    <div class="count" id="count">6 signals</div>
+
+    <div class="row">
+      <div>
+        <label>EPISODE</label>
+        <input id="episode" type="number" value="20" min="1" max="99">
+      </div>
+      <div>
+        <label>SEASON</label>
+        <input id="season" type="number" value="1" min="1" max="9">
+      </div>
+    </div>
+
+    <div class="btns">
+      <button id="play">▶ Play</button>
+      <button id="rec" class="rec">⏺ Record</button>
+      <button id="stop" disabled>■ Stop</button>
+    </div>
+    <div class="status" id="status">Ready. Paste handles and hit play.</div>
+    <div class="hint">RECORD renders the full sequence and downloads a <b style="color:#777">.webm</b> you can drop straight into CapCut. For a clean screen-grab instead, hit PLAY and capture the canvas.</div>
+  </div>
+
+  <div class="stagewrap">
+    <canvas id="stage" width="1280" height="720"></canvas>
+    <div class="stagefoot">1280×720 · REALITY IS USER GENERATED</div>
+  </div>
+</div>
+
+<div class="footer">SIGNAL RECEIVED.</div>
+
+<script>
+"use strict";
+const W = 1280, H = 720;
+const cv = document.getElementById("stage");
+const ctx = cv.getContext("2d", { alpha:false });
+
+// ── PALETTE ────────────────────────────────────────────────────────────────
+const PINK      = "rgb(255,64,205)";
+const PINK_HOT  = "rgb(255,235,250)";
+const PINK_DIM  = "rgb(220,40,150)";
+const PINK_DARK = "rgb(110,15,70)";
+
+const ACK_PHRASES = [
+  "// signal received","// still here","// transmission confirmed",
+  "// reality: user generated","// signal: clear","// no touchy for free™",
+  "// stoopid but true","// protect your peace","// frequency locked",
+  "// in the realm","// portal open","// acknowledged",
+  "// we see you","// signal intact","// logged",
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let raf = null, playing = false, recorder = null, chunks = [], recording = false;
+const el = id => document.getElementById(id);
+
+function parseHandles(){
+  let raw = el("handles").value.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+  raw = raw.map(h => h.startsWith("@") ? h : "@"+h);
+  if(!raw.length) raw = ["@stoopidshow"];
+  return raw;
+}
+function updateCount(){
+  const n = parseHandles().length;
+  el("count").textContent = n + (n===1?" signal":" signals");
+}
+el("handles").addEventListener("input", updateCount);
+
+// ── TIMELINE (seconds) ──────────────────────────────────────────────────────
+function buildTimeline(handles){
+  const N = handles.length;
+  const RAIN = 4.5, RESOLVE = 2.0, HOLD = 2.5, FADE = 1.5;
+  // per-name typewriter schedule
+  const CPS = 22, PAUSE = 0.28;
+  let cursor = 0; const start = [];
+  for(let i=0;i<N;i++){
+    start.push(cursor);
+    const typeT = Math.max(0.18, handles[i].length / CPS);
+    cursor += typeT + PAUSE;
+  }
+  const ROLL = cursor + 0.6;
+  const T = { RAIN, RESOLVE, ROLL, HOLD, FADE };
+  T.rollStart = start;
+  T.total = RAIN + RESOLVE + ROLL + HOLD + FADE;
+  T.tRainEnd    = RAIN;
+  T.tResolveEnd = RAIN + RESOLVE;
+  T.tRollEnd    = RAIN + RESOLVE + ROLL;
+  T.tHoldEnd    = RAIN + RESOLVE + ROLL + HOLD;
+  return T;
+}
+
+// ── RAIN COLUMNS ────────────────────────────────────────────────────────────
+let cols = [];
+function rng(a,b){ return a + Math.random()*(b-a); }
+function initRain(handles){
+  const COLS = 64, colW = W/COLS;
+  const pool = [];
+  for(let i=0;i<COLS + handles.length + 2;i++) pool.push(handles[i % handles.length]);
+  for(let i=pool.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  cols = [];
+  for(let i=0;i<COLS;i++){
+    cols.push({
+      x: i*colW + colW/2,
+      y: rng(-H, 0),
+      speed: rng(6,18),
+      handle: pool[i],
+      frozen: false, frozenY: null,
+    });
+  }
+}
+
+// ── DRAW HELPERS ─────────────────────────────────────────────────────────────
+function glowText(txt, x, y, fontPx, color, blur){
+  ctx.save();
+  ctx.font = "bold "+fontPx+"px 'Courier New', monospace";
+  ctx.textBaseline = "top";
+  ctx.shadowColor = color; ctx.shadowBlur = blur||14;
+  ctx.fillStyle = color;
+  ctx.fillText(txt, x, y);
+  ctx.shadowBlur = 0; ctx.fillText(txt, x, y); // second pass = hotter core
+  ctx.restore();
+}
+function plainText(txt, x, y, fontPx, color, bold){
+  ctx.save();
+  ctx.font = (bold?"bold ":"")+fontPx+"px 'Courier New', monospace";
+  ctx.textBaseline = "top"; ctx.fillStyle = color;
+  ctx.fillText(txt, x, y);
+  ctx.restore();
+}
+function header(txt){
+  ctx.fillStyle = "rgb(15,3,8)"; ctx.fillRect(0,0,W,56);
+  ctx.fillStyle = PINK_DARK; ctx.fillRect(0,56,W,1);
+  plainText(txt, 20, 18, 18, PINK, true);
+}
+function footer(txt){
+  ctx.fillStyle = "rgb(10,2,6)"; ctx.fillRect(0,H-38,W,38);
+  ctx.fillStyle = PINK_DARK; ctx.fillRect(0,H-38,W,1);
+  plainText(txt, 20, H-27, 14, PINK_DARK, false);
+}
+
+// ── FX: scanlines / vignette / noise / tear (drawn ON canvas for capture) ────
+let vignetteGrad = null;
+function ensureVignette(){
+  if(vignetteGrad) return;
+  vignetteGrad = ctx.createRadialGradient(W/2,H/2,H*0.25, W/2,H/2,H*0.85);
+  vignetteGrad.addColorStop(0,"rgba(0,0,0,0)");
+  vignetteGrad.addColorStop(1,"rgba(0,0,0,0.55)");
+}
+function fx(tearChance){
+  ensureVignette();
+  ctx.fillStyle = vignetteGrad; ctx.fillRect(0,0,W,H);
+  // scanlines
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,1);
+  // occasional VHS tear
+  if(tearChance && Math.random()<tearChance){
+    const y=(Math.random()*H)|0, h=(1+Math.random()*4)|0, dx=((Math.random()*40)-20)|0;
+    const slice = ctx.getImageData(0,y,W,h);
+    ctx.putImageData(slice, dx, y);
+  }
+}
+
+// ── PHASE RENDERERS ──────────────────────────────────────────────────────────
+function drawRain(dt, t, T, handles, resolve){
+  ctx.fillStyle = "#000"; ctx.fillRect(0,0,W,H);
+  ctx.font = "bold 16px 'Courier New', monospace"; ctx.textBaseline="top";
+  const phaseT = resolve ? (t-T.tRainEnd)/T.RESOLVE : t/T.RAIN;
+
+  for(const c of cols){
+    if(c.frozen && c.frozenY!==null){
+      const w = ctx.measureText(c.handle).width;
+      glowText(c.handle, c.x - w/2, c.frozenY, 22, PINK, 12);
+      continue;
+    }
+    const trail = 12;
+    for(let ti=0;ti<trail;ti++){
+      const ty = (c.y - ti*18)|0;
+      if(ty<0||ty>H) continue;
+      const b = Math.max(0, 1 - ti/trail);
+      let col;
+      if(ti===0) col = PINK_HOT;
+      else if(ti<3) col = PINK;
+      else col = "rgb("+((220*b)|0)+","+((40*b)|0)+","+((150*b)|0)+")";
+      const cidx = (ti + (phaseT*30|0)) % c.handle.length;
+      const ch = c.handle[cidx] || "@";
+      const w = ctx.measureText(ch).width;
+      ctx.fillStyle = col;
+      if(ti===0){ ctx.save(); ctx.shadowColor=PINK; ctx.shadowBlur=10; }
+      ctx.fillText(ch, c.x - w/2, ty);
+      if(ti===0) ctx.restore();
+    }
+    const speedMult = resolve ? Math.max(0.05, 1 - phaseT*0.9) : 1;
+    c.y += c.speed * speedMult * (dt*60/1000);
+    if(resolve && speedMult < 0.15){
+      if(c.frozenY===null){
+        const row = Math.max(0, Math.min((c.y/50)|0, ((H-80)/50)|0));
+        c.frozenY = 60 + row*50;
+      }
+      c.frozen = true;
+    }
+    if(!resolve && c.y > H+100){ c.y = rng(-200,-20); c.speed = rng(6,18); }
+  }
+
+  // header fades in near end of rain
+  if(!resolve){
+    if(t/T.RAIN > 0.7){
+      const a = Math.min(1,(t/T.RAIN - 0.7)/0.3);
+      ctx.fillStyle="rgba(20,5,12,"+a+")"; ctx.fillRect(0,0,W,44);
+      ctx.font="bold 20px 'Courier New', monospace"; ctx.textBaseline="top";
+      ctx.fillStyle="rgba(255,64,205,"+a+")";
+      ctx.fillText("◉  SIGNAL ACKNOWLEDGED  //  THE STOOPID SHOW", 16, 12);
+    }
+  } else {
+    ctx.fillStyle="rgb(20,5,12)"; ctx.fillRect(0,0,W,44);
+    plainText("◉  SIGNAL ACKNOWLEDGED  //  THE STOOPID SHOW", 16, 12, 18, PINK, true);
+  }
+  fx(resolve?0:0.04);
+}
+
+function rollLayout(handles){
+  const N = handles.length;
+  const COLS = N>12 ? 2 : 1;
+  const colW = (W-120)/COLS;
+  const rowsPerCol = Math.ceil(N/COLS);
+  const LH = 48, startY = 90;
+  const maxVisible = ((H - startY - 60)/LH)|0;
+  const scrollNeeded = Math.max(0, rowsPerCol - maxVisible);
+  return {N,COLS,colW,rowsPerCol,LH,startY,maxVisible,scrollNeeded};
+}
+
+function drawRoll(t, T, handles, ackMap){
+  const L = rollLayout(handles);
+  const localT = t - T.tResolveEnd;                 // seconds into roll
+  const prog = Math.min(1, localT / T.ROLL);
+  const scroll = Math.min(prog*L.scrollNeeded*1.2, L.scrollNeeded)|0;
+
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+  header("EP."+String(el("episode").value).padStart(2,"0")+"  S"+
+         String(el("season").value).padStart(2,"0")+
+         "  //  SIGNAL ACKNOWLEDGED  //  THE STOOPID SHOW");
+
+  for(let ni=0; ni<L.N; ni++){
+    const row = ni % L.rowsPerCol, col = (ni / L.rowsPerCol)|0;
+    const dispRow = row - scroll;
+    if(dispRow<0 || dispRow>=L.maxVisible) continue;
+    const x = 60 + col*L.colW, y = L.startY + dispRow*L.LH;
+    const handle = handles[ni], ack = ackMap[ni];
+    const startF = T.rollStart[ni];
+    const typeT = Math.max(0.18, handle.length/22);
+    const since = localT - startF;
+    if(since < 0) continue;
+
+    if(since <= typeT){
+      const cc = Math.min(handle.length, ((since/typeT)*handle.length)|0);
+      const disp = handle.slice(0,cc);
+      glowText(disp, x, y, 32, PINK, 16);
+      // blinking cursor
+      if(((localT*6)|0)%2===0){
+        ctx.font="bold 32px 'Courier New', monospace";
+        const w = disp?ctx.measureText(disp).width:0;
+        ctx.fillStyle = PINK; ctx.fillRect(x+w+3, y+3, 14, 30);
+      }
+    } else {
+      glowText(handle, x, y, 32, PINK, 16);
+      const ackSince = since - typeT;
+      const ackTypeT = Math.max(0.1, ack.length/40);
+      const ac = ackSince<=ackTypeT ? (((ackSince/ackTypeT)*ack.length)|0) : ack.length;
+      plainText(ack.slice(0,ac), x+4, y+36, 16, PINK_DIM, false);
+    }
+  }
+  footer("REALITY IS USER GENERATED  //  "+L.N+" SIGNALS RECEIVED  //  @stoopidshow");
+  fx(0.03);
+}
+
+function drawHold(t, T, handles, ackMap){
+  const L = rollLayout(handles);
+  const localT = t - T.tRollEnd;
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+  header("EP."+String(el("episode").value).padStart(2,"0")+"  S"+
+         String(el("season").value).padStart(2,"0")+
+         "  //  SIGNAL ACKNOWLEDGED  //  THE STOOPID SHOW");
+
+  const scroll = L.scrollNeeded;
+  for(let ni=0; ni<L.N; ni++){
+    const row = ni % L.rowsPerCol, col = (ni / L.rowsPerCol)|0;
+    const dispRow = row - scroll;
+    if(dispRow<0 || dispRow>=L.maxVisible) continue;
+    const x = 60 + col*L.colW, y = L.startY + dispRow*L.LH;
+    glowText(handles[ni], x, y, 32, PINK, 16);
+    plainText(ackMap[ni], x+4, y+36, 16, PINK_DIM, false);
+  }
+  // pulse SIGNAL RECEIVED
+  const pulse = 0.4 + 0.6*Math.abs(Math.sin(localT*Math.PI*3));
+  ctx.fillStyle="rgb(10,2,6)"; ctx.fillRect(0,H-40,W,40);
+  ctx.font="bold 20px 'Courier New', monospace"; ctx.textBaseline="top";
+  const txt="SIGNAL RECEIVED  //  @stoopidshow";
+  const w=ctx.measureText(txt).width;
+  ctx.save(); ctx.shadowColor=PINK; ctx.shadowBlur=18;
+  ctx.fillStyle="rgba(255,64,205,"+pulse+")";
+  ctx.fillText(txt,(W-w)/2, H-30); ctx.restore();
+  fx(0);
+}
+
+function drawFade(t, T){
+  const localT = t - T.tHoldEnd;
+  const k = Math.max(0, 1 - (localT/T.FADE)*2);
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+  const img = ctx.createImageData(W,H), d = img.data;
+  for(let i=0;i<d.length;i+=4){
+    const g = (Math.random()*255)|0;
+    d[i]   = (g*k)|0;              // R
+    d[i+1] = (g*0.10*k)|0;         // G
+    d[i+2] = (g*0.55*k)|0;         // B
+    d[i+3] = 255;
+  }
+  ctx.putImageData(img,0,0);
+  ctx.fillStyle="rgba(0,0,0,0.16)";
+  for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,1);
+}
+
+// ── MAIN LOOP ────────────────────────────────────────────────────────────────
+let handles=[], ackMap=[], T=null, startTime=0, lastTime=0;
+function frame(now){
+  if(!playing) return;
+  if(!startTime){ startTime = now; lastTime = now; }
+  const t  = (now - startTime)/1000;
+  const dt = now - lastTime; lastTime = now;
+
+  if(t < T.tRainEnd)         drawRain(dt, t, T, handles, false);
+  else if(t < T.tResolveEnd) drawRain(dt, t, T, handles, true);
+  else if(t < T.tRollEnd)    drawRoll(t, T, handles, ackMap);
+  else if(t < T.tHoldEnd)    drawHold(t, T, handles, ackMap);
+  else if(t < T.total)       drawFade(t, T);
+  else { finish(); return; }
+
+  raf = requestAnimationFrame(frame);
+}
+
+function begin(record){
+  cancelAnimationFrame(raf);
+  handles = parseHandles();
+  ackMap  = handles.map((h,i)=>ACK_PHRASES[i % ACK_PHRASES.length]);
+  T = buildTimeline(handles);
+  initRain(handles);
+  startTime = 0; lastTime = 0; playing = true;
+  el("play").disabled = true; el("rec").disabled = true; el("stop").disabled = false;
+
+  if(record){
+    chunks = [];
+    const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9" : "video/webm";
+    const stream = cv.captureStream(30);
+    recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+    recorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    recorder.onstop = downloadClip;
+    recorder.start();
+    recording = true;
+    setStatus("<b>● REC</b> rendering "+handles.length+" signals ("+T.total.toFixed(1)+"s)…");
+  } else {
+    setStatus("Playing "+handles.length+" signals…");
+  }
+  raf = requestAnimationFrame(frame);
+}
+
+function finish(){
+  playing = false;
+  if(recording && recorder){ recorder.stop(); recording=false; }
+  else setStatus("Done. <b>SIGNAL RECEIVED.</b>");
+  el("play").disabled=false; el("rec").disabled=false; el("stop").disabled=true;
+}
+function stopAll(){
+  playing=false; cancelAnimationFrame(raf);
+  if(recording && recorder){ recorder.stop(); recording=false; }
+  el("play").disabled=false; el("rec").disabled=false; el("stop").disabled=true;
+  setStatus("Stopped.");
+}
+function downloadClip(){
+  const blob = new Blob(chunks, { type:"video/webm" });
+  const url = URL.createObjectURL(blob);
+  const ep = String(el("episode").value).padStart(2,"0");
+  const a = document.createElement("a");
+  a.href = url; a.download = "signal_acknowledged_EP"+ep+".webm";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  setStatus("Saved <b>signal_acknowledged_EP"+ep+".webm</b> — drop into CapCut.");
+}
+function setStatus(html){ el("status").innerHTML = html; }
+
+el("play").onclick = ()=>begin(false);
+el("rec").onclick  = ()=>begin(true);
+el("stop").onclick = stopAll;
+
+// idle poster frame
+(function poster(){
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+  ctx.textBaseline="top";
+  glowText("◉ SIGNAL ACKNOWLEDGED", 60, H/2-70, 44, PINK, 22);
+  plainText("// paste your subscribers → press play", 62, H/2+0, 20, PINK_DIM, false);
+  plainText("THE STOOPID SHOW  //  @stoopidshow", 62, H/2+34, 16, PINK_DARK, false);
+  fx(0);
+})();
+updateCount();
+</script>
+</body>
+</html>
