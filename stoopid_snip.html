@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SNIP</title>
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; --pink:#FF40CD; } /* SIGNAL palette v2 */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:24px; min-height:100vh;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0; z-index:5;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  h1{font-size:22px; letter-spacing:3px; margin-bottom:4px;}
+  h1 span{color:var(--teal);}
+  .sub{color:#666; font-size:12px; margin-bottom:20px; letter-spacing:1px;}
+
+  .wrap{display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start;}
+  .panel{width:340px; border:1px solid #333; padding:16px 18px; position:relative;}
+  .corner{position:absolute; width:14px; height:14px; border:2px solid var(--teal);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+
+  .step{font-size:10px; color:#555; letter-spacing:2px; margin:16px 0 6px;}
+  .step:first-of-type{margin-top:4px;}
+  .step b{color:var(--teal);}
+
+  button{font-family:inherit; cursor:pointer;}
+  .btn{width:100%; padding:13px; background:#000; border:1px solid var(--teal);
+    color:var(--teal); font-size:14px; letter-spacing:3px; margin-top:2px;}
+  .btn:hover:not(:disabled){background:var(--teal); color:#000;}
+  .btn:disabled{border-color:#2a2a2a; color:#3a3a3a; cursor:not-allowed;}
+  .btn.pink{border-color:var(--pink); color:var(--pink);}
+  .btn.pink:hover:not(:disabled){background:var(--pink); color:#000;}
+  .btn.ghost{border-color:#333; color:#888;}
+  .btn.ghost:hover:not(:disabled){border-color:#666; color:#ccc; background:#0d0d0d;}
+
+  .row{display:flex; gap:8px; margin-top:8px;}
+  .row .btn{margin-top:0;}
+
+  .readout{font-size:11px; color:#777; letter-spacing:1px; margin-top:14px; line-height:1.7;
+    border-top:1px solid #1e1e1e; padding-top:12px;}
+  .readout b{color:#bbb;}
+  .dim{color:var(--pink);}
+
+  .hint{font-size:11px; color:#4a4a4a; line-height:1.6; margin-top:14px;}
+  kbd{background:#111; border:1px solid #333; border-radius:3px; padding:1px 6px; color:#aaa; font-size:11px;}
+
+  /* stage */
+  .stage{position:relative; border:1px solid #222; max-width:min(760px,92vw);
+    background:#080808 repeating-linear-gradient(45deg,#0b0b0b 0 10px,#080808 10px 20px);
+    min-width:320px; min-height:200px; display:flex; align-items:center; justify-content:center;}
+  .stage .empty{color:#333; font-size:13px; letter-spacing:2px; padding:60px 20px; text-align:center; line-height:1.8;}
+  #shot{display:block; max-width:100%; height:auto; cursor:crosshair; touch-action:none;}
+  #sel{position:absolute; border:1.5px dashed var(--pink); background:rgba(255,64,205,.10);
+    pointer-events:none; display:none; box-shadow:0 0 0 9999px rgba(0,0,0,.55);}
+  #sel .ct{position:absolute; width:9px; height:9px; border:2px solid var(--pink);}
+  #sel .a{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  #sel .b{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  #sel .c{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  #sel .d{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  #selsize{position:absolute; top:-20px; left:0; font-size:10px; color:var(--pink);
+    letter-spacing:1px; white-space:nowrap; text-shadow:0 0 4px #000;}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#000; border:1px solid var(--teal); color:var(--teal); padding:10px 18px;
+    font-size:12px; letter-spacing:2px; z-index:20; opacity:0; transition:opacity .2s; pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  .footer{margin-top:28px; font-size:11px; color:#555; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>STOOPID <span>[ SNIP ]</span></h1>
+<div class="sub">CAPTURE THE SCREEN. DRAG THE BOX. CLIP THE SIGNAL. NO SERVER — IT NEVER LEAVES YOUR MACHINE.</div>
+
+<div class="wrap">
+  <div class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+    <div class="step"><b>1.</b> GRAB A FRAME</div>
+    <button class="btn" id="capBtn" onclick="capture()">CAPTURE SCREEN</button>
+    <div class="row">
+      <button class="btn ghost" id="reBtn" onclick="capture()" disabled>RE-CAPTURE</button>
+      <button class="btn ghost" id="clrBtn" onclick="reset()" disabled>CLEAR</button>
+    </div>
+
+    <div class="step"><b>2.</b> DRAG A BOX OVER THE SHOT TO SNIP A REGION <span style="color:#3a3a3a">(OR SKIP FOR THE WHOLE FRAME)</span></div>
+
+    <div class="step"><b>3.</b> CLIP IT</div>
+    <button class="btn pink" id="dlBtn" onclick="save()" disabled>DOWNLOAD PNG</button>
+    <div class="row">
+      <button class="btn pink" id="cpBtn" onclick="copyClip()" disabled>COPY TO CLIPBOARD</button>
+    </div>
+
+    <div class="readout" id="readout">
+      <b>STATUS:</b> STANDING BY<br>
+      <b>FRAME:</b> —<br>
+      <b>SNIP:</b> <span class="dim">FULL FRAME</span>
+    </div>
+
+    <div class="hint">
+      Hold <kbd>Shift</kbd> while dragging for a square snip. <kbd>Esc</kbd> clears the box.
+      Your browser will ask which screen, window, or tab to grab — pick one, and STOOPID SNIP freezes a single frame you can clip. Nothing is uploaded, recorded, or sent anywhere.
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="empty" id="empty">▓ NO SIGNAL ▓<br>HIT <span style="color:#00FFC6">CAPTURE SCREEN</span> TO GRAB A FRAME</div>
+    <canvas id="shot" style="display:none"></canvas>
+    <div id="sel">
+      <span class="ct a"></span><span class="ct b"></span><span class="ct c"></span><span class="ct d"></span>
+      <span id="selsize"></span>
+    </div>
+  </div>
+</div>
+
+<div class="footer">PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET — WHATEVER DEVICE WAS CHARGED. SIGNAL RECEIVED.</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const shot   = document.getElementById("shot");
+const ctx    = shot.getContext("2d");
+const stage  = document.getElementById("stage");
+const empty  = document.getElementById("empty");
+const sel     = document.getElementById("sel");
+const selsize = document.getElementById("selsize");
+const readout = document.getElementById("readout");
+
+let hasFrame = false;
+let drag = null;          // {sx, sy} in canvas px while dragging
+let snip = null;          // {x, y, w, h} in canvas px — the committed selection
+
+function toast(msg, color){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.borderColor = color || "var(--teal)";
+  t.style.color = color || "var(--teal)";
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+async function capture(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+    toast("SCREEN CAPTURE NOT SUPPORTED HERE", "var(--red)");
+    return;
+  }
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getDisplayMedia({ video:{ cursor:"always" }, audio:false });
+  }catch(err){
+    // user cancelled the picker, or permission denied — stay quiet-ish
+    if(err && err.name === "NotAllowedError"){ toast("CAPTURE CANCELLED", "var(--orange)"); }
+    else{ toast("CAPTURE FAILED", "var(--red)"); }
+    return;
+  }
+
+  const video = document.createElement("video");
+  video.srcObject = stream;
+  video.muted = true;
+  try{
+    await video.play();
+    // give the pipeline a beat so the first frame isn't black
+    await new Promise(r=>{
+      if(video.readyState >= 2 && video.videoWidth) return r();
+      video.onloadeddata = r;
+    });
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+
+    shot.width  = video.videoWidth  || 1280;
+    shot.height = video.videoHeight || 720;
+    ctx.drawImage(video, 0, 0, shot.width, shot.height);
+  }catch(err){
+    toast("COULD NOT READ FRAME", "var(--red)");
+    return;
+  }finally{
+    stream.getTracks().forEach(t=>t.stop());   // stop sharing immediately — one frame is all we need
+    video.srcObject = null;
+  }
+
+  hasFrame = true;
+  snip = null;
+  sel.style.display = "none";
+  empty.style.display = "none";
+  shot.style.display = "block";
+  document.getElementById("reBtn").disabled  = false;
+  document.getElementById("clrBtn").disabled = false;
+  document.getElementById("dlBtn").disabled  = false;
+  document.getElementById("cpBtn").disabled  = !(navigator.clipboard && window.ClipboardItem);
+  updateReadout("FRAME LOCKED");
+  toast("FRAME LOCKED — DRAG TO SNIP");
+}
+
+function reset(){
+  hasFrame = false; snip = null; drag = null;
+  ctx.clearRect(0,0,shot.width,shot.height);
+  shot.style.display = "none";
+  sel.style.display  = "none";
+  empty.style.display = "block";
+  ["reBtn","clrBtn","dlBtn","cpBtn"].forEach(id=>document.getElementById(id).disabled = true);
+  updateReadout("STANDING BY");
+}
+
+function updateReadout(status){
+  const frame = hasFrame ? `${shot.width} × ${shot.height} px` : "—";
+  const snipTxt = snip
+    ? `<span class="dim">${snip.w} × ${snip.h} px @ ${snip.x},${snip.y}</span>`
+    : (hasFrame ? `<span class="dim">FULL FRAME</span>` : `<span class="dim">FULL FRAME</span>`);
+  readout.innerHTML = `<b>STATUS:</b> ${status}<br><b>FRAME:</b> ${frame}<br><b>SNIP:</b> ${snipTxt}`;
+}
+
+/* ---- coordinate helpers: on-screen (CSS) px <-> canvas px ---- */
+function scale(){ return shot.width / shot.getBoundingClientRect().width; }
+function toCanvas(clientX, clientY){
+  const r = shot.getBoundingClientRect();
+  const s = scale();
+  let x = (clientX - r.left) * s;
+  let y = (clientY - r.top)  * s;
+  x = Math.max(0, Math.min(shot.width,  x));
+  y = Math.max(0, Math.min(shot.height, y));
+  return {x, y};
+}
+
+/* ---- drag to select ---- */
+shot.addEventListener("pointerdown", e=>{
+  if(!hasFrame) return;
+  e.preventDefault();
+  shot.setPointerCapture(e.pointerId);
+  const p = toCanvas(e.clientX, e.clientY);
+  drag = { sx:p.x, sy:p.y, shift:e.shiftKey };
+  snip = null;
+});
+shot.addEventListener("pointermove", e=>{
+  if(!drag) return;
+  const p = toCanvas(e.clientX, e.clientY);
+  let x0=drag.sx, y0=drag.sy, x1=p.x, y1=p.y;
+  if(e.shiftKey){                       // square: clamp to smaller side
+    const side = Math.min(Math.abs(x1-x0), Math.abs(y1-y0));
+    x1 = x0 + Math.sign(x1-x0)*side;
+    y1 = y0 + Math.sign(y1-y0)*side;
+  }
+  const x=Math.min(x0,x1), y=Math.min(y0,y1), w=Math.abs(x1-x0), h=Math.abs(y1-y0);
+  drawSelBox(x,y,w,h);
+});
+shot.addEventListener("pointerup", e=>{
+  if(!drag) return;
+  const p = toCanvas(e.clientX, e.clientY);
+  let x0=drag.sx, y0=drag.sy, x1=p.x, y1=p.y;
+  if(e.shiftKey){
+    const side = Math.min(Math.abs(x1-x0), Math.abs(y1-y0));
+    x1 = x0 + Math.sign(x1-x0)*side;
+    y1 = y0 + Math.sign(y1-y0)*side;
+  }
+  const x=Math.round(Math.min(x0,x1)), y=Math.round(Math.min(y0,y1));
+  const w=Math.round(Math.abs(x1-x0)), h=Math.round(Math.abs(y1-y0));
+  drag = null;
+  if(w < 6 || h < 6){                   // treat a click/tiny drag as "clear box"
+    snip = null; sel.style.display = "none"; updateReadout("FULL FRAME ARMED"); return;
+  }
+  snip = {x,y,w,h};
+  drawSelBox(x,y,w,h);
+  updateReadout("SNIP ARMED");
+});
+
+function drawSelBox(x,y,w,h){
+  const s = scale();
+  sel.style.display = "block";
+  sel.style.left   = (x/s) + "px";
+  sel.style.top    = (y/s) + "px";
+  sel.style.width  = (w/s) + "px";
+  sel.style.height = (h/s) + "px";
+  selsize.textContent = `${Math.round(w)} × ${Math.round(h)}`;
+}
+
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape" && hasFrame){ snip=null; drag=null; sel.style.display="none"; updateReadout("FULL FRAME ARMED"); }
+});
+window.addEventListener("resize", ()=>{ if(snip) drawSelBox(snip.x,snip.y,snip.w,snip.h); });
+
+/* ---- output ---- */
+function renderClip(){
+  const c = document.createElement("canvas");
+  const cx = c.getContext("2d");
+  if(snip){
+    c.width = snip.w; c.height = snip.h;
+    cx.drawImage(shot, snip.x, snip.y, snip.w, snip.h, 0, 0, snip.w, snip.h);
+  }else{
+    c.width = shot.width; c.height = shot.height;
+    cx.drawImage(shot, 0, 0);
+  }
+  return c;
+}
+
+function stamp(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+
+function save(){
+  if(!hasFrame) return;
+  const c = renderClip();
+  const a = document.createElement("a");
+  a.download = `stoopid_snip_${stamp()}.png`;
+  a.href = c.toDataURL("image/png");
+  a.click();
+  toast("CLIP SAVED");
+}
+
+async function copyClip(){
+  if(!hasFrame) return;
+  if(!(navigator.clipboard && window.ClipboardItem)){
+    toast("CLIPBOARD NOT SUPPORTED — USE DOWNLOAD", "var(--orange)"); return;
+  }
+  try{
+    const c = renderClip();
+    const blob = await new Promise(res=>c.toBlob(res, "image/png"));
+    await navigator.clipboard.write([ new ClipboardItem({ "image/png": blob }) ]);
+    toast("COPIED TO CLIPBOARD");
+  }catch(err){
+    toast("COPY BLOCKED — USE DOWNLOAD", "var(--red)");
+  }
+}
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ Public brand tools for **THE STOOPID SHOW** (@stoopidshow) — hosted free on Gi
 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
 | [Stoopid Defense](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_defense.html) | Neon laser tower defense — defend the signal from waves of slop; every collapse gets a verdict |
 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
+| [Stoopid Snip](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_snip.html) | Snip/clip screenshot tool — capture the screen, drag a box, download or copy the clip. Nothing is uploaded; it never leaves your machine |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
