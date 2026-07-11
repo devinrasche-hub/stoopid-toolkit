@@ -403,8 +403,12 @@
       ocLevel, ocCost, unlockAnnounced,
       freezeT, muteT, slowAllT, dealArmed, dealWave, dealStreak, uiT, events,
       armed=null, selected=null, hoverCell=null, pulseT=0, speedMul=1, lowFX=false;
-  let best=+(localStorage.getItem("stoopid_defense_best")||0);
-  let bestScore=+(localStorage.getItem("stoopid_defense_best_score")||0);
+  // storage access can THROW (blocked embeds, locked-down privacy modes) — a
+  // failed read must cost the personal best, never the whole game
+  const lsGet=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const lsSet=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
+  let best=+(lsGet("stoopid_defense_best")||0);
+  let bestScore=+(lsGet("stoopid_defense_best_score")||0);
 
   // ambient data motes drifting through the off-grid
   const MOTES=[];
@@ -645,6 +649,16 @@
     announceUnlocks(); // chained early transmits never touch endWave — announce here too
     sfx.horn(); syncHud(); syncForecast();
   }
+  // the endless handoff fires no matter HOW wave 30 was cleared — deal waves
+  // settle on their own branch and must not swallow the transition
+  function announceEndless(w){
+    if(w!==30) return false;
+    BUS.emit("ev:endless");
+    setBanner("THE GRID GOES ENDLESS", TEAL, "thirty waves. the slop never ends. neither do you.");
+    setStatus("wave 30 cleared. ENDLESS MODE. no milestones out here. just waves.","flip");
+    sfx.streakup();
+    return true;
+  }
   // a wave is settled when it has fully spawned and its last foe is gone —
   // even if the next wave is already on the grid. early transmit keeps the streak.
   function creditWave(w){
@@ -664,7 +678,10 @@
         BUS.emit("ev:credit",{w, clean:true, deal:true, jack});
         setBanner("THE DEAL PAID", ORANGE, "+"+jack+" signal · let it ride?");
         setStatus("the deal paid. +"+jack+" signal. double or nothing again? the algorithm dares you.","flip");
-        dealStreak=Math.min(8, dealStreak+1); // let it ride — stays armed, pot grows
+        // let it ride — but only if the deal is still armed. disarming (the
+        // off-ramp) breaks the chain even when this wave settles late, so a
+        // chained early transmit can't bank the pot through a non-deal wave.
+        dealStreak = dealArmed ? Math.min(8, dealStreak+1) : 1;
         sfx.streakup();
       } else {
         streak=0; dealStreak=1; dealArmed=false;
@@ -672,7 +689,9 @@
         setBanner("THE DEAL COLLAPSED", RED, "you leaked. nothing.");
         setStatus("you took the deal and leaked. nothing. the algorithm keeps its winnings and your dignity.","bad");
       }
-      score+=w*10; syncHud(); syncDeal();
+      score+=w*10;
+      announceEndless(w); // a deal on wave 30 still crosses into endless — loudly
+      syncHud(); syncDeal();
       return;
     }
     let bonus=30+w*5;
@@ -686,11 +705,8 @@
     }
     cash+=bonus; score+=w*10;
     BUS.emit("ev:credit",{w, clean:!m.leaked, deal:false, bonus});
-    if(w===30){
-      BUS.emit("ev:endless");
-      setBanner("THE GRID GOES ENDLESS", TEAL, "thirty waves. the slop never ends. neither do you.");
-      setStatus("wave 30 cleared. ENDLESS MODE. no milestones out here. just waves.","flip");
-      sfx.streakup();
+    if(announceEndless(w)){
+      // handled — the grid goes endless
     } else if(w>=20 && w%20===0){
       setBanner("THE MILESTONE WAS A TRAP", ORANGE, "so you moved it. keep going.");
       setStatus("wave "+w+" cleared. the milestone was a trap. so I moved it. keep going.","flip");
@@ -787,7 +803,7 @@
     if(regSubmitted) return;
     const nm=($("regName").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,3);
     if(!nm){ $("regStatus").textContent="three letters. any letters. even wrong ones."; return; }
-    localStorage.setItem("stoopid_defense_initials",nm);
+    lsSet("stoopid_defense_initials",nm);
     $("regBtn").disabled=true; $("regStatus").textContent="transmitting…";
     try{
       const r=await fetch(REG_URL+"/submit",{method:"POST",headers:{"content-type":"application/json"},
@@ -1196,7 +1212,11 @@
       el.textContent = dealArmed ? ("DEAL ON — WIN +"+dealJackpot(wave+1)) : "DOUBLE OR NOTHING: OFF";
     } else if(state==="wave" && dealWave){
       el.style.display=""; el.disabled=true; el.classList.add("on");
-      el.textContent="DEAL WAVE — +"+dealJackpot(wave)+" ON THE LINE";
+      // show the PROMISED jackpot (snapshot at arm time) — a previous deal wave
+      // settling mid-wave bumps dealStreak, and a live recompute would then
+      // advertise more than settlement will actually pay
+      const jack=(waveMeta[wave]&&waveMeta[wave].jack)||dealJackpot(wave);
+      el.textContent="DEAL WAVE — +"+jack+" ON THE LINE";
     } else {
       el.style.display="none";
     }
@@ -1482,8 +1502,11 @@
       }
     }
 
-    // foes
-    let bossAlive=null;
+    // foes — the integrity bar binds to the FOREMOST algorithm (deepest into the
+    // grid), not whichever one happens to render last; multi-boss waves would
+    // otherwise show a bar that jumps between different HP pools
+    let bossAlive=null, bossCount=0;
+    const trackBoss=f=>{ bossCount++; if(!bossAlive || f.d>bossAlive.d) bossAlive=f; };
     for(const f of foes){
       if(f.hp<=0) continue;
       const p=posAt(f.d);
@@ -1491,7 +1514,7 @@
       const slowed=f.slowF<1;
       const spr=SPRITES[f.type];
       if(spr && spr.naturalWidth){
-        if(f.type==="boss") bossAlive=f;
+        if(f.type==="boss") trackBoss(f);
         cx.save();
         cx.translate(p.x,p.y);
         if(f.type==="manager"){
@@ -1577,7 +1600,7 @@
         cx.beginPath(); cx.moveTo(-f.r,2); cx.lineTo(f.r,2); cx.stroke();
         cx.fillStyle=WHITE; cx.fillRect(-1.5,0.5,3,3);
       } else { // THE ALGORITHM
-        bossAlive=f;
+        trackBoss(f);
         cx.rotate(pulseT*1.4);
         cx.beginPath();
         for(let i=0;i<6;i++){ const a=i*Math.PI/3; cx.lineTo(Math.cos(a)*f.r,Math.sin(a)*f.r); }
@@ -1648,7 +1671,7 @@
       cx.fillRect(W/2-117,11,234*frac,14);
       cx.shadowBlur=0;
       cx.fillStyle="#fff"; cx.font="bold 10px 'Courier New',monospace"; cx.textAlign="center";
-      cx.fillText("THE ALGORITHM",W/2,36+4);
+      cx.fillText("THE ALGORITHM"+(bossCount>1?" ×"+bossCount:""),W/2,36+4);
       cx.restore();
     }
 
@@ -1750,10 +1773,10 @@
     waveBtn.classList.toggle("early",!!d.early);
     if(d.text!==undefined) waveBtn.textContent=d.text;
   });
-  BUS.on("best", d=>{ try{
-    localStorage.setItem("stoopid_defense_best",d.best);
-    localStorage.setItem("stoopid_defense_best_score",d.bestScore);
-  }catch(e){} });
+  BUS.on("best", d=>{
+    lsSet("stoopid_defense_best",d.best);
+    lsSet("stoopid_defense_best_score",d.bestScore);
+  });
   BUS.on("resetui", ()=>{ $("resultCard").classList.remove("show"); });
   BUS.on("over", d=>{
     $("resVerdict").textContent=d.verdict.v;
@@ -1769,7 +1792,7 @@
     $("resultCard").scrollIntoView({behavior:"smooth", block:"center"});
     regSubmitted=false; $("regBtn").disabled=false;
     $("regForm").style.display=""; $("regStatus").textContent="";
-    $("regName").value=localStorage.getItem("stoopid_defense_initials")||"";
+    $("regName").value=lsGet("stoopid_defense_initials")||"";
     regLoad();
   });
 
