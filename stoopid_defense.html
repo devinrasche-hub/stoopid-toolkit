@@ -273,7 +273,7 @@
   const SEGS=[]; let TOTAL=0;
   for(let i=0;i<PTS.length-1;i++){
     const a=PTS[i], b=PTS[i+1], len=Math.hypot(b.x-a.x,b.y-a.y);
-    SEGS.push({a,b,len,start:TOTAL}); TOTAL+=len;
+    SEGS.push({a,b,len,start:TOTAL,ang:Math.atan2(b.y-a.y,b.x-a.x)}); TOTAL+=len;
   }
   function posAt(d){
     if(d<=0){const s=SEGS[0];return{x:s.a.x+(s.b.x-s.a.x)*(d/s.len),y:s.a.y+(s.b.y-s.a.y)*(d/s.len)};}
@@ -283,6 +283,23 @@
     }
     return {x:PTS[PTS.length-1].x, y:PTS[PTS.length-1].y};
   }
+  /* position cache — stamp px/py/ang on every live foe, ONE path lookup per
+     foe per pass instead of one per tower-foe pair. writes in place: the hot
+     loops (slow fields, aura, targeting, splash, render) read floats and never
+     allocate. stamped at the top of update (pre-march phase) and again after
+     the march; spawn() stamps children born mid-update. */
+  function stampFoe(f){
+    const d=f.d;
+    if(d<=0){ const s=SEGS[0], t=d/s.len;
+      f.px=s.a.x+(s.b.x-s.a.x)*t; f.py=s.a.y+(s.b.y-s.a.y)*t; f.ang=s.ang; return; }
+    for(const s of SEGS){
+      if(d<=s.start+s.len){ const t=(d-s.start)/s.len;
+        f.px=s.a.x+(s.b.x-s.a.x)*t; f.py=s.a.y+(s.b.y-s.a.y)*t; f.ang=s.ang; return; }
+    }
+    const s=SEGS[SEGS.length-1];
+    f.px=s.b.x; f.py=s.b.y; f.ang=s.ang;
+  }
+  function stampAll(){ for(const f of foes) stampFoe(f); }
   const pathCells=new Set();
   for(let i=0;i<WAYPTS.length-1;i++){
     let [c1,r1]=WAYPTS[i], [c2,r2]=WAYPTS[i+1];
@@ -315,6 +332,15 @@
     };
   }
   function upCost(t){ return Math.round(TOWERS[t.type].cost*[0.8,1.6,2.7,4.5][t.lvl-1]); }
+  // per-level tower tint, precomputed — ctx.filter forces a filtered surface per
+  // draw group (software path on many phones); baked colors cost nothing
+  const LVLCOL={};
+  (function(){
+    const bright=(hex,fm)=>{ const n=parseInt(hex.slice(1),16);
+      const r=Math.min(255,(n>>16&255)*fm)|0, g=Math.min(255,(n>>8&255)*fm)|0, b2=Math.min(255,(n&255)*fm)|0;
+      return "rgb("+r+","+g+","+b2+")"; };
+    for(const k in TOWERS){ LVLCOL[k]=[]; for(let m=0;m<MAXLVL;m++) LVLCOL[k].push(bright(TOWERS[k].col,1+0.15*m)); }
+  })();
 
   /* ---------- LEVEL GATING (a new tower every 5 waves; caps grow with the grid) ----------
      the grid earns its arsenal. pulse holds the line from wave 1; the heavy hitters
@@ -754,6 +780,7 @@
       // bounty tracks HALF the threat curve (sqrt of hpScale) — income grows with the
       // slop but never keeps pace, so endless mode stays terminal
       bounty:Math.round(f.bounty*Math.sqrt(hpScale(w))), leak:f.leak, res:f.res||0, noslow:!!f.noslow});
+    stampFoe(foes[foes.length-1]); // children born mid-update must never render/aim unstamped
     if(dOverride===undefined){
       const p=posAt(2);
       rings.push({x:p.x,y:p.y,r:2,maxr:16,col:f.col,life:0.22});
@@ -1033,11 +1060,11 @@
   // fire-control protocols: 0 FIRST (furthest along), 1 STRONG (max hp), 2 FRESH (newest spawn)
   const TGTMODES=["FIRST","STRONG","FRESH"];
   function nearestFoe(x,y,range,mode){
-    let bestF=null, bestV=-Infinity;
+    let bestF=null, bestV=-Infinity; const r2=range*range;
     for(const f of foes){
       if(f.hp<=0||f.d<0) continue;
-      const p=posAt(f.d);
-      if(Math.hypot(p.x-x,p.y-y)>range) continue;
+      const dx=f.px-x, dy=f.py-y;
+      if(dx*dx+dy*dy>r2) continue;
       const v = mode===1 ? f.hp : mode===2 ? -f.d : f.d;
       if(v>bestV){ bestV=v; bestF=f; }
     }
@@ -1061,13 +1088,12 @@
   function settleKill(f){
     kills++;
     cash+=f.bounty; score+=f.shape==="hex"?150:10;
-    const p=posAt(f.d);
-    burst(p.x,p.y,f.col,f.shape==="hex"?30:12);
-    texts.push({x:p.x,y:p.y-12,txt:"+"+f.bounty,life:0.9,col:TEAL});
+    burst(f.px,f.py,f.col,f.shape==="hex"?30:12);
+    texts.push({x:f.px,y:f.py-12,txt:"+"+f.bounty,life:0.9,col:TEAL});
     if(f.shape==="hex"){
       shake=Math.min(shake+9,12); sfx.bossdie();
       flash={col:RED,life:0.16,max:0.16};
-      rings.push({x:p.x,y:p.y,r:10,maxr:95,col:RED,life:0.45});
+      rings.push({x:f.px,y:f.py,r:10,maxr:95,col:RED,life:0.45});
       // it never really dies — it decomposes into slop. children always spawn
       // with at least the last leg left to walk: a boss killed at the core
       // must never turn a won fight into a leak.
@@ -1083,7 +1109,7 @@
       sfx.kill();
     }
     else if(f.shape==="manager"){
-      rings.push({x:p.x,y:p.y,r:8,maxr:AURA_R,col:PURPLE,life:0.4});
+      rings.push({x:f.px,y:f.py,r:8,maxr:AURA_R,col:PURPLE,life:0.4});
       setStatus("the manager was deleted. the slop is unprotected. proceed.","good");
       sfx.boom();
     }
@@ -1111,18 +1137,38 @@
     creditWave(f.wv);
   }
   const GLYPHS="01#$%&+x!?";
+  /* particle pool + in-place compaction — the fx arrays used to churn a fresh
+     array per .filter() per update (×3 at ×3 speed) plus a new object per
+     spark. recycled objects must have EVERY field restamped — a stale .ch
+     turns a laser spark into a glyph. */
+  const PART_POOL=[];
+  function newPart(x,y,vx,vy,life,col,sz,ch){
+    const p=PART_POOL.pop()||{};
+    p.x=x; p.y=y; p.vx=vx; p.vy=vy; p.life=life; p.col=col; p.sz=sz; p.ch=ch||null;
+    parts.push(p);
+  }
+  function compact(arr,isDead,pool){
+    let w=0;
+    for(let i=0;i<arr.length;i++){
+      const o=arr[i];
+      if(isDead(o)){ if(pool && pool.length<512) pool.push(o); }
+      else arr[w++]=o;
+    }
+    arr.length=w;
+  }
+  const deadFoe=f=>f.hp<=0, deadFx=o=>o.life<=0;
   function burst(x,y,col,n){
     for(let i=0;i<n;i++){
       const a=Math.random()*Math.PI*2, s=30+Math.random()*130;
-      parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.35+Math.random()*0.4,col,sz:1+Math.random()*2.5});
+      newPart(x,y,Math.cos(a)*s,Math.sin(a)*s,0.35+Math.random()*0.4,col,1+Math.random()*2.5);
     }
     // the slop decompiles — raw data escaping the corpse
     for(let i=0;i<Math.min(4,Math.ceil(n/3));i++){
       const a=Math.random()*Math.PI*2, s=15+Math.random()*55;
-      parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-24,life:0.55+Math.random()*0.4,col,sz:0,
-        ch:GLYPHS[Math.floor(Math.random()*GLYPHS.length)]});
+      newPart(x,y,Math.cos(a)*s,Math.sin(a)*s-24,0.55+Math.random()*0.4,col,0,
+        GLYPHS[Math.floor(Math.random()*GLYPHS.length)]);
     }
-    if(parts.length>380) parts.splice(0,parts.length-380);
+    while(parts.length>380){ const p=parts.shift(); if(PART_POOL.length<512) PART_POOL.push(p); }
   }
 
   /* ---------- SIGNAL BOOSTS (spend the hoard mid-transmission) ----------
@@ -1166,9 +1212,9 @@
       rings.push({x:W/2,y:H/2,r:20,maxr:360,col:ORANGE,life:0.5});
       setStatus("everyone log off. the grid crawls. the sponsored posts stay online. of course they do.","flip");
     } else if(id==="ratio"){
-      const tgt=strongestFoe(), p=posAt(tgt.d);
-      rings.push({x:p.x,y:p.y,r:8,maxr:80,col:RED,life:0.45});
-      texts.push({x:p.x,y:p.y-16,txt:"RATIO'D",life:1.0,col:RED});
+      const tgt=strongestFoe();
+      rings.push({x:tgt.px,y:tgt.py,r:8,maxr:80,col:RED,life:0.45});
+      texts.push({x:tgt.px,y:tgt.py-16,txt:"RATIO'D",life:1.0,col:RED});
       shake=Math.min(shake+5,12);
       damage(tgt, tgt.hp+99999, RED); // delete the loudest thing on the grid
       setStatus("ratio'd the loudest thing on the grid. you cannot argue with the algorithm. you can delete it.","good");
@@ -1245,15 +1291,16 @@
         syncForecast(); syncDeal();
       }
     }
+    stampAll(); // pre-march positions for slow fields + aura
     // slow fields + truth burn
     for(const f of foes) f.slowF=1;
     for(const t of towers){
       if(t.type!=="flip") continue;
-      const s=stat(t), tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL;
+      const s=stat(t), tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL, r2=s.range*s.range;
       for(const f of foes){
         if(f.hp<=0||f.d<0) continue; // off-grid slop is out of reach — same rule as the lasers
-        const p=posAt(f.d);
-        if(Math.hypot(p.x-tx,p.y-ty)<=s.range){
+        const dx=f.px-tx, dy=f.py-ty;
+        if(dx*dx+dy*dy<=r2){
           if(!f.noslow) f.slowF=Math.min(f.slowF,s.slow);
           if(s.dot) damage(f,s.dot*dt,ORANGE);
         }
@@ -1263,13 +1310,13 @@
     if(slowAllT>0){ for(const f of foes) if(!f.noslow) f.slowF=Math.min(f.slowF,0.55); }
     // the manager's aura — nearby slop gets corporate protection
     for(const f of foes) f.auraRes=0;
+    const AURA2=AURA_R*AURA_R;
     for(const m of foes){
       if(m.shape!=="manager"||m.hp<=0) continue;
-      const mp=posAt(m.d);
       for(const f of foes){
         if(f===m||f.hp<=0) continue;
-        const p=posAt(f.d);
-        if(Math.hypot(p.x-mp.x,p.y-mp.y)<=AURA_R) f.auraRes=0.5;
+        const dx=f.px-m.px, dy=f.py-m.py;
+        if(dx*dx+dy*dy<=AURA2) f.auraRes=0.5;
       }
     }
     // foes march
@@ -1277,16 +1324,16 @@
       if(f.hp<=0) continue;
       const rage = f.shape==="doom" ? 1+0.9*(1-Math.max(0,f.hp)/f.maxhp) : 1;
       if(freezeT<=0) f.d+=f.sp*f.slowF*rage*dt; // TOUCH GRASS freezes the feed
-      // dart + boss leave trails
+      // dart + boss leave trails — pre-march px/py: a trail belongs BEHIND the mover
       if((f.shape==="dart"||f.shape==="hex") && Math.random()<dt*30){
-        const p=posAt(f.d);
-        parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,col:f.col,sz:f.shape==="hex"?2.5:1.5});
+        newPart(f.px,f.py,0,0,0.3,f.col,f.shape==="hex"?2.5:1.5);
       }
       if(f.d>=TOTAL && !f.dead){
         f.hp=0; f.dead=true;
         events.push({kind:"leak", f});
       }
     }
+    stampAll(); // post-march refresh — towers aim and render at true positions
     // towers fire
     for(const t of towers){
       t.fx=Math.max(0,t.fx-dt);
@@ -1296,26 +1343,26 @@
       t.cd-=dt;
       const tgt=nearestFoe(tx,ty,s.range,t.tgt||0);
       if(tgt){
-        const p=posAt(tgt.d);
-        t.angle=Math.atan2(p.y-ty,p.x-tx);
+        t.angle=Math.atan2(tgt.py-ty,tgt.px-tx);
         if(t.cd<=0){
           t.cd=1/s.rate; t.fx=0.09;
           const col=TOWERS[t.type].col;
-          beams.push({x1:tx,y1:ty-(t.type==="beam"?11:0),x2:p.x,y2:p.y,col,life:t.type==="beam"?0.16:0.07,w:t.type==="beam"?3:2});
+          beams.push({x1:tx,y1:ty-(t.type==="beam"?11:0),x2:tgt.px,y2:tgt.py,col,life:t.type==="beam"?0.16:0.07,w:t.type==="beam"?3:2});
           // muzzle spark
-          parts.push({x:tx+Math.cos(t.angle)*10,y:ty+Math.sin(t.angle)*10,
-            vx:Math.cos(t.angle)*60,vy:Math.sin(t.angle)*60,life:0.15,col,sz:2});
+          newPart(tx+Math.cos(t.angle)*10,ty+Math.sin(t.angle)*10,
+            Math.cos(t.angle)*60,Math.sin(t.angle)*60,0.15,col,2);
           if(t.type==="nova"){
-            rings.push({x:p.x,y:p.y,r:6,maxr:s.splash,col,life:0.28});
+            rings.push({x:tgt.px,y:tgt.py,r:6,maxr:s.splash,col,life:0.28});
+            const sp2=s.splash*s.splash;
             for(const f of foes){
               if(f.hp<=0||f.d<0) continue;
-              const q=posAt(f.d);
-              if(Math.hypot(q.x-p.x,q.y-p.y)<=s.splash) damage(f,s.dmg,col);
+              const dx=f.px-tgt.px, dy=f.py-tgt.py;
+              if(dx*dx+dy*dy<=sp2) damage(f,s.dmg,col);
             }
             sfx.boom();
           } else {
             damage(tgt,s.dmg,col);
-            burst(p.x,p.y,col,3);
+            burst(tgt.px,tgt.py,col,3);
             if(t.type==="beam") sfx.beam(); else sfx.pew();
           }
         }
@@ -1324,17 +1371,17 @@
     // settlement — deaths and leaks resolve here, after every damage source has fired
     settle();
     if(state==="over") return;
-    foes=foes.filter(f=>f.hp>0);
+    compact(foes,deadFoe);
     if(state==="wave" && !spawnList.length && !foes.length) endWave();
     // fx decay
     for(const b of beams) b.life-=dt;
-    beams=beams.filter(b=>b.life>0);
+    compact(beams,deadFx);
     for(const r of rings){ r.life-=dt; r.r+=(r.maxr-r.r)*10*dt; }
-    rings=rings.filter(r=>r.life>0);
+    compact(rings,deadFx);
     for(const p of parts){ p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.92; p.vy*=0.92; }
-    parts=parts.filter(p=>p.life>0);
+    compact(parts,deadFx,PART_POOL);
     for(const t of texts){ t.life-=dt; t.y-=22*dt; }
-    texts=texts.filter(t=>t.life>0);
+    compact(texts,deadFx);
     if(texts.length>40) texts.splice(0,texts.length-40);
     if(banner){ banner.life-=dt; if(banner.life<=0) banner=null; }
     if(flash){ flash.life-=dt; if(flash.life<=0) flash=null; }
@@ -1440,9 +1487,8 @@
       cx.strokeStyle="rgba(255,255,255,0.14)";
       cx.strokeRect(-CELL/2+4,-CELL/2+4,CELL-8,CELL-8);
       glow(b.col,(t.fx>0?15:5)+3.5*t.lvl);
-      if(!lowFX) cx.filter="brightness("+(100+15*(t.lvl-1))+"%) saturate("+(100+10*(t.lvl-1))+"%)";
       if(Math.random()<0.015) cx.globalAlpha=0.55; // hologram flicker — projection budget cuts
-      cx.strokeStyle=b.col; cx.lineWidth=2;
+      cx.strokeStyle=LVLCOL[t.type][t.lvl-1]; cx.lineWidth=2;
       // high-tier towers get a spinning halo
       if(t.lvl>=4){
         cx.save();
@@ -1509,14 +1555,13 @@
     const trackBoss=f=>{ bossCount++; if(!bossAlive || f.d>bossAlive.d) bossAlive=f; };
     for(const f of foes){
       if(f.hp<=0) continue;
-      const p=posAt(f.d);
       if(f.d<0) continue;
       const slowed=f.slowF<1;
       const spr=SPRITES[f.type];
       if(spr && spr.naturalWidth){
         if(f.type==="boss") trackBoss(f);
         cx.save();
-        cx.translate(p.x,p.y);
+        cx.translate(f.px,f.py);
         if(f.type==="manager"){
           cx.save();
           cx.strokeStyle="rgba(138,43,226,0.35)"; cx.lineWidth=1.5;
@@ -1525,9 +1570,8 @@
           cx.restore();
         }
         const sz=f.r*({slop:3.0,bait:3.2,brick:2.8,swarm:3.2,shield:3.0,reply:3.0,doom:3.0,manager:2.8,boss:3.0}[f.type]||3);
-        const ang=Math.atan2(posAt(f.d+4).y-p.y, posAt(f.d+4).x-p.x);
-        if(f.type==="bait") cx.rotate(ang+Math.PI/4);
-        else if(f.type==="doom") cx.rotate(ang);
+        if(f.type==="bait") cx.rotate(f.ang+Math.PI/4);
+        else if(f.type==="doom") cx.rotate(f.ang);
         else if(f.type==="brick") cx.rotate(pulseT*0.8+f.wob);
         else if(f.type==="boss") cx.rotate(pulseT*0.6);
         else if(f.type==="slop"||f.type==="swarm"){ const w2=1+Math.sin(pulseT*6+f.wob)*0.07; cx.scale(w2,2-w2); }
@@ -1535,7 +1579,7 @@
         cx.drawImage(spr,-sz/2,-sz/2,sz,sz);
         cx.restore();
         if(slowed || (f.auraRes>0&&f.type!=="manager")){
-          cx.save(); cx.translate(p.x,p.y);
+          cx.save(); cx.translate(f.px,f.py);
           cx.strokeStyle= slowed?ORANGE:PURPLE; cx.lineWidth=1.2;
           glow(cx.strokeStyle,5);
           cx.setLineDash([3,4]); cx.lineDashOffset=pulseT*16;
@@ -1544,14 +1588,14 @@
         }
       } else {
       cx.save();
-      cx.translate(p.x,p.y);
+      cx.translate(f.px,f.py);
       glow(slowed?ORANGE:f.col,10);
       cx.strokeStyle= slowed?ORANGE:f.col; cx.lineWidth=2; cx.fillStyle="#000";
       if(f.shape==="blob"){
         const w2=1+Math.sin(pulseT*6+f.wob)*0.15;
         cx.beginPath(); cx.arc(0,0,f.r*w2,0,Math.PI*2); cx.fill(); cx.stroke();
       } else if(f.shape==="dart"){
-        cx.rotate(Math.atan2(posAt(f.d+4).y-p.y, posAt(f.d+4).x-p.x));
+        cx.rotate(f.ang);
         cx.beginPath(); cx.moveTo(f.r+3,0); cx.lineTo(-f.r,-f.r+2); cx.lineTo(-f.r,f.r-2); cx.closePath();
         cx.fill(); cx.stroke();
       } else if(f.shape==="block"){
@@ -1620,8 +1664,8 @@
       }
       // hp bar
       const hw=f.r*2, frac=Math.max(0,f.hp/f.maxhp);
-      cx.fillStyle="rgba(255,255,255,0.15)"; cx.fillRect(p.x-hw/2,p.y-f.r-7,hw,3);
-      cx.fillStyle= frac>0.4?TEAL:RED; cx.fillRect(p.x-hw/2,p.y-f.r-7,hw*frac,3);
+      cx.fillStyle="rgba(255,255,255,0.15)"; cx.fillRect(f.px-hw/2,f.py-f.r-7,hw,3);
+      cx.fillStyle= frac>0.4?TEAL:RED; cx.fillRect(f.px-hw/2,f.py-f.r-7,hw*frac,3);
     }
 
     // beams — the whole point
