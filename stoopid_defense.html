@@ -314,7 +314,7 @@
       splash:b.splash ? b.splash*Math.pow(1.16,m) : 0
     };
   }
-  function upCost(t){ return Math.round(TOWERS[t.type].cost*[0.9,1.5,2.4,3.8][t.lvl-1]); }
+  function upCost(t){ return Math.round(TOWERS[t.type].cost*[0.8,1.6,2.7,4.5][t.lvl-1]); }
 
   /* ---------- LEVEL GATING (a new tower every 5 waves; caps grow with the grid) ----------
      the grid earns its arsenal. pulse holds the line from wave 1; the heavy hitters
@@ -349,10 +349,11 @@
     boss:  {hp:520, sp:30,  r:16, bounty:130, col:RED,    shape:"hex",    leak:3, label:"THE ALGORITHM"}
   };
   const AURA_R=70; // the manager's protection racket
-  // gentle ramp early, compounding after wave 10 — a parked grid WILL fall
+  // firmer ramp early (the midgame is not a waiting room), gentler compound late —
+  // a parked grid still falls, it just gets warned sooner
   function hpScale(w){
-    const base=1 + 0.22*(w-1) + 0.005*w*w;
-    return w>10 ? base*Math.pow(1.115,w-10) : base;
+    const base=1 + 0.30*(w-1) + 0.005*w*w;
+    return w>10 ? base*Math.pow(1.105,w-10) : base;
   }
 
   const WAVELINES=[
