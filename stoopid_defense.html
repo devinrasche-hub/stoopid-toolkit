@@ -241,7 +241,7 @@
   </div>
 </div>
 
-<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.37 &middot; the towers were paid in signal</footer>
+<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.39 &middot; the towers were paid in signal</footer>
 
 <script>
 (function(){
@@ -356,8 +356,9 @@
   function levelNow(){ return state==="wave" ? wave : Math.min(wave+1, 999); }
   function towerUnlocked(type){ return levelNow() >= GATE[type].unlock; }
   function towerCap(type){
-    const g=GATE[type];
-    return g.cap0 + Math.max(0, Math.floor((levelNow()-g.unlock)/g.capEvery));
+    const g=GATE[type], lv=levelNow();
+    return g.cap0 + Math.max(0, Math.floor((lv-g.unlock)/g.capEvery))
+      + (lv>30 ? Math.floor((lv-30)/3) : 0); // endless: the grid opens up faster
   }
   function towerCount(type){ let n=0; for(const t of towers) if(t.type===type) n++; return n; }
   function canBuild(type){ return towerUnlocked(type) && towerCount(type) < towerCap(type); }
@@ -375,11 +376,18 @@
     boss:  {hp:520, sp:30,  r:16, bounty:130, col:RED,    shape:"hex",    leak:3, label:"THE ALGORITHM"}
   };
   const AURA_R=70; // the manager's protection racket
-  // firmer ramp early (the midgame is not a waiting room), gentler compound late —
-  // a parked grid still falls, it just gets warned sooner
+  // the season curve: gentle to 10, compounding to 29, a ×1.28 wall AT 30 — the
+  // finale is a spike, not a step. endless resumes from the UNSPIKED wave-30 value
+  // (post-climax breather), then compounds 7.5%/wave with a quadratic accelerator:
+  // a parked grid still falls, and even a maxed one ends (bot-verified: dies ~43)
   function hpScale(w){
-    const base=1 + 0.30*(w-1) + 0.005*w*w;
-    return w>10 ? base*Math.pow(1.105,w-10) : base;
+    const base=1 + 0.28*(w-1) + 0.0045*w*w;
+    const s = w>10 ? base*Math.pow(1.139,w-10) : base;
+    if(w===30) return s*1.28;
+    if(w<=30) return s;
+    const b30=(1 + 0.28*29 + 0.0045*900)*Math.pow(1.139,20);
+    const d=w-30;
+    return b30*Math.pow(1.075,d)*(1+0.002*d*d);
   }
 
   /* ---------- THE LADDER (each ALGORITHM tests a different hole in the grid) ----------
@@ -387,8 +395,9 @@
      bar. after that, every hex arrives with a modifier that punishes a lopsided
      grid: sponsored wants your escorts cleared, managed wants target discipline,
      the milestone wants distributed coverage, the ratio wants splash, doomscroll
-     wants slow at the core. past 30 the ladder loops; every 4th endless boss wave
-     stacks two rungs and brings a second hex. */
+     wants slow at the core. wave 30 is the finale: doomscroll + ratio, TWO hexes.
+     past 30 the ladder loops; every 4th endless boss wave stacks two rungs and
+     brings a second hex. */
   const BOSSMODS={
     sponsored: {tag:"SPONSORED",    col:WHITE,  line:"it came with sponsors. it resists everything while they live. delete the money first."},
     managed:   {tag:"MANAGED",      col:PURPLE, line:"its manager walks point. the aura protects it. delete the manager first."},
@@ -404,13 +413,14 @@
     if(w===15) return ["managed"];
     if(w===20) return ["milestone"];
     if(w===25) return ["ratio"];
-    if(w===30) return ["doomscroll"];
+    if(w===30) return ["doomscroll","ratio"]; // the finale runs both rungs at once
     const i=(w-35)/5;
     if(w%20===10) return [MOD_ROT[i%4], MOD_ROT[(i+1)%4]]; // 50, 70, 90… double trouble
     return [MOD_ROT[i%4]];
   }
-  // stacked endless waves (50, 70, …) get a second hex. everything else gets ONE.
-  function bossCountFor(w){ return (w>30 && w%20===10) ? 2 : 1; }
+  // stacked endless waves (50, 70, …) get a second hex — and so does the wave-30
+  // finale. everything else gets ONE.
+  function bossCountFor(w){ return ((w>30 && w%20===10) || w===30) ? 2 : 1; }
   // the old multi-boss HP budget consolidates into the single hex — discounted,
   // because one focused target dies faster than a crowd and the modifier is the
   // rest of the difficulty. bounty tracks sqrt of this, same half-curve rule.
@@ -446,7 +456,7 @@
     "wave 27. the slop unionized. negotiations failed.",
     "wave 28. new slop, same slop. the feed recycles.",
     "wave 29. one more wave to the edge of the map.",
-    "wave 30. THE ALGORITHM stopped counting. the grid didn't."
+    "wave 30. the finale. THE ALGORITHM stopped counting at two."
   ];
   // past wave 30 the grid goes endless — the lines loop, the slop doesn't stop
   const ENDLESS_LINES=[
@@ -656,17 +666,21 @@
     // boss waves run the trash 40% lighter — the event needs the room. the
     // meaningful chaff (bricks, sponsors, replies, dooms) still shows up in full.
     const thin=n=>boss?Math.max(1,Math.round(n*0.6)):n;
+    // endless compresses the crowd at wave-33 volume — growth moves into HP.
+    // deep waves stay ~90s instead of stretching past two minutes, and the
+    // renderer never has to carry more slop than wave 33 already proved it can.
+    const cw=Math.min(w,33);
     const L=[], add=(t,n,g)=>{ for(let i=0;i<n;i++) L.push({t,g}); };
-    add("slop", thin(6+Math.floor(w*1.5)), Math.max(0.26, 0.6-w*0.012));
-    if(w>=2) add("bait", thin(Math.floor(w*0.9)), 0.32);
-    if(w>=6) add("brick", Math.floor(w/2.5), 0.9); // debuts AFTER the first boss — boss waves never debut an enemy
-    if(w>=7) add("swarm", thin(4+Math.floor(w*0.8)), 0.17);
-    if(w>=8) add("shield", Math.floor(w/4), 1.6);
-    if(w>=9) add("reply", Math.floor(w/3), 0.6);
-    if(w>=11) add("doom", Math.floor(w/4), 0.8);
+    add("slop", thin(6+Math.floor(cw*1.5)), Math.max(0.26, 0.6-w*0.012));
+    if(w>=2) add("bait", thin(Math.floor(cw*0.9)), 0.32);
+    if(w>=6) add("brick", Math.floor(cw/2.5), 0.9); // debuts AFTER the first boss — boss waves never debut an enemy
+    if(w>=7) add("swarm", thin(4+Math.floor(cw*0.8)), 0.17);
+    if(w>=8) add("shield", Math.floor(cw/4), 1.6);
+    if(w>=9) add("reply", Math.floor(cw/3), 0.6);
+    if(w>=11) add("doom", Math.floor(cw/4), 0.8);
     // the manager's own schedule dodges boss waves — wave 25 was a scheduling
     // accident, not a designed peak. MANAGED boss waves bring their own.
-    if(w>=13 && w%4===1 && w%5!==0) add("manager", 1+Math.floor(w/18), 2.0);
+    if(w>=13 && w%4===1 && w%5!==0) add("manager", 1+Math.floor(cw/18), 2.0);
     if(boss){
       const mods=bossModsFor(w);
       // one beat of runway before the boss group — the grid should feel it coming
@@ -1051,7 +1065,7 @@
   function buyOverclock(){
     if(wave<8 || cash<ocCost) return false;
     cash-=ocCost; spent+=ocCost; ocLevel++;
-    ocCost=Math.round(ocCost*1.6);
+    ocCost=Math.round(ocCost*(wave>30?1.28:1.6)); // endless discount — DPS stays purchasable out there
     rings.push({x:W/2,y:H/2,r:10,maxr:120,col:ORANGE,life:0.4});
     sfx.streakup(); syncHud();
     return true;
