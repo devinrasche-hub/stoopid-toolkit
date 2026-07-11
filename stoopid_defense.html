@@ -254,6 +254,16 @@
     if(ART[k]){ const im=document.createElement("img"); im.className="ticon"; im.src=ART[k]; im.alt=""; btn.prepend(im); }
   });
   const TEAL="#00FFC6", PURPLE="#8A2BE2", RED="#FF2D2D", ORANGE="#CC5500", WHITE="#FFFFFF";
+
+  /* ---------- SIGNAL BUS (sim → shell) ----------
+     the simulation never touches the DOM, audio, storage, or network — it emits
+     signals here and the shell (SHELL WIRING, bottom of file) subscribes. a
+     headless harness can subscribe instead (or not at all) and the sim runs
+     identically. mechanical channels: status/hud/bar/panel/forecast/oc/boosts/
+     deal/wavebtn/best/resetui/over/sfx. semantic channels (for tests+telemetry):
+     ev:wave, ev:credit, ev:leak, ev:unlock, ev:endless, ev:boost. */
+  const BUS={h:{}, on(k,fn){ (this.h[k]=this.h[k]||[]).push(fn); return fn; },
+    emit(k,d){ const l=this.h[k]; if(l) for(const fn of l) fn(d||{}); }};
   const CELL=40, COLS=16, ROWS=11, W=COLS*CELL, H=ROWS*CELL;
   const cv=document.getElementById("game"), cx=cv.getContext("2d");
 
@@ -288,9 +298,9 @@
   /* ---------- TOWERS (5 levels deep — signal always has a job) ---------- */
   const MAXLVL=5;
   const TOWERS={
-    pulse:{name:"PULSE LASER",   col:TEAL,   cost:90,  range:100, rate:3.2,  dmg:7,  desc:"fast. cheap. loyal."},
-    beam:{name:"PHILOSOPHY BEAM",col:PURPLE, cost:170, range:175, rate:0.75, dmg:38, desc:"slow, devastating truths."},
-    nova:{name:"URGENCY NOVA",   col:RED,    cost:230, range:115, rate:0.95, dmg:16, splash:60, desc:"area-of-effect panic."},
+    pulse:{name:"PULSE LASER",   col:TEAL,   cost:115, range:100, rate:3.2,  dmg:7,  desc:"fast. cheap. loyal."},
+    beam:{name:"PHILOSOPHY BEAM",col:PURPLE, cost:160, range:175, rate:0.75, dmg:50, desc:"slow, devastating truths."},
+    nova:{name:"URGENCY NOVA",   col:RED,    cost:230, range:115, rate:0.95, dmg:20, splash:60, desc:"area-of-effect panic."},
     flip:{name:"FLIP FIELD",     col:ORANGE, cost:140, range:95,  rate:0,    dmg:0,  slow:0.45, desc:"slows slop until it turns true."}
   };
   function stat(t){
@@ -314,7 +324,7 @@
     pulse:{unlock:1,  cap0:4, capEvery:5},  // cheap & loyal — the workhorse, generous cap
     beam: {unlock:5,  cap0:2, capEvery:5},  // philosophy beam — the OP one, kept scarce
     nova: {unlock:10, cap0:2, capEvery:5},  // urgency nova — area panic, mid unlock
-    flip: {unlock:15, cap0:2, capEvery:5}   // flip field — utility, arrives last
+    flip: {unlock:11, cap0:2, capEvery:5}   // flip field — arrives with the doomscroller, its natural prey
   };
   // the wave you're currently arming for: mid-wave it's this wave, in build it's the next one.
   function levelNow(){ return state==="wave" ? wave : Math.min(wave+1, 999); }
@@ -329,8 +339,8 @@
   /* ---------- THE SLOP ---------- */
   const FOES={
     slop:  {hp:26,  sp:52,  r:9,  bounty:11,  col:RED,    shape:"blob",   leak:1, label:"raw slop"},
-    bait:  {hp:15,  sp:106, r:7,  bounty:9,   col:WHITE,  shape:"dart",   leak:1, label:"engagement bait"},
-    brick: {hp:85,  sp:36,  r:11, bounty:24,  col:PURPLE, shape:"block",  leak:2, label:"slop brick"},
+    bait:  {hp:12,  sp:106, r:7,  bounty:9,   col:WHITE,  shape:"dart",   leak:1, label:"engagement bait"},
+    brick: {hp:115, sp:36,  r:11, bounty:24,  col:PURPLE, shape:"block",  leak:2, label:"slop brick"},
     swarm: {hp:11,  sp:118, r:4,  bounty:4,   col:RED,    shape:"mote",   leak:1, label:"ratio swarm"},
     shield:{hp:95,  sp:40,  r:10, bounty:30,  col:WHITE,  shape:"sponsor",leak:2, label:"sponsored post", res:0.45, noslow:true},
     reply: {hp:42,  sp:62,  r:9,  bounty:14,  col:WHITE,  shape:"reply",  leak:1, label:"reply guy"},
@@ -410,8 +420,8 @@
     for(const id in BOOSTS){ boostState[id]={cost:BOOSTS[id].cost0, cd:0, uses:0}; }
     syncBoosts(); syncDeal();
     cause="unmoderated slop"; lastVerdict=null; armed=null; selected=null;
-    document.getElementById("resultCard").classList.remove("show");
-    waveBtn.disabled=false; waveBtn.textContent="TRANSMIT WAVE 1"; waveBtn.classList.remove("early");
+    BUS.emit("resetui");
+    BUS.emit("wavebtn",{disabled:false, early:false, text:"TRANSMIT WAVE 1"});
     setStatus("the grid is quiet. it will not stay quiet.","");
     syncHud(); syncBar(); syncPanel(); syncForecast();
   }
@@ -430,7 +440,7 @@
       o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+0.02);
     }catch(e){}
   }
-  const sfx={
+  const SFX={
     pew(){ const n=performance.now(); if(n-lastPew<50) return; lastPew=n; tone(880,240,0.06,"square",0.03); },
     beam(){ tone(160,1200,0.18,"sawtooth",0.05); },
     boom(){ tone(200,40,0.22,"sawtooth",0.07); },
@@ -443,6 +453,9 @@
     bossdie(){ tone(90,30,0.5,"sawtooth",0.1); tone(1200,300,0.3,"square",0.05); },
     over(){ tone(440,40,0.9,"sawtooth",0.09); }
   };
+  // sim-side: a sound is a signal — the synth above stays in the shell
+  const sfx={}; for(const k in SFX) sfx[k]=()=>BUS.emit("sfx",{n:k});
+  BUS.on("sfx",e=>SFX[e.n]());
   document.getElementById("soundBtn").addEventListener("click",e=>{
     muted=!muted; e.target.textContent="SOUND: "+(muted?"OFF":"ON");
   });
@@ -490,9 +503,19 @@
   /* ---------- HELPERS ---------- */
   const $=id=>document.getElementById(id);
   const waveBtn=$("waveBtn"), statusBox=$("statusBox");
-  function setStatus(msg,cls){ statusBox.textContent=msg; statusBox.className="status"+(cls?" "+cls:""); }
+  // sim-side: a status line is an EVENT, not a DOM write — the shell renders it.
+  // setBanner stays pure data (banner is canvas state drawn by render()).
+  function setStatus(msg,cls){ BUS.emit("status",{msg,cls}); }
   function setBanner(txt,col,sub){ banner={txt,col,sub:sub||"",life:3.2,max:3.2}; }
-  function syncHud(){
+  /* sim-side UI signals — the ui* implementations live in SHELL WIRING below */
+  function syncHud(){ BUS.emit("hud"); }
+  function syncBar(){ BUS.emit("bar"); }
+  function syncPanel(){ BUS.emit("panel"); }
+  function syncForecast(){ BUS.emit("forecast"); }
+  function syncOc(){ BUS.emit("oc"); }
+  function syncBoosts(){ BUS.emit("boosts"); }
+  function syncDeal(){ BUS.emit("deal"); }
+  function uiHud(){
     $("hudCash").textContent=Math.floor(cash);
     const lv=$("hudLives"); lv.textContent=lives; lv.className=lives<=3?"hurt":"";
     $("hudWave").textContent=wave;
@@ -501,7 +524,7 @@
     $("hudBest").textContent=bestScore;
     syncBar(); syncOc(); syncBoosts(); syncDeal(); syncPanel();
   }
-  function syncBar(){
+  function uiBar(){
     document.querySelectorAll(".twr").forEach(btn=>{
       const t=btn.dataset.type;
       const unlocked=towerUnlocked(t), cap=towerCap(t), n=towerCount(t);
@@ -517,7 +540,7 @@
       }
     });
   }
-  function syncPanel(){
+  function uiPanel(){
     const p=$("towerPanel");
     if(!selected){ p.classList.remove("show"); return; }
     const t=selected, b=TOWERS[t.type], s=stat(t);
@@ -542,7 +565,7 @@
   }
 
   /* ---------- THREAT FORECAST (the grid sees the future now) ---------- */
-  function syncForecast(){
+  function uiForecast(){
     const el=$("forecastBox");
     const show = state==="build" || (state==="wave" && earlyReady);
     if(!show){ el.innerHTML=""; return; }
@@ -565,7 +588,7 @@
     if(w>=2) add("bait", Math.floor(w*0.9), 0.32);
     if(w>=5) add("brick", Math.floor(w/2.5), 0.9);
     if(w>=7) add("swarm", 4+Math.floor(w*0.8), 0.17);
-    if(w>=8) add("shield", Math.floor(w/4), 1.1);
+    if(w>=8) add("shield", Math.floor(w/4), 1.6);
     if(w>=9) add("reply", Math.floor(w/3), 0.6);
     if(w>=11) add("doom", Math.floor(w/4), 0.8);
     if(w>=13 && w%4===1) add("manager", 1+Math.floor(w/18), 2.0);
@@ -605,8 +628,8 @@
       jack:dealWave?dealJackpot(wave):0, dstreak:dealStreak};
     spawnList=spawnsFor(wave, dealWave);
     spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
-    waveBtn.disabled=true; waveBtn.classList.remove("early");
-    waveBtn.textContent="WAVE "+wave+" IN PROGRESS";
+    BUS.emit("ev:wave",{w:wave, deal:dealWave});
+    BUS.emit("wavebtn",{disabled:true, early:false, text:"WAVE "+wave+" IN PROGRESS"});
     const boss=wave%5===0;
     const line = WAVELINES[wave-1] || (boss ? "wave "+wave+". THE ALGORITHM has entered the grid. again. it lives here now."
       : wave>30 ? "wave "+wave+". "+ENDLESS_LINES[(wave-31)%ENDLESS_LINES.length]
@@ -637,12 +660,14 @@
         const jack=m.jack||dealJackpot(w);                           // signal — the amount promised when the deal was struck
         const jscore=Math.round((45+15*w)*Math.min(5,m.dstreak||dealStreak)); // score — leaderboard-relevant but stays inside the registry guard (wave*3000+5000)
         cash+=jack; score+=jscore;
+        BUS.emit("ev:credit",{w, clean:true, deal:true, jack});
         setBanner("THE DEAL PAID", ORANGE, "+"+jack+" signal · let it ride?");
         setStatus("the deal paid. +"+jack+" signal. double or nothing again? the algorithm dares you.","flip");
         dealStreak=Math.min(8, dealStreak+1); // let it ride — stays armed, pot grows
         sfx.streakup();
       } else {
         streak=0; dealStreak=1; dealArmed=false;
+        BUS.emit("ev:credit",{w, clean:false, deal:true, jack:0});
         setBanner("THE DEAL COLLAPSED", RED, "you leaked. nothing.");
         setStatus("you took the deal and leaked. nothing. the algorithm keeps its winnings and your dignity.","bad");
       }
@@ -659,7 +684,9 @@
       streak=0;
     }
     cash+=bonus; score+=w*10;
+    BUS.emit("ev:credit",{w, clean:!m.leaked, deal:false, bonus});
     if(w===30){
+      BUS.emit("ev:endless");
       setBanner("THE GRID GOES ENDLESS", TEAL, "thirty waves. the slop never ends. neither do you.");
       setStatus("wave 30 cleared. ENDLESS MODE. no milestones out here. just waves.","flip");
       sfx.streakup();
@@ -674,10 +701,10 @@
   function endWave(){
     state="build"; earlyReady=false;
     creditWave(wave);
-    if(wave>best){ best=wave; localStorage.setItem("stoopid_defense_best",best); }
-    if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
-    waveBtn.disabled=false; waveBtn.classList.remove("early");
-    waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
+    if(wave>best) best=wave;
+    if(score>bestScore) bestScore=score;
+    BUS.emit("best",{best,bestScore});
+    BUS.emit("wavebtn",{disabled:false, early:false, text:"TRANSMIT WAVE "+(wave+1)});
     // a new tower type unlocks the moment you're arming for its unlock wave
     announceUnlocks();
     sfx.kill(); syncHud(); syncForecast();
@@ -692,6 +719,7 @@
       if(GATE[type].unlock>lv || unlockAnnounced[type]) continue;
       unlockAnnounced[type]=true;
       if(GATE[type].unlock<=1) continue; // day-one gear needs no fanfare
+      BUS.emit("ev:unlock",{type});
       setBanner(TOWERS[type].name+" UNLOCKED", TOWERS[type].col, "new arsenal online — press "+(["pulse","beam","nova","flip"].indexOf(type)+1)+" to arm");
       setStatus("the grid earned the "+TOWERS[type].name.toLowerCase()+". it unlocks now. use it wisely — the cap is "+towerCapAt(type,lv)+".","flip");
       sfx.streakup();
@@ -729,24 +757,11 @@
     state="over"; sfx.over(); syncBoosts(); syncDeal();
     lastVerdict=verdictFor(wave);
     setStatus("signal lost. the slop is doing a victory podcast.","bad");
-    waveBtn.disabled=true; waveBtn.classList.remove("early"); syncForecast();
-    if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
-    if(wave>best){ best=wave; localStorage.setItem("stoopid_defense_best",best); }
-    $("resVerdict").textContent=lastVerdict.v;
-    $("resVerdict").className="verdict "+lastVerdict.v.toLowerCase();
-    $("resRuling").textContent='"'+lastVerdict.r+'"';
-    $("resWaves").textContent=wave+(wave>=best?" (BEST)":"");
-    $("resScore").textContent=score+(score>=bestScore?" (BEST)":"");
-    $("resKills").textContent=kills;
-    $("resPerfect").textContent=perfect;
-    $("resBuilt").textContent=built;
-    $("resCause").textContent=cause;
-    $("resultCard").classList.add("show");
-    $("resultCard").scrollIntoView({behavior:"smooth", block:"center"});
-    regSubmitted=false; $("regBtn").disabled=false;
-    $("regForm").style.display=""; $("regStatus").textContent="";
-    $("regName").value=localStorage.getItem("stoopid_defense_initials")||"";
-    regLoad();
+    BUS.emit("wavebtn",{disabled:true, early:false}); syncForecast();
+    if(score>bestScore) bestScore=score;
+    if(wave>best) best=wave;
+    BUS.emit("best",{best,bestScore});
+    BUS.emit("over",{verdict:lastVerdict, wave, score, kills, perfect, built, cause, best, bestScore});
   }
 
   /* ---------- GLOBAL SIGNAL REGISTRY (all scores self-reported. like engagement.) ---------- */
@@ -869,7 +884,7 @@
   });
   $("againBtn").addEventListener("click", reset);
   waveBtn.addEventListener("click", startWave);
-  function syncOc(){
+  function uiOc(){
     const b=$("ocBtn");
     if(wave<8){ b.style.display="none"; return; }
     b.style.display="";
@@ -877,17 +892,49 @@
     b.disabled=cash<ocCost;
   }
   $("ocBtn").addEventListener("click",()=>{
-    if(cash<ocCost) return;
-    cash-=ocCost; spent+=ocCost; ocLevel++;
-    ocCost=Math.round(ocCost*1.6);
+    if(!buyOverclock()) return;
     setStatus("grid overclocked. all lasers +12%. total +"+(ocLevel*12)+"%. the hum is louder now.","flip");
-    rings.push({x:W/2,y:H/2,r:10,maxr:120,col:ORANGE,life:0.4});
-    sfx.streakup(); syncHud(); syncPanel();
+    syncPanel();
   });
   $("speedBtn").addEventListener("click", cycleSpeed);
   function cycleSpeed(){
     speedMul = speedMul>=3 ? 1 : speedMul+1;
     $("speedBtn").textContent="SPEED ×"+speedMul;
+  }
+
+  /* ---------- SIM ACTIONS (the only writers of cash/towers/ocLevel) ----------
+     input handlers and harnesses call these; they validate, mutate, and signal.
+     they never touch the DOM. */
+  function buyTower(type,c,r){
+    if(!towerUnlocked(type) || !buildable(c,r) || towerCount(type)>=towerCap(type) || cash<TOWERS[type].cost) return false;
+    const cost=TOWERS[type].cost;
+    cash-=cost; spent+=cost; built++;
+    towers.push({type, c, r, lvl:1, cd:0, angle:0, invested:cost, fx:0, tgt:0});
+    sfx.build(); syncHud();
+    return true;
+  }
+  function upgradeTower(t){
+    if(!t || t.lvl>=MAXLVL) return false;
+    const c=upCost(t); if(cash<c) return false;
+    cash-=c; spent+=c; t.invested+=c; t.lvl++;
+    rings.push({x:(t.c+0.5)*CELL, y:(t.r+0.5)*CELL, r:4, maxr:26, col:TOWERS[t.type].col, life:0.3});
+    sfx.build(); syncHud();
+    return true;
+  }
+  function sellTower(t){
+    if(!t) return false;
+    cash+=Math.round(t.invested*0.7);
+    towers=towers.filter(x=>x!==t);
+    sfx.sell(); syncHud();
+    return true;
+  }
+  function buyOverclock(){
+    if(wave<8 || cash<ocCost) return false;
+    cash-=ocCost; spent+=ocCost; ocLevel++;
+    ocCost=Math.round(ocCost*1.6);
+    rings.push({x:W/2,y:H/2,r:10,maxr:120,col:ORANGE,life:0.4});
+    sfx.streakup(); syncHud();
+    return true;
   }
 
   /* ---------- INPUT ---------- */
@@ -925,9 +972,7 @@
       if(!buildable(p.c,p.r)){ setStatus("can't build there. the path belongs to the slop.","bad"); return; }
       if(towerCount(armed)>=towerCap(armed)){ const cap=towerCap(armed); setStatus("grid limit reached: "+cap+" "+TOWERS[armed].name.toLowerCase()+(cap===1?"":"s")+" max at this level.","bad"); armed=null; syncBar(); return; }
       if(cash<cost){ setStatus("insufficient signal.","bad"); return; }
-      cash-=cost; spent+=cost; built++;
-      towers.push({type:armed, c:p.c, r:p.r, lvl:1, cd:0, angle:0, invested:cost, fx:0, tgt:0});
-      sfx.build(); syncHud();
+      buyTower(armed, p.c, p.r);
       if(cash<cost || towerCount(armed)>=towerCap(armed)) armed=null;
       syncBar();
     } else {
@@ -950,11 +995,8 @@
   });
   $("upBtn").addEventListener("click",()=>{
     const t=selected; if(!t||t.lvl>=MAXLVL) return;
-    const c=upCost(t); if(cash<c){ setStatus("insufficient signal for that upgrade.","bad"); return; }
-    cash-=c; spent+=c; t.invested+=c; t.lvl++;
-    const tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL;
-    rings.push({x:tx,y:ty,r:4,maxr:26,col:TOWERS[t.type].col,life:0.3});
-    sfx.build(); syncHud(); syncPanel();
+    if(cash<upCost(t)){ setStatus("insufficient signal for that upgrade.","bad"); return; }
+    upgradeTower(t); syncPanel();
   });
   function cycleTarget(){
     const t=selected; if(!t||t.type==="flip") return;
@@ -965,9 +1007,8 @@
   $("tgtBtn").addEventListener("click", cycleTarget);
   $("sellBtn").addEventListener("click",()=>{
     const t=selected; if(!t) return;
-    cash+=Math.round(t.invested*0.7);
-    towers=towers.filter(x=>x!==t);
-    selected=null; sfx.sell(); syncHud(); syncPanel();
+    sellTower(t);
+    selected=null; syncPanel();
     setStatus("tower decommissioned. it knew the risks.","");
   });
 
@@ -1036,6 +1077,7 @@
   function settleLeak(f){
     const dealLeak = waveMeta[f.wv] && waveMeta[f.wv].deal;
     lives-=f.leak*(dealLeak?2:1); shake=Math.min(shake+(dealLeak?9:6),12); sfx.leak();
+    BUS.emit("ev:leak",{type:f.type, wv:f.wv, cost:f.leak*(dealLeak?2:1)});
     if(waveMeta[f.wv]) waveMeta[f.wv].leaked=true;
     streak=0;
     cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
@@ -1093,6 +1135,7 @@
     if(cash<st.cost){ setStatus("insufficient signal. "+b.name.toLowerCase()+" costs "+st.cost+".","bad"); return; }
     const paid=st.cost;
     cash-=paid; spent+=paid; st.uses++; st.cd=b.cool; st.cost=Math.round(st.cost*b.mult);
+    BUS.emit("ev:boost",{id, paid});
     texts.push({x:W/2,y:H/2-46,txt:b.name+" −"+paid,life:1.1,col:b.col});
     if(id==="grass"){
       freezeT=Math.max(freezeT,b.dur); flash={col:TEAL,life:0.14,max:0.14};
@@ -1115,7 +1158,7 @@
     }
     sfx.streakup(); syncHud();
   }
-  function syncBoosts(){
+  function uiBoosts(){
     const bar=$("boostBar");
     if(state==="over" || wave<BOOST_UNLOCK){ bar.style.display="none"; return; }
     bar.style.display="";
@@ -1142,7 +1185,7 @@
     else setStatus("deal's off. safe. the algorithm respects nothing about safe.","");
     syncDeal(); syncForecast(); // the manifest must show the deal's real counts immediately
   }
-  function syncDeal(){
+  function uiDeal(){
     const el=$("dealBtn");
     const canArm = state==="build" || (state==="wave" && earlyReady);
     if(canArm){
@@ -1177,8 +1220,7 @@
       // early transmit unlocks once the current wave has fully spawned
       if(!spawnList.length && !earlyReady && foes.length){
         earlyReady=true;
-        waveBtn.disabled=false; waveBtn.classList.add("early");
-        waveBtn.textContent="TRANSMIT "+(wave+1)+" EARLY (+"+earlyBonus()+")";
+        BUS.emit("wavebtn",{disabled:false, early:true, text:"TRANSMIT "+(wave+1)+" EARLY (+"+earlyBonus()+")"});
         syncForecast(); syncDeal();
       }
     }
@@ -1693,6 +1735,43 @@
     render();
     requestAnimationFrame(loop);
   }
+  /* ---------- SHELL WIRING (the only place sim signals touch the page) ---------- */
+  BUS.on("status", d=>{ statusBox.textContent=d.msg; statusBox.className="status"+(d.cls?" "+d.cls:""); });
+  BUS.on("hud", uiHud);
+  BUS.on("bar", uiBar);
+  BUS.on("panel", uiPanel);
+  BUS.on("forecast", uiForecast);
+  BUS.on("oc", uiOc);
+  BUS.on("boosts", uiBoosts);
+  BUS.on("deal", uiDeal);
+  BUS.on("wavebtn", d=>{
+    waveBtn.disabled=!!d.disabled;
+    waveBtn.classList.toggle("early",!!d.early);
+    if(d.text!==undefined) waveBtn.textContent=d.text;
+  });
+  BUS.on("best", d=>{ try{
+    localStorage.setItem("stoopid_defense_best",d.best);
+    localStorage.setItem("stoopid_defense_best_score",d.bestScore);
+  }catch(e){} });
+  BUS.on("resetui", ()=>{ $("resultCard").classList.remove("show"); });
+  BUS.on("over", d=>{
+    $("resVerdict").textContent=d.verdict.v;
+    $("resVerdict").className="verdict "+d.verdict.v.toLowerCase();
+    $("resRuling").textContent='"'+d.verdict.r+'"';
+    $("resWaves").textContent=d.wave+(d.wave>=d.best?" (BEST)":"");
+    $("resScore").textContent=d.score+(d.score>=d.bestScore?" (BEST)":"");
+    $("resKills").textContent=d.kills;
+    $("resPerfect").textContent=d.perfect;
+    $("resBuilt").textContent=d.built;
+    $("resCause").textContent=d.cause;
+    $("resultCard").classList.add("show");
+    $("resultCard").scrollIntoView({behavior:"smooth", block:"center"});
+    regSubmitted=false; $("regBtn").disabled=false;
+    $("regForm").style.display=""; $("regStatus").textContent="";
+    $("regName").value=localStorage.getItem("stoopid_defense_initials")||"";
+    regLoad();
+  });
+
   reset();
   requestAnimationFrame(loop);
 })();
