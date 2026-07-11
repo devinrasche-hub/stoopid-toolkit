@@ -241,7 +241,7 @@
   </div>
 </div>
 
-<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.36 &middot; the towers were paid in signal</footer>
+<footer>THE STOOPID SHOW &middot; STOOPID BUT TRUE &middot; GRID OS v20.37 &middot; the towers were paid in signal</footer>
 
 <script>
 (function(){
@@ -294,7 +294,7 @@
     flip:{name:"FLIP FIELD",     col:ORANGE, cost:140, range:95,  rate:0,    dmg:0,  slow:0.45, desc:"slows slop until it turns true."}
   };
   function stat(t){
-    const b=TOWERS[t.type], m=t.lvl-1, oc=1+0.12*(typeof ocLevel==="number"?ocLevel:0);
+    const b=TOWERS[t.type], m=t.lvl-1, oc=1+0.12*(ocLevel||0);
     return {
       dmg:   b.dmg*Math.pow(1.45,m)*oc,
       range: b.range*Math.pow(1.10,m),
@@ -371,16 +371,27 @@
     "wave 23. THE ALGORITHM left a review. one star. 'too much signal.'",
     "wave 24. the grid is humming. that is either good or the end.",
     "wave 25. the year is 2035. the slop got there first.",
-    "wave 26. the towers do not sleep. neither does the feed."
+    "wave 26. the towers do not sleep. neither does the feed.",
+    "wave 27. the slop unionized. negotiations failed.",
+    "wave 28. new slop, same slop. the feed recycles.",
+    "wave 29. one more wave to the edge of the map.",
+    "wave 30. THE ALGORITHM stopped counting. the grid didn't."
+  ];
+  // past wave 30 the grid goes endless — the lines loop, the slop doesn't stop
+  const ENDLESS_LINES=[
+    "the feed refreshes itself now. nobody asked it to.",
+    "the slop is generating slop. it calls this growth.",
+    "no milestones out here. just waves.",
+    "the grid hums. the void scrolls. transmission continues."
   ];
 
   /* ---------- STATE ---------- */
   let cash, lives, wave, state, foes, towers, beams, rings, parts, texts,
       spawnList, spawnTimer, kills, built, spent, shake, cause, lastVerdict,
       score, streak, perfect, waveMeta, banner, flash, earlyReady,
-      ocLevel, ocCost,
-      freezeT, muteT, slowAllT, dealArmed, dealWave, dealStreak, waveHpMul, uiT,
-      armed=null, selected=null, hoverCell=null, pulseT=0, speedMul=1;
+      ocLevel, ocCost, unlockAnnounced,
+      freezeT, muteT, slowAllT, dealArmed, dealWave, dealStreak, uiT, events,
+      armed=null, selected=null, hoverCell=null, pulseT=0, speedMul=1, lowFX=false;
   let best=+(localStorage.getItem("stoopid_defense_best")||0);
   let bestScore=+(localStorage.getItem("stoopid_defense_best_score")||0);
 
@@ -393,9 +404,9 @@
     foes=[]; towers=[]; beams=[]; rings=[]; parts=[]; texts=[];
     spawnList=[]; spawnTimer=0; kills=0; built=0; spent=0; shake=0;
     score=0; streak=0; perfect=0; waveMeta={}; banner=null; flash=null; earlyReady=false;
-    ocLevel=0; ocCost=400; syncOc();
+    ocLevel=0; ocCost=400; unlockAnnounced={}; syncOc();
     freezeT=0; muteT=0; slowAllT=0; uiT=0;
-    dealArmed=false; dealWave=false; dealStreak=1; waveHpMul=1;
+    dealArmed=false; dealWave=false; dealStreak=1; events=[];
     for(const id in BOOSTS){ boostState[id]={cost:BOOSTS[id].cost0, cd:0, uses:0}; }
     syncBoosts(); syncDeal();
     cause="unmoderated slop"; lastVerdict=null; armed=null; selected=null;
@@ -488,7 +499,7 @@
     $("hudScore").textContent=score;
     const st=$("hudStreak"); st.textContent=streak; st.className=streak>=2?"streaking":"";
     $("hudBest").textContent=bestScore;
-    syncBar(); syncOc(); syncBoosts(); syncDeal();
+    syncBar(); syncOc(); syncBoosts(); syncDeal(); syncPanel();
   }
   function syncBar(){
     document.querySelectorAll(".twr").forEach(btn=>{
@@ -535,15 +546,16 @@
     const el=$("forecastBox");
     const show = state==="build" || (state==="wave" && earlyReady);
     if(!show){ el.innerHTML=""; return; }
+    const dealNext = dealArmed && (wave+1)>=DEAL_UNLOCK;
     const counts={};
-    for(const s of buildSpawns(wave+1)) counts[s.t]=(counts[s.t]||0)+1;
+    for(const s of spawnsFor(wave+1, dealNext)) counts[s.t]=(counts[s.t]||0)+1;
     const line=Object.keys(FOES).filter(k=>counts[k]).map(k=>{
       const n=counts[k], lbl=FOES[k].label;
       return (k==="boss"||k==="manager")
         ? '<b class="warn">'+lbl+(n>1?" &times;"+n:"")+"</b>"
         : lbl+" <b>&times;"+n+"</b>";
     }).join(" &middot; ");
-    el.innerHTML="NEXT TRANSMISSION MANIFEST &mdash; "+line;
+    el.innerHTML=(dealNext?"DEAL MANIFEST &mdash; ":"NEXT TRANSMISSION MANIFEST &mdash; ")+line;
   }
 
   /* ---------- WAVES ---------- */
@@ -560,32 +572,44 @@
     if(w%5===0) add("boss", Math.ceil(w/7), 2.4);
     return L;
   }
+  // the final manifest for a wave, deal extras included — startWave and the
+  // forecast both use this, so the manifest can never lie on a deal wave
+  function spawnsFor(w, deal){
+    let L=buildSpawns(w);
+    if(deal){ // double or nothing: it comes harder — +HP (DEAL_HP in spawn) and +count
+      // bosses and managers are excluded from the extras — the deal makes the wave
+      // meaner, not a different wave. one ALGORITHM per invoice.
+      const extra=[]; for(let i=0;i<L.length;i+=2){ const t=L[i].t; if(t!=="boss"&&t!=="manager") extra.push({t, g:L[i].g}); }
+      L=L.concat(extra);
+    }
+    return L;
+  }
   function earlyBonus(){ return 30+wave*5; }
   function startWave(){
     if(state==="over") return;
     if(state==="wave"){
       if(spawnList.length || !earlyReady) return;
       const b=earlyBonus();
-      cash+=b; score+=b;
+      cash+=b; // signal only — score comes from clearing what you stacked, not from stacking
       texts.push({x:W/2,y:H/2-30,txt:"EARLY TRANSMIT +"+b,life:1.2,col:ORANGE});
       setStatus("early transmission. +"+b+" signal. reckless. respected.","flip");
     }
     wave++; state="wave"; earlyReady=false;
     // did the player take the algorithm's deal on this wave?
     dealWave = dealArmed && wave>=DEAL_UNLOCK;
-    waveHpMul = dealWave ? 1.55 : 1;
+    if(!dealWave) dealStreak=1; // the pot only rides on consecutive deals — no banking it
     // per-wave ledger — early transmits stack waves, each still gets its own streak credit
-    waveMeta[wave]={leaked:false, alive:0, doneSpawning:false, credited:false, deal:dealWave};
-    spawnList=buildSpawns(wave);
-    if(dealWave){ // double or nothing: it comes harder — +HP (above) and +count
-      const extra=[]; for(let i=0;i<spawnList.length;i+=2) extra.push({t:spawnList[i].t, g:spawnList[i].g});
-      spawnList=spawnList.concat(extra);
-    }
+    // jackpot + streak snapshot at arm time — settlement pays what was PROMISED,
+    // so disarming the next deal (or settle order) can never change what this wave owes
+    waveMeta[wave]={leaked:false, doneSpawning:false, credited:false, deal:dealWave,
+      jack:dealWave?dealJackpot(wave):0, dstreak:dealStreak};
+    spawnList=spawnsFor(wave, dealWave);
     spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
     waveBtn.disabled=true; waveBtn.classList.remove("early");
     waveBtn.textContent="WAVE "+wave+" IN PROGRESS";
     const boss=wave%5===0;
-    const line = WAVELINES[wave-1] || (boss ? "wave "+wave+". THE ALGORITHM has entered the grid."
+    const line = WAVELINES[wave-1] || (boss ? "wave "+wave+". THE ALGORITHM has entered the grid. again. it lives here now."
+      : wave>30 ? "wave "+wave+". "+ENDLESS_LINES[(wave-31)%ENDLESS_LINES.length]
       : "wave "+wave+". the slop no longer knocks.");
     if(dealWave){
       setStatus("DEAL WAVE "+wave+". you took the deal. it comes bigger and meaner. leaks cost double. clear it clean.","flip");
@@ -594,20 +618,24 @@
       setStatus(line, boss?"bad":"");
       setBanner("WAVE "+wave, boss?RED:TEAL, boss?"THE ALGORITHM APPROACHES":"");
     }
+    announceUnlocks(); // chained early transmits never touch endWave — announce here too
     sfx.horn(); syncHud(); syncForecast();
   }
   // a wave is settled when it has fully spawned and its last foe is gone —
   // even if the next wave is already on the grid. early transmit keeps the streak.
   function creditWave(w){
     const m=waveMeta[w];
-    if(!m || m.credited || !m.doneSpawning || m.alive>0) return;
+    if(!m || m.credited || !m.doneSpawning) return;
+    // settled = every foe of this wave is down — derived from the foes array
+    // itself, not a hand-balanced counter that can silently desync
+    for(const f of foes) if(f.wv===w && f.hp>0) return;
     m.credited=true;
     // the algorithm's deal settles here — double, or nothing
     if(m.deal){
       if(!m.leaked){
         streak++; perfect++;
-        const jack=dealJackpot(w);                                   // signal — big, feeds the boost loop
-        const jscore=Math.round((45+15*w)*Math.min(5,dealStreak));   // score — leaderboard-relevant but stays inside the registry guard (wave*3000+5000)
+        const jack=m.jack||dealJackpot(w);                           // signal — the amount promised when the deal was struck
+        const jscore=Math.round((45+15*w)*Math.min(5,m.dstreak||dealStreak)); // score — leaderboard-relevant but stays inside the registry guard (wave*3000+5000)
         cash+=jack; score+=jscore;
         setBanner("THE DEAL PAID", ORANGE, "+"+jack+" signal · let it ride?");
         setStatus("the deal paid. +"+jack+" signal. double or nothing again? the algorithm dares you.","flip");
@@ -631,7 +659,11 @@
       streak=0;
     }
     cash+=bonus; score+=w*10;
-    if(w>=20 && w%20===0){
+    if(w===30){
+      setBanner("THE GRID GOES ENDLESS", TEAL, "thirty waves. the slop never ends. neither do you.");
+      setStatus("wave 30 cleared. ENDLESS MODE. no milestones out here. just waves.","flip");
+      sfx.streakup();
+    } else if(w>=20 && w%20===0){
       setBanner("THE MILESTONE WAS A TRAP", ORANGE, "so you moved it. keep going.");
       setStatus("wave "+w+" cleared. the milestone was a trap. so I moved it. keep going.","flip");
     } else {
@@ -647,26 +679,36 @@
     waveBtn.disabled=false; waveBtn.classList.remove("early");
     waveBtn.textContent="TRANSMIT WAVE "+(wave+1);
     // a new tower type unlocks the moment you're arming for its unlock wave
-    const nextLvl=wave+1;
-    for(const type in GATE){
-      if(GATE[type].unlock===nextLvl){
-        setBanner(TOWERS[type].name+" UNLOCKED", TOWERS[type].col, "new arsenal online — press "+(["pulse","beam","nova","flip"].indexOf(type)+1)+" to arm");
-        setStatus("the grid earned the "+TOWERS[type].name.toLowerCase()+". it unlocks now. use it wisely — the cap is "+towerCapAt(type,nextLvl)+".","flip");
-        sfx.streakup();
-      }
-    }
+    announceUnlocks();
     sfx.kill(); syncHud(); syncForecast();
   }
   // cap a type would have at a given level (for unlock announcements)
   function towerCapAt(type,lvl){ const g=GATE[type]; return g.cap0 + Math.max(0, Math.floor((lvl-g.unlock)/g.capEvery)); }
+  // unlock announcements track what's been SAID, not which wave just ended —
+  // chained early transmits skip endWave(), but they can't skip this
+  function announceUnlocks(){
+    const lv=levelNow();
+    for(const type in GATE){
+      if(GATE[type].unlock>lv || unlockAnnounced[type]) continue;
+      unlockAnnounced[type]=true;
+      if(GATE[type].unlock<=1) continue; // day-one gear needs no fanfare
+      setBanner(TOWERS[type].name+" UNLOCKED", TOWERS[type].col, "new arsenal online — press "+(["pulse","beam","nova","flip"].indexOf(type)+1)+" to arm");
+      setStatus("the grid earned the "+TOWERS[type].name.toLowerCase()+". it unlocks now. use it wisely — the cap is "+towerCapAt(type,lv)+".","flip");
+      sfx.streakup();
+    }
+  }
   function spawn(type,dOverride,hpMul,wv){
-    const f=FOES[type], hs=hpScale(wave)*(hpMul||1)*(waveHpMul||1);
-    const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
+    // difficulty is stamped from the foe's OWN wave — children of an old boss
+    // never inherit the current wave's scaling or an active deal's multiplier
     const w = wv===undefined ? wave : wv;
-    if(waveMeta[w]) waveMeta[w].alive++;
+    const deal = !!(waveMeta[w] && waveMeta[w].deal);
+    const f=FOES[type], hs=hpScale(w)*(hpMul||1)*(deal?DEAL_HP:1);
+    const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
     foes.push({type, d, hp:f.hp*hs, maxhp:f.hp*hs, wv:w,
       sp:f.sp, r:f.r, col:f.col, shape:f.shape, slowF:1, wob:Math.random()*7,
-      bounty:f.bounty+Math.floor(wave/4), leak:f.leak, res:f.res||0, noslow:!!f.noslow});
+      // bounty tracks HALF the threat curve (sqrt of hpScale) — income grows with the
+      // slop but never keeps pace, so endless mode stays terminal
+      bounty:Math.round(f.bounty*Math.sqrt(hpScale(w))), leak:f.leak, res:f.res||0, noslow:!!f.noslow});
     if(dOverride===undefined){
       const p=posAt(2);
       rings.push({x:p.x,y:p.y,r:2,maxr:16,col:f.col,life:0.22});
@@ -675,6 +717,7 @@
 
   /* ---------- GAME OVER ---------- */
   function verdictFor(w){
+    if(w>=30) return {v:"STOOPID", r:"the grid went endless and you went with it. the slop never stops. neither did you."};
     if(w>=20) return {v:"STOOPID", r:"you moved the milestone. the grid remembers. built it anyway — even when nobody was watching."};
     if(w>=12) return {v:"STOOPID", r:"the signal held longer than the internet's attention span. that counts."};
     if(w>=8)  return {v:"STOOPID", r:"respectable. the slop won, but it had to earn it."};
@@ -682,15 +725,17 @@
     return {v:"STUPID", r:"insufficient nonsense. the grid was simply unattended."};
   }
   function gameOver(){
+    if(state==="over") return;
     state="over"; sfx.over(); syncBoosts(); syncDeal();
     lastVerdict=verdictFor(wave);
     setStatus("signal lost. the slop is doing a victory podcast.","bad");
     waveBtn.disabled=true; waveBtn.classList.remove("early"); syncForecast();
     if(score>bestScore){ bestScore=score; localStorage.setItem("stoopid_defense_best_score",bestScore); }
+    if(wave>best){ best=wave; localStorage.setItem("stoopid_defense_best",best); }
     $("resVerdict").textContent=lastVerdict.v;
     $("resVerdict").className="verdict "+lastVerdict.v.toLowerCase();
     $("resRuling").textContent='"'+lastVerdict.r+'"';
-    $("resWaves").textContent=wave;
+    $("resWaves").textContent=wave+(wave>=best?" (BEST)":"");
     $("resScore").textContent=score+(score>=bestScore?" (BEST)":"");
     $("resKills").textContent=kills;
     $("resPerfect").textContent=perfect;
@@ -927,8 +972,8 @@
   });
 
   /* ---------- COMBAT ---------- */
-  // fire-control protocols: 0 FIRST (furthest along), 1 STRONG (max hp), 2 LAST (freshest spawn)
-  const TGTMODES=["FIRST","STRONG","LAST"];
+  // fire-control protocols: 0 FIRST (furthest along), 1 STRONG (max hp), 2 FRESH (newest spawn)
+  const TGTMODES=["FIRST","STRONG","FRESH"];
   function nearestFoe(x,y,range,mode){
     let bestF=null, bestV=-Infinity;
     for(const f of foes){
@@ -943,36 +988,68 @@
   function damage(f,dmg,col){
     const resist = muteT>0 ? 0 : Math.max(f.res||0, f.auraRes||0); // MUTE strips all reach
     f.hp-=dmg*(1-resist);
-    if(f.hp<=0&&!f.dead){
-      f.dead=true; kills++;
-      cash+=f.bounty; score+=f.shape==="hex"?150:10;
-      const p=posAt(f.d);
-      burst(p.x,p.y,f.col,f.shape==="hex"?30:12);
-      texts.push({x:p.x,y:p.y-12,txt:"+"+f.bounty,life:0.9,col:TEAL});
-      if(f.shape==="hex"){
-        shake=Math.min(shake+9,12); sfx.bossdie();
-        flash={col:RED,life:0.16,max:0.16};
-        rings.push({x:p.x,y:p.y,r:10,maxr:95,col:RED,life:0.45});
-        // it never really dies — it decomposes into slop
-        const n=Math.min(5, 2+Math.floor(wave/8));
-        for(let i=1;i<=n;i++) if(f.d-12*i>0) spawn("slop", f.d-12*i, 0.45, f.wv);
-        setStatus("THE ALGORITHM deleted. it decomposed into slop. of course it did.","good");
-      }
-      else if(f.shape==="reply"){
-        // it never ends. two more baits appear: "well, actually—"
-        for(let i=1;i<=2;i++) if(f.d-7*i>0) spawn("bait", f.d-7*i, 0.7, f.wv);
-        sfx.kill();
-      }
-      else if(f.shape==="manager"){
-        rings.push({x:p.x,y:p.y,r:8,maxr:AURA_R,col:PURPLE,life:0.4});
-        setStatus("the manager was deleted. the slop is unprotected. proceed.","good");
-        sfx.boom();
-      }
-      else sfx.kill();
-      if(waveMeta[f.wv]) waveMeta[f.wv].alive--;
-      creditWave(f.wv);
-      syncHud();
+    if(f.hp<=0&&!f.dead){ f.dead=true; events.push({kind:"kill", f}); }
+  }
+  /* every consequence of a death or leak lands here, once, at a fixed point in
+     update() — damage() itself never spawns, credits, or touches the DOM, so
+     the foes array can't grow or settle mid-iteration. */
+  function settle(){
+    while(events.length){
+      const ev=events.shift();
+      if(ev.kind==="kill") settleKill(ev.f); else settleLeak(ev.f);
+      if(state==="over"){ events.length=0; return; }
     }
+  }
+  function settleKill(f){
+    kills++;
+    cash+=f.bounty; score+=f.shape==="hex"?150:10;
+    const p=posAt(f.d);
+    burst(p.x,p.y,f.col,f.shape==="hex"?30:12);
+    texts.push({x:p.x,y:p.y-12,txt:"+"+f.bounty,life:0.9,col:TEAL});
+    if(f.shape==="hex"){
+      shake=Math.min(shake+9,12); sfx.bossdie();
+      flash={col:RED,life:0.16,max:0.16};
+      rings.push({x:p.x,y:p.y,r:10,maxr:95,col:RED,life:0.45});
+      // it never really dies — it decomposes into slop. children always spawn
+      // with at least the last leg left to walk: a boss killed at the core
+      // must never turn a won fight into a leak.
+      const n=Math.min(5, 2+Math.floor(f.wv/8));
+      const base=Math.min(f.d, TOTAL-120);
+      for(let i=1;i<=n;i++) if(base-12*i>0) spawn("slop", base-12*i, 0.45, f.wv);
+      setStatus("THE ALGORITHM deleted. it decomposed into slop. of course it did.","good");
+    }
+    else if(f.shape==="reply"){
+      // it never ends. two more baits appear: "well, actually—"
+      const base=Math.min(f.d, TOTAL-90);
+      for(let i=1;i<=2;i++) if(base-7*i>0) spawn("bait", base-7*i, 0.7, f.wv);
+      sfx.kill();
+    }
+    else if(f.shape==="manager"){
+      rings.push({x:p.x,y:p.y,r:8,maxr:AURA_R,col:PURPLE,life:0.4});
+      setStatus("the manager was deleted. the slop is unprotected. proceed.","good");
+      sfx.boom();
+    }
+    else sfx.kill();
+    creditWave(f.wv);
+    syncHud();
+  }
+  function settleLeak(f){
+    const dealLeak = waveMeta[f.wv] && waveMeta[f.wv].deal;
+    lives-=f.leak*(dealLeak?2:1); shake=Math.min(shake+(dealLeak?9:6),12); sfx.leak();
+    if(waveMeta[f.wv]) waveMeta[f.wv].leaked=true;
+    streak=0;
+    cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
+          : f.shape==="sponsor" ? "sponsored content (paid reach)"
+          : f.shape==="manager" ? "middle management"
+          : f.shape==="doom" ? "terminal doomscroll"
+          : f.shape==="reply" ? "the replies. always the replies."
+          : "unmoderated slop";
+    const e=PTS[PTS.length-1];
+    rings.push({x:e.x-26,y:e.y,r:6,maxr:40,col:RED,life:0.35});
+    setStatus(FOES[f.type].label+" reached the signal core. integrity -"+(f.leak*(dealLeak?2:1))+(dealLeak?" (the deal collects double)":"")+".","bad");
+    syncHud();
+    if(lives<=0){ lives=0; syncHud(); gameOver(); return; }
+    creditWave(f.wv);
   }
   const GLYPHS="01#$%&+x!?";
   function burst(x,y,col,n){
@@ -993,7 +1070,7 @@
      the build menu was the whole game; now the wave is a game too. four powers,
      bought with signal, fired live. they are also the bottomless money sink the
      late game was missing — every one costs more than the last. */
-  const BOOST_UNLOCK=3, DEAL_UNLOCK=3;
+  const BOOST_UNLOCK=3, DEAL_UNLOCK=3, DEAL_HP=1.55;
   const BOOSTS={
     grass: {name:"TOUCH GRASS", btn:"bstGrass",  col:TEAL,   cost0:100, mult:1.5, cool:10, dur:2.6, key:"q"},
     mute:  {name:"MUTE",        btn:"bstMute",   col:PURPLE, cost0:130, mult:1.5, cool:12, dur:6,   key:"w"},
@@ -1027,7 +1104,7 @@
     } else if(id==="logoff"){
       slowAllT=Math.max(slowAllT,b.dur); flash={col:ORANGE,life:0.12,max:0.12};
       rings.push({x:W/2,y:H/2,r:20,maxr:360,col:ORANGE,life:0.5});
-      setStatus("everyone log off. the whole grid crawls. use the quiet.","flip");
+      setStatus("everyone log off. the grid crawls. the sponsored posts stay online. of course they do.","flip");
     } else if(id==="ratio"){
       const tgt=strongestFoe(), p=posAt(tgt.d);
       rings.push({x:p.x,y:p.y,r:8,maxr:80,col:RED,life:0.45});
@@ -1055,16 +1132,20 @@
   }
   function toggleDeal(){
     if(state==="over") return;
-    if(state!=="build"){ setStatus("the deal is struck between transmissions, not during one.","bad"); return; }
+    // strikeable between transmissions — and in the early-transmit window, so a
+    // chained run always has an off-ramp before the next wave rides the pot
+    const canArm = state==="build" || (state==="wave" && earlyReady);
+    if(!canArm){ setStatus("the deal is struck between transmissions, not during one.","bad"); return; }
     if(wave+1<DEAL_UNLOCK) return;
     dealArmed=!dealArmed;
     if(dealArmed) setStatus("double or nothing armed. wave "+(wave+1)+" comes bigger, meaner, leaks cost double — clear it clean, win +"+dealJackpot(wave+1)+".","flip");
     else setStatus("deal's off. safe. the algorithm respects nothing about safe.","");
-    syncDeal();
+    syncDeal(); syncForecast(); // the manifest must show the deal's real counts immediately
   }
   function syncDeal(){
     const el=$("dealBtn");
-    if(state==="build"){
+    const canArm = state==="build" || (state==="wave" && earlyReady);
+    if(canArm){
       if(wave+1<DEAL_UNLOCK){ el.style.display="none"; return; }
       el.style.display=""; el.disabled=false;
       el.classList.toggle("on", dealArmed);
@@ -1098,7 +1179,7 @@
         earlyReady=true;
         waveBtn.disabled=false; waveBtn.classList.add("early");
         waveBtn.textContent="TRANSMIT "+(wave+1)+" EARLY (+"+earlyBonus()+")";
-        syncForecast();
+        syncForecast(); syncDeal();
       }
     }
     // slow fields + truth burn
@@ -1107,7 +1188,7 @@
       if(t.type!=="flip") continue;
       const s=stat(t), tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL;
       for(const f of foes){
-        if(f.hp<=0) continue;
+        if(f.hp<=0||f.d<0) continue; // off-grid slop is out of reach — same rule as the lasers
         const p=posAt(f.d);
         if(Math.hypot(p.x-tx,p.y-ty)<=s.range){
           if(!f.noslow) f.slowF=Math.min(f.slowF,s.slow);
@@ -1115,8 +1196,8 @@
         }
       }
     }
-    // LOG OFF — the whole grid crawls
-    if(slowAllT>0){ for(const f of foes) f.slowF=Math.min(f.slowF,0.55); }
+    // LOG OFF — the whole grid crawls. except sponsored posts. paid to stay online.
+    if(slowAllT>0){ for(const f of foes) if(!f.noslow) f.slowF=Math.min(f.slowF,0.55); }
     // the manager's aura — nearby slop gets corporate protection
     for(const f of foes) f.auraRes=0;
     for(const m of foes){
@@ -1138,33 +1219,17 @@
         const p=posAt(f.d);
         parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,col:f.col,sz:f.shape==="hex"?2.5:1.5});
       }
-      if(f.d>=TOTAL){
+      if(f.d>=TOTAL && !f.dead){
         f.hp=0; f.dead=true;
-        const dealLeak = waveMeta[f.wv] && waveMeta[f.wv].deal;
-        lives-=f.leak*(dealLeak?2:1); shake=Math.min(shake+(dealLeak?9:6),12); sfx.leak();
-        if(waveMeta[f.wv]){ waveMeta[f.wv].leaked=true; waveMeta[f.wv].alive--; }
-        streak=0;
-        cause = f.shape==="hex" ? "THE ALGORITHM (direct hit)"
-              : f.shape==="sponsor" ? "sponsored content (paid reach)"
-              : f.shape==="manager" ? "middle management"
-              : f.shape==="doom" ? "terminal doomscroll"
-              : f.shape==="reply" ? "the replies. always the replies."
-              : "unmoderated slop";
-        const e=PTS[PTS.length-1];
-        rings.push({x:e.x-26,y:e.y,r:6,maxr:40,col:RED,life:0.35});
-        setStatus(FOES[f.type].label+" reached the signal core. integrity -"+(f.leak*(dealLeak?2:1))+(dealLeak?" (the deal collects double)":"")+".","bad");
-        syncHud();
-        if(lives<=0){ lives=0; syncHud(); gameOver(); return; }
-        creditWave(f.wv);
+        events.push({kind:"leak", f});
       }
     }
-    foes=foes.filter(f=>f.hp>0);
-    if(state==="wave" && !spawnList.length && !foes.length) endWave();
     // towers fire
     for(const t of towers){
       t.fx=Math.max(0,t.fx-dt);
       if(t.type==="flip") continue;
       const s=stat(t), tx=(t.c+0.5)*CELL, ty=(t.r+0.5)*CELL;
+      if(!s.rate) continue; // a rate-0 tower must never reach the 1/s.rate below
       t.cd-=dt;
       const tgt=nearestFoe(tx,ty,s.range,t.tgt||0);
       if(tgt){
@@ -1180,7 +1245,7 @@
           if(t.type==="nova"){
             rings.push({x:p.x,y:p.y,r:6,maxr:s.splash,col,life:0.28});
             for(const f of foes){
-              if(f.hp<=0) continue;
+              if(f.hp<=0||f.d<0) continue;
               const q=posAt(f.d);
               if(Math.hypot(q.x-p.x,q.y-p.y)<=s.splash) damage(f,s.dmg,col);
             }
@@ -1193,6 +1258,11 @@
         }
       }
     }
+    // settlement — deaths and leaks resolve here, after every damage source has fired
+    settle();
+    if(state==="over") return;
+    foes=foes.filter(f=>f.hp>0);
+    if(state==="wave" && !spawnList.length && !foes.length) endWave();
     // fx decay
     for(const b of beams) b.life-=dt;
     beams=beams.filter(b=>b.life>0);
@@ -1216,6 +1286,9 @@
   }
 
   /* ---------- RENDER ---------- */
+  // shadowBlur is the slowest thing canvas 2D can do — every glow goes through
+  // here so lowFX can shut them all off when the frame rate can't afford them
+  function glow(col,b){ cx.shadowColor=col; cx.shadowBlur=lowFX?0:b; }
   function render(){
     cx.setTransform(1,0,0,1,0,0);
     cx.clearRect(0,0,W,H);
@@ -1235,7 +1308,7 @@
     cx.save();
     cx.strokeStyle="rgba(0,255,198,0.5)"; cx.lineWidth=2;
     cx.setLineDash([6,58]); cx.lineDashOffset=-(pulseT*90)%64;
-    cx.shadowColor=TEAL; cx.shadowBlur=8;
+    glow(TEAL,8);
     cx.beginPath(); cx.moveTo(PTS[0].x,PTS[0].y);
     for(const p of PTS) cx.lineTo(p.x,p.y);
     cx.stroke();
@@ -1245,8 +1318,8 @@
     {
       const p0=posAt(6);
       cx.save();
-      cx.strokeStyle=RED; cx.shadowColor=RED;
-      cx.shadowBlur=8+4*Math.sin(pulseT*5);
+      cx.strokeStyle=RED;
+      glow(RED,8+4*Math.sin(pulseT*5));
       cx.globalAlpha=0.5+0.25*Math.sin(pulseT*5);
       cx.lineWidth=2;
       const g=6+2*Math.sin(pulseT*5);
@@ -1260,7 +1333,7 @@
     {
       const health=lives/10;
       cx.save();
-      cx.shadowColor= health>0.3?TEAL:RED; cx.shadowBlur=10+10*health;
+      glow(health>0.3?TEAL:RED, 10+10*health);
       cx.strokeStyle= health>0.3?TEAL:RED;
       cx.globalAlpha=0.35+0.65*health;
       const cr=8+Math.sin(pulseT*3)*2;
@@ -1303,8 +1376,8 @@
       cx.translate(tx,ty);
       cx.strokeStyle="rgba(255,255,255,0.14)";
       cx.strokeRect(-CELL/2+4,-CELL/2+4,CELL-8,CELL-8);
-      cx.shadowColor=b.col; cx.shadowBlur=(t.fx>0?15:5)+3.5*t.lvl;
-      cx.filter="brightness("+(100+15*(t.lvl-1))+"%) saturate("+(100+10*(t.lvl-1))+"%)";
+      glow(b.col,(t.fx>0?15:5)+3.5*t.lvl);
+      if(!lowFX) cx.filter="brightness("+(100+15*(t.lvl-1))+"%) saturate("+(100+10*(t.lvl-1))+"%)";
       if(Math.random()<0.015) cx.globalAlpha=0.55; // hologram flicker — projection budget cuts
       cx.strokeStyle=b.col; cx.lineWidth=2;
       // high-tier towers get a spinning halo
@@ -1398,7 +1471,7 @@
         if(slowed || (f.auraRes>0&&f.type!=="manager")){
           cx.save(); cx.translate(p.x,p.y);
           cx.strokeStyle= slowed?ORANGE:PURPLE; cx.lineWidth=1.2;
-          cx.shadowColor=cx.strokeStyle; cx.shadowBlur=5;
+          glow(cx.strokeStyle,5);
           cx.setLineDash([3,4]); cx.lineDashOffset=pulseT*16;
           cx.beginPath(); cx.arc(0,0,f.r+4,0,Math.PI*2); cx.stroke();
           cx.restore();
@@ -1406,7 +1479,7 @@
       } else {
       cx.save();
       cx.translate(p.x,p.y);
-      cx.shadowColor= slowed?ORANGE:f.col; cx.shadowBlur=10;
+      glow(slowed?ORANGE:f.col,10);
       cx.strokeStyle= slowed?ORANGE:f.col; cx.lineWidth=2; cx.fillStyle="#000";
       if(f.shape==="blob"){
         const w2=1+Math.sin(pulseT*6+f.wob)*0.15;
@@ -1472,7 +1545,7 @@
       }
       // corporate protection indicator
       if(f.auraRes>0 && f.shape!=="manager"){
-        cx.strokeStyle=PURPLE; cx.lineWidth=1; cx.shadowBlur=4; cx.shadowColor=PURPLE;
+        cx.strokeStyle=PURPLE; cx.lineWidth=1; glow(PURPLE,4);
         cx.setLineDash([3,4]); cx.lineDashOffset=pulseT*16;
         cx.beginPath(); cx.arc(0,0,f.r+4,0,Math.PI*2); cx.stroke();
         cx.setLineDash([]);
@@ -1489,11 +1562,11 @@
     for(const b of beams){
       cx.save();
       cx.globalAlpha=Math.min(1,b.life*12);
-      cx.strokeStyle=b.col; cx.shadowColor=b.col;
-      cx.shadowBlur=14; cx.lineWidth=b.w+4; cx.globalAlpha*=0.25;
+      cx.strokeStyle=b.col; glow(b.col,14);
+      cx.lineWidth=b.w+4; cx.globalAlpha*=0.25;
       cx.beginPath(); cx.moveTo(b.x1,b.y1); cx.lineTo(b.x2,b.y2); cx.stroke();
       cx.globalAlpha=Math.min(1,b.life*12);
-      cx.lineWidth=b.w; cx.shadowBlur=8;
+      cx.lineWidth=b.w; cx.shadowBlur=lowFX?0:8;
       cx.beginPath(); cx.moveTo(b.x1,b.y1); cx.lineTo(b.x2,b.y2); cx.stroke();
       cx.restore();
     }
@@ -1501,7 +1574,7 @@
     for(const r of rings){
       cx.save();
       cx.globalAlpha=Math.min(1,r.life*4);
-      cx.strokeStyle=r.col; cx.shadowColor=r.col; cx.shadowBlur=10; cx.lineWidth=2;
+      cx.strokeStyle=r.col; glow(r.col,10); cx.lineWidth=2;
       cx.beginPath(); cx.arc(r.x,r.y,r.r,0,Math.PI*2); cx.stroke();
       cx.restore();
     }
@@ -1528,7 +1601,7 @@
       cx.save();
       cx.fillStyle="rgba(0,0,0,0.55)"; cx.fillRect(W/2-120,8,240,20);
       cx.strokeStyle=RED; cx.lineWidth=1; cx.strokeRect(W/2-120,8,240,20);
-      cx.fillStyle=RED; cx.shadowColor=RED; cx.shadowBlur=6;
+      cx.fillStyle=RED; glow(RED,6);
       cx.fillRect(W/2-117,11,234*frac,14);
       cx.shadowBlur=0;
       cx.fillStyle="#fff"; cx.font="bold 10px 'Courier New',monospace"; cx.textAlign="center";
@@ -1542,11 +1615,11 @@
       const gl=Math.random()<0.12 ? (Math.random()-0.5)*6 : 0;
       cx.save();
       cx.globalAlpha=a*(Math.random()<0.06?0.4:1);
-      cx.fillStyle=banner.col; cx.shadowColor=banner.col; cx.shadowBlur=16;
+      cx.fillStyle=banner.col; glow(banner.col,16);
       cx.font="bold 36px 'Courier New',monospace"; cx.textAlign="center";
       cx.fillText(banner.txt, W/2+gl, H/2-8);
       if(banner.sub){
-        cx.font="13px 'Courier New',monospace"; cx.shadowBlur=8;
+        cx.font="13px 'Courier New',monospace"; cx.shadowBlur=lowFX?0:8;
         cx.globalAlpha=a*0.85;
         cx.fillText(banner.sub, W/2-gl, H/2+18);
       }
@@ -1606,10 +1679,17 @@
   }
 
   /* ---------- LOOP ---------- */
-  let last=performance.now();
+  let last=performance.now(), slowFrames=0;
   function loop(now){
-    const dt=Math.min(0.05,(now-last)/1000); last=now;
-    if(state!=="over"){ for(let i=0;i<speedMul;i++) update(dt); }
+    const raw=now-last;
+    const dt=Math.min(0.05,raw/1000); last=now;
+    // sustained sub-30fps: drop the glow for the session rather than letting
+    // the dt clamp turn lag into slow-motion difficulty
+    if(!lowFX){
+      if(raw>34) slowFrames++; else slowFrames=Math.max(0,slowFrames-2);
+      if(slowFrames>=45){ lowFX=true; setStatus("frame rate dipping. glow reduced. the war continues.",""); }
+    }
+    for(let i=0;i<speedMul && state!=="over";i++) update(dt);
     render();
     requestAnimationFrame(loop);
   }
