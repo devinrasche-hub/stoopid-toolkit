@@ -235,7 +235,7 @@
   </div>
   <div class="signoff">SIGNAL RECEIVED — @stoopidshow</div>
   <div class="btnrow">
-    <button class="btn" id="dlBtn">DOWNLOAD PNG</button>
+    <button class="btn" id="dlBtn">SAVE THE EVIDENCE</button>
     <button class="btn flip" id="postBtn">POST IT &rarr;</button>
     <button class="btn alt" id="againBtn">REBUILD THE GRID</button>
   </div>
@@ -321,15 +321,31 @@
     flip:{name:"FLIP FIELD",     col:ORANGE, cost:140, range:95,  rate:0,    dmg:0,  slow:0.45, desc:"slows slop until it turns true."}
   };
   function stat(t){
-    const b=TOWERS[t.type], m=t.lvl-1, oc=1+0.12*(ocLevel||0);
+    const b=TOWERS[t.type], m=t.lvl-1, oc=1+0.12*(ocLevel||0), cg=t.cong||1;
     return {
-      dmg:   b.dmg*Math.pow(1.45,m)*oc,
+      dmg:   b.dmg*Math.pow(1.45,m)*oc*cg,
       range: b.range*Math.pow(1.10,m),
       rate:  b.rate*Math.pow(1.18,m),
       slow:  b.slow ? Math.max(0.15, b.slow-0.08*m) : 0,
-      dot:   t.type==="flip" && t.lvl>=3 ? 5*(t.lvl-2)*oc : 0,
+      dot:   t.type==="flip" && t.lvl>=3 ? 5*(t.lvl-2)*oc*cg : 0,
       splash:b.splash ? b.splash*Math.pow(1.16,m) : 0
     };
+  }
+  /* ---------- SIGNAL CONGESTION (towers on the same trunk line share bandwidth) ----------
+     every neighbor within 2 tiles throttles a tower's damage ×0.9, multiplicative,
+     floored at 0.6 — one tower in the pocket pays nothing, a wall of them pays 40%.
+     towers are static: recomputed only on build/sell, read as t.cong in stat(). */
+  const CONG_R2=(CELL*2)*(CELL*2), CONG_F=0.9, CONG_FLOOR=0.6;
+  function recongest(){
+    for(const t of towers){
+      let n=0;
+      for(const o of towers){
+        if(o===t) continue;
+        const dx=(o.c-t.c)*CELL, dy=(o.r-t.r)*CELL;
+        if(dx*dx+dy*dy<=CONG_R2) n++;
+      }
+      t.cong=Math.max(CONG_FLOOR, Math.pow(CONG_F,n));
+    }
   }
   function upCost(t){ return Math.round(TOWERS[t.type].cost*[0.8,1.6,2.7,4.5][t.lvl-1]); }
   // per-level tower tint, precomputed — ctx.filter forces a filtered surface per
@@ -463,6 +479,7 @@
     "the feed refreshes itself now. nobody asked it to.",
     "the slop is generating slop. it calls this growth.",
     "no milestones out here. just waves.",
+    "reality is user generated. the slop is a heavy user.",
     "the grid hums. the void scrolls. transmission continues."
   ];
 
@@ -631,9 +648,10 @@
         +(s.dot?" &middot; truth burn <b>"+s.dot+"/s</b>":"")
       : "damage <b>"+Math.round(s.dmg)+"</b> &middot; range <b>"+Math.round(s.range)+"</b> &middot; rate <b>"+s.rate.toFixed(1)+"/s</b>"
         +(s.splash?" &middot; splash <b>"+Math.round(s.splash)+"</b>":"");
+    if((t.cong||1)<1) line+=' &middot; <b class="warn">congestion &minus;'+Math.round((1-t.cong)*100)+"%</b>";
     $("pStats").innerHTML=line+"<br>"+b.desc;
     const ub=$("upBtn");
-    if(t.lvl>=MAXLVL){ ub.disabled=true; ub.textContent="MAX LEVEL"; }
+    if(t.lvl>=MAXLVL){ ub.disabled=true; ub.textContent="PEAK STOOPID"; }
     else { ub.disabled=cash<upCost(t); ub.textContent="UPGRADE ("+upCost(t)+")"; }
     const tb=$("tgtBtn");
     if(t.type==="flip"){ tb.style.display="none"; }
@@ -726,7 +744,7 @@
     spawnList=spawnsFor(wave, dealWave);
     spawnTimer=Math.min(spawnTimer>0?spawnTimer:0.4, 0.4);
     BUS.emit("ev:wave",{w:wave, deal:dealWave});
-    BUS.emit("wavebtn",{disabled:true, early:false, text:"WAVE "+wave+" IN PROGRESS"});
+    BUS.emit("wavebtn",{disabled:true, early:false, text:"WAVE "+wave+" TRANSMITTING…"});
     const boss=wave%5===0;
     const line = WAVELINES[wave-1] || (boss ? "wave "+wave+". THE ALGORITHM has entered the grid. again. it lives here now."
       : wave>30 ? "wave "+wave+". "+ENDLESS_LINES[(wave-31)%ENDLESS_LINES.length]
@@ -748,8 +766,8 @@
   function announceEndless(w){
     if(w!==30) return false;
     BUS.emit("ev:endless");
-    setBanner("THE GRID GOES ENDLESS", TEAL, "thirty waves. the slop never ends. neither do you.");
-    setStatus("wave 30 cleared. ENDLESS MODE. no milestones out here. just waves.","flip");
+    setBanner("THE GRID GOES ENDLESS", TEAL, "the script ran out. reality is user generated now.");
+    setStatus("wave 30 cleared. that was the last scripted wave. everything after this line is user generated. including you.","flip");
     sfx.streakup();
     return true;
   }
@@ -843,7 +861,7 @@
     const w = wv===undefined ? wave : wv;
     const deal = !!(waveMeta[w] && waveMeta[w].deal);
     const bmul = type==="boss" ? bossHpMulFor(w) : 1;
-    const f=FOES[type], hs=hpScale(w)*(hpMul||1)*(deal?DEAL_HP:1)*bmul;
+    const f=FOES[type], hs=hpScale(w)*(hpMul||1)*(deal?dealHpFor(waveMeta[w].dstreak):1)*bmul;
     const d = dOverride!==undefined ? dOverride : -20-Math.random()*12;
     const mods = type==="boss" ? bossModsFor(w) : null;
     foes.push({type, d, hp:f.hp*hs, maxhp:f.hp*hs, wv:w,
@@ -1039,11 +1057,15 @@
     if(!towerUnlocked(type) || !buildable(c,r) || towerCount(type)>=towerCap(type) || cash<TOWERS[type].cost) return false;
     const cost=TOWERS[type].cost;
     cash-=cost; spent+=cost; built++;
-    towers.push({type, c, r, lvl:1, cd:0, angle:0, invested:cost, fx:0, tgt:0, born:pulseT});
+    const nt={type, c, r, lvl:1, cd:0, angle:0, invested:cost, fx:0, tgt:0, born:pulseT, cong:1};
+    towers.push(nt);
+    recongest();
     // landing pop — ring expands to the tower's range, so placement doubles as a range read
     const px=(c+0.5)*CELL, py=(r+0.5)*CELL, col=TOWERS[type].col;
     rings.push({x:px, y:py, r:4, maxr:TOWERS[type].range, col, life:0.4});
     burst(px,py,col,7);
+    // the tax is legible at the moment it's incurred — not discovered later in a panel
+    if(nt.cong<1) texts.push({x:px, y:py-22, txt:"CONGESTION −"+Math.round((1-nt.cong)*100)+"%", life:1.1, col:RED});
     sfx.build(); syncHud();
     return true;
   }
@@ -1059,6 +1081,7 @@
     if(!t) return false;
     cash+=Math.round(t.invested*0.7);
     towers=towers.filter(x=>x!==t);
+    recongest(); // the survivors breathe again
     sfx.sell(); syncHud();
     return true;
   }
@@ -1275,7 +1298,11 @@
      the build menu was the whole game; now the wave is a game too. four powers,
      bought with signal, fired live. they are also the bottomless money sink the
      late game was missing — every one costs more than the last. */
-  const BOOST_UNLOCK=3, DEAL_UNLOCK=3, DEAL_HP=1.55;
+  const BOOST_UNLOCK=3, DEAL_UNLOCK=3;
+  // the deal's teeth grow with the pot: streak 1 is gentler than the old flat
+  // ×1.55, streak 8 is ×2.55. the reward curve always had a slope — now the
+  // risk curve has one too, and the off-ramp becomes a real decision.
+  function dealHpFor(s){ return 1.35 + 0.15*Math.min(8, s||1); }
   const BOOSTS={
     grass: {name:"TOUCH GRASS", btn:"bstGrass",  col:TEAL,   cost0:100, mult:1.5, cool:10, dur:2.6, key:"q"},
     mute:  {name:"MUTE",        btn:"bstMute",   col:PURPLE, cost0:130, mult:1.5, cool:12, dur:6,   key:"w"},
@@ -1706,6 +1733,17 @@
         cx.save();
         cx.strokeStyle="rgba(255,255,255,0.35)"; cx.lineWidth=1;
         cx.beginPath(); cx.arc(tx,ty,s.range,0,Math.PI*2); cx.stroke();
+        // congestion links — show exactly WHO is throttling the selected tower
+        if((t.cong||1)<1){
+          cx.strokeStyle="rgba(255,45,45,0.4)"; cx.setLineDash([3,5]); cx.lineDashOffset=-pulseT*14;
+          for(const o of towers){
+            if(o===t) continue;
+            const dx=(o.c-t.c)*CELL, dy=(o.r-t.r)*CELL;
+            if(dx*dx+dy*dy<=CONG_R2){
+              cx.beginPath(); cx.moveTo(tx,ty); cx.lineTo((o.c+0.5)*CELL,(o.r+0.5)*CELL); cx.stroke();
+            }
+          }
+        }
         cx.restore();
       }
     }
