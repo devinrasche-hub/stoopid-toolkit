@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>THE COURTROOM — LIVE</title>
+<style>
+  :root{
+    --black:#000; --white:#fff; --teal:#00FFC6; --purple:#8A2BE2;
+    --red:#FF2D2D; --orange:#CC5500;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--black);color:var(--white);font-family:'Courier New',monospace;
+       height:100vh;overflow:hidden;user-select:none}
+  /* scanlines */
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);}
+  .bracket{position:fixed;width:34px;height:34px;border:3px solid var(--teal);z-index:40}
+  .tl{top:14px;left:14px;border-right:none;border-bottom:none}
+  .tr{top:14px;right:14px;border-left:none;border-bottom:none}
+  .bl{bottom:14px;left:14px;border-right:none;border-top:none}
+  .br{bottom:14px;right:14px;border-left:none;border-top:none}
+  #rec{position:fixed;top:24px;right:64px;color:var(--red);font-weight:bold;
+       letter-spacing:2px;z-index:40;font-size:14px}
+  #rec::before{content:"●";margin-right:6px;animation:blink 1.2s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  #stage{height:100vh;display:flex;flex-direction:column;align-items:center;
+         justify-content:center;text-align:center;padding:40px;position:relative}
+  .kicker{color:var(--teal);letter-spacing:6px;font-size:15px;margin-bottom:14px}
+  h1{font-size:64px;letter-spacing:4px;line-height:1.05;font-weight:bold}
+  .sub{color:#999;margin-top:18px;font-size:17px}
+  .casetag{color:var(--purple);letter-spacing:5px;font-size:16px;margin-bottom:20px;font-weight:bold}
+  #casetext{font-size:36px;line-height:1.35;max-width:1000px;font-weight:bold}
+  .question{margin-top:34px;font-size:19px;color:#bbb}
+  .question b.g{color:var(--teal)} .question b.r{color:var(--red)}
+  /* voting */
+  #votearea{width:min(900px,86vw);margin-top:40px;display:none}
+  .barrow{display:flex;align-items:center;gap:14px;margin:14px 0}
+  .barlabel{width:120px;text-align:right;font-weight:bold;font-size:20px}
+  .bartrack{flex:1;height:34px;border:2px solid #333;position:relative;background:#0a0a0a}
+  .barfill{height:100%;width:0%;transition:width .18s steps(6)}
+  #bar-stoopid .barfill{background:var(--teal)}
+  #bar-stupid  .barfill{background:var(--red)}
+  .count{width:70px;text-align:left;font-size:20px;font-weight:bold}
+  #ticker{margin-top:22px;height:26px;color:#777;font-size:15px;letter-spacing:1px}
+  #ticker b{color:#ccc}
+  #ballots{color:#666;font-size:14px;margin-top:8px;letter-spacing:2px}
+  /* verdict stamp */
+  #stamp{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+         z-index:60;flex-direction:column}
+  #stampbox{border:6px solid;padding:26px 60px;font-size:74px;font-weight:bold;
+    letter-spacing:6px;transform:rotate(-7deg) scale(3);opacity:0;background:#000}
+  #stampbox.slam{animation:slam .28s cubic-bezier(.2,2.4,.4,1) forwards}
+  @keyframes slam{to{transform:rotate(-7deg) scale(1);opacity:1}}
+  #margin{margin-top:38px;font-size:26px;color:var(--white);opacity:0;transition:opacity .5s}
+  #verdictsub{margin-top:12px;font-size:18px;color:#999;opacity:0;transition:opacity .5s}
+  .shake{animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-9px,4px)}
+    40%{transform:translate(8px,-5px)}60%{transform:translate(-6px,3px)}80%{transform:translate(5px,-2px)}}
+  #hints{position:fixed;bottom:22px;left:0;right:0;text-align:center;color:#555;
+         font-size:13px;letter-spacing:2px;z-index:40}
+  #custom{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;z-index:70;
+          align-items:center;justify-content:center;flex-direction:column}
+  #custom input{width:min(800px,80vw);background:#000;border:2px solid var(--teal);
+    color:var(--white);font-family:inherit;font-size:22px;padding:14px;outline:none}
+  #custom .kicker{margin-bottom:24px}
+  .footer{position:fixed;bottom:52px;left:0;right:0;text-align:center;color:#333;
+          font-size:12px;letter-spacing:3px;z-index:40}
+</style>
+</head>
+<body>
+<div class="bracket tl"></div><div class="bracket tr"></div>
+<div class="bracket bl"></div><div class="bracket br"></div>
+<div id="rec">REC</div>
+
+<div id="stage">
+  <div id="title">
+    <div class="kicker">THE STOOPID REALM PRESENTS</div>
+    <h1>THE COURTROOM</h1>
+    <div class="sub">STOOPID vs. STUPID — the internet stands trial.<br>All rulings final. All rulings meaningless. Both things are true.</div>
+  </div>
+
+  <div id="case" style="display:none">
+    <div class="casetag" id="casenum">CASE #001</div>
+    <div id="casetext"></div>
+    <div class="question">🟢 <b class="g">STOOPID</b> — absurd but true &nbsp;·&nbsp; 🔴 <b class="r">STUPID</b> — just noise</div>
+    <div id="votearea">
+      <div class="barrow" id="bar-stoopid">
+        <div class="barlabel" style="color:var(--teal)">STOOPID</div>
+        <div class="bartrack"><div class="barfill"></div></div>
+        <div class="count" style="color:var(--teal)">0</div>
+      </div>
+      <div class="barrow" id="bar-stupid">
+        <div class="barlabel" style="color:var(--red)">STUPID</div>
+        <div class="bartrack"><div class="barfill"></div></div>
+        <div class="count" style="color:var(--red)">0</div>
+      </div>
+      <div id="ticker">&nbsp;</div>
+      <div id="ballots">BALLOTS ON RECORD: 0</div>
+    </div>
+  </div>
+</div>
+
+<div id="stamp">
+  <div id="stampbox"></div>
+  <div id="margin"></div>
+  <div id="verdictsub"></div>
+</div>
+
+<div id="custom">
+  <div class="kicker">FILE A CUSTOM CASE</div>
+  <input id="custominput" placeholder="describe the behavior on trial… (ENTER to file, ESC to cancel)" maxlength="180">
+</div>
+
+<div class="footer">PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET · THE ALGORITHM (BARELY)</div>
+<div id="hints">SPACE advance · N next case · C custom case · M mute · H hide this</div>
+
+<script>
+// ---------- the docket (bias: -1 leans STUPID, +1 leans STOOPID, 0 coin-flip) ----------
+const DOCKET = [
+ ["A man livestreams himself watching his own livestream to double his viewer count.", 1],
+ ["App notification at 2AM: “We miss you.” The app is a flashlight.", 1],
+ ["Reply guy spends 45 minutes correcting the grammar of a bot. The bot thanks him.", -1],
+ ["Guy touches grass, films it, then doesn't post it. Says it was “for him.”", 1],
+ ["Influencer sells a course on how to sell courses about selling courses.", -1],
+ ["Local dad answers “how are you” honestly. The meeting runs 40 minutes long.", 1],
+ ["Man argues with the self-checkout. The self-checkout wins on points.", 1],
+ ["Account posts “RIP” to a celebrity who is alive. For engagement.", -1],
+ ["A kid asks his dad if the internet is a place. The dad says “unfortunately.”", 1],
+ ["Guy sets his phone to grayscale to fight the addiction. Buys a MORE colorful case to cope.", 1],
+ ["Startup disrupts sitting down. It's a chair. It's $40 a month.", -1],
+ ["Man reads the terms & conditions to his kids as a bedtime story. They sleep instantly. He can't.", 1],
+ ["Rage-bait account quote-tweets itself from its alt to start beef. Loses the argument.", -1],
+ ["Neighbor waves with the whole arm. No agenda detected. Investigation ongoing.", 1],
+];
+const HANDLES = ["@bean_sentinel","@grass_toucher_9","@sock_archivist","@davenport_worldfamous",
+ "@insufficient_nonsense","@dad_ex_machina","@portal_wiper","@cloud_puncher","@refried_skeptic",
+ "@late_night_larry","@specimen_0042","@poems_that_arrest","@flavor_pillow","@signal_keeper_kim",
+ "@whole_arm_waver","@second_breakfast","@the_void_itself","@kwtf_intern","@buckle_up_dumbdumb"];
+
+let idx=-1, state="title", votes={g:0,r:0}, bias=0, voteTimer=null, muted=false, audio=null;
+
+function ac(){ if(!audio){ audio = new (window.AudioContext||window.webkitAudioContext)(); } return audio; }
+function knock(t=0){ if(muted) return; const a=ac(), o=a.createOscillator(), g=a.createGain();
+  o.type="triangle"; o.frequency.setValueAtTime(90,a.currentTime+t);
+  o.frequency.exponentialRampToValueAtTime(45,a.currentTime+t+.09);
+  g.gain.setValueAtTime(.9,a.currentTime+t); g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.16);
+  o.connect(g).connect(a.destination); o.start(a.currentTime+t); o.stop(a.currentTime+t+.2); }
+function tick(){ if(muted) return; const a=ac(), o=a.createOscillator(), g=a.createGain();
+  o.type="square"; o.frequency.value=740+Math.random()*240;
+  g.gain.setValueAtTime(.05,a.currentTime); g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.05);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+.06); }
+
+const $=s=>document.querySelector(s);
+
+function showCase(text,b){
+  state="case"; votes={g:0,r:0}; bias=b;
+  $("#title").style.display="none"; $("#stamp").style.display="none";
+  $("#case").style.display="block"; $("#votearea").style.display="none";
+  $("#casenum").textContent="CASE #"+String(idx+1).padStart(3,"0");
+  $("#casetext").textContent=text;
+  updateBars();
+}
+function nextCase(){ idx=(idx+1)%DOCKET.length; const [t,b]=DOCKET[idx]; showCase(t,b); }
+
+function startVoting(){
+  state="voting"; $("#votearea").style.display="block";
+  const total = 120+Math.floor(Math.random()*280);
+  let cast=0;
+  voteTimer=setInterval(()=>{
+    const burst=1+Math.floor(Math.random()*4);
+    for(let i=0;i<burst && cast<total;i++,cast++){
+      const p=.5+bias*.22+(Math.random()-.5)*.1;
+      if(Math.random()<p) votes.g++; else votes.r++;
+    }
+    tick(); updateBars();
+    const h=HANDLES[Math.floor(Math.random()*HANDLES.length)];
+    $("#ticker").innerHTML="ballot received from <b>"+h+"</b> — the algorithm sees them";
+    if(cast>=total){ clearInterval(voteTimer); state="readyToRule";
+      $("#ticker").innerHTML="polls closed. <b>press SPACE to bring the gavel.</b>"; }
+  },140);
+}
+function updateBars(){
+  const t=votes.g+votes.r||1;
+  $("#bar-stoopid .barfill").style.width=(100*votes.g/t)+"%";
+  $("#bar-stupid .barfill").style.width=(100*votes.r/t)+"%";
+  $("#bar-stoopid .count").textContent=votes.g;
+  $("#bar-stupid .count").textContent=votes.r;
+  $("#ballots").textContent="BALLOTS ON RECORD: "+(votes.g+votes.r);
+}
+function rule(){
+  state="verdict";
+  knock(0); knock(.28); knock(.56);
+  document.body.classList.add("shake");
+  setTimeout(()=>document.body.classList.remove("shake"),400);
+  const t=votes.g+votes.r, hung=Math.abs(votes.g-votes.r)<=Math.ceil(t*.02);
+  let text,color,sub,margin;
+  if(hung){ text="HUNG JURY"; color="var(--purple)";
+    sub="Insufficient nonsense. The case dissolves.";
+    margin=votes.g+"–"+votes.r+". Nobody wins. The internet remains undefeated."; }
+  else if(votes.g>votes.r){ text="RULED STOOPID"; color="var(--teal)";
+    sub="Absurd but true. Welcome to the record.";
+    margin="By a "+Math.round(100*votes.g/t)+"% margin ("+votes.g+"–"+votes.r+")."; }
+  else{ text="RULED STUPID"; color="var(--red)";
+    sub="Just noise. The Archive declines to remember it.";
+    margin="By a "+Math.round(100*votes.r/t)+"% margin ("+votes.r+"–"+votes.g+")."; }
+  const box=$("#stampbox");
+  box.textContent=text; box.style.color=color; box.style.borderColor=color;
+  box.classList.remove("slam"); void box.offsetWidth;
+  $("#stamp").style.display="flex";
+  setTimeout(()=>box.classList.add("slam"),350);
+  $("#margin").style.opacity=0; $("#verdictsub").style.opacity=0;
+  setTimeout(()=>{ $("#margin").textContent=margin; $("#margin").style.opacity=1; },900);
+  setTimeout(()=>{ $("#verdictsub").textContent=sub; $("#verdictsub").style.opacity=1; },1400);
+}
+
+document.addEventListener("keydown",e=>{
+  if($("#custom").style.display==="flex"){
+    if(e.key==="Enter"){ const v=$("#custominput").value.trim();
+      if(v){ idx++; DOCKET.splice(idx,0,[v,0]); showCase(v,0); }
+      $("#custom").style.display="none"; }
+    if(e.key==="Escape"){ $("#custom").style.display="none"; }
+    return;
+  }
+  if(e.code==="Space"){ e.preventDefault();
+    if(state==="title"||state==="verdict") nextCase();
+    else if(state==="case") startVoting();
+    else if(state==="readyToRule") rule();
+  }
+  else if(e.key==="n"||e.key==="N"){ if(voteTimer)clearInterval(voteTimer); nextCase(); }
+  else if(e.key==="c"||e.key==="C"){ if(voteTimer)clearInterval(voteTimer);
+    $("#custom").style.display="flex"; $("#custominput").value=""; $("#custominput").focus(); }
+  else if(e.key==="m"||e.key==="M"){ muted=!muted; }
+  else if(e.key==="h"||e.key==="H"){ const h=$("#hints");
+    h.style.display=h.style.display==="none"?"block":"none"; }
+});
+</script>
+</body>
+</html>

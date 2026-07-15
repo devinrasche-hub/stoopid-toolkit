@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>KWTF 88.8 — THE DIAL</title>
+<style>
+  :root{--black:#000;--white:#fff;--teal:#00FFC6;--purple:#8A2BE2;--red:#FF2D2D;--orange:#CC5500}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--black);color:var(--white);font-family:'Courier New',monospace;
+       height:100vh;overflow:hidden;user-select:none}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+  .bracket{position:fixed;width:34px;height:34px;border:3px solid var(--teal);z-index:40}
+  .tl{top:14px;left:14px;border-right:none;border-bottom:none}
+  .tr{top:14px;right:14px;border-left:none;border-bottom:none}
+  .bl{bottom:14px;left:14px;border-right:none;border-top:none}
+  .br{bottom:14px;right:14px;border-left:none;border-top:none}
+  #stage{height:100vh;display:flex;flex-direction:column;align-items:center;
+         justify-content:center;padding:30px;position:relative;z-index:2}
+  .kicker{letter-spacing:6px;font-size:14px;color:#888;margin-bottom:6px}
+  #freq{font-size:110px;font-weight:bold;letter-spacing:4px;line-height:1}
+  #band{font-size:16px;letter-spacing:8px;color:#666;margin-top:4px}
+  /* dial */
+  #dialwrap{width:min(1000px,90vw);margin-top:40px}
+  #scale{position:relative;height:70px;border-bottom:2px solid #333}
+  .tick{position:absolute;bottom:0;width:1px;height:14px;background:#444}
+  .tick.major{height:26px;background:#777}
+  .ticklabel{position:absolute;bottom:32px;transform:translateX(-50%);color:#666;font-size:13px}
+  .stationmark{position:absolute;bottom:0;width:3px;height:44px}
+  #needle{position:absolute;bottom:-8px;width:3px;height:86px;background:var(--white);
+    box-shadow:0 0 12px rgba(255,255,255,.7)}
+  #dialhint{color:#555;font-size:13px;letter-spacing:2px;text-align:center;margin-top:16px}
+  /* station card */
+  #card{margin-top:46px;width:min(900px,88vw);min-height:220px;text-align:center}
+  #stationname{font-size:30px;font-weight:bold;letter-spacing:6px;margin-bottom:8px}
+  #stationtag{font-size:14px;color:#888;letter-spacing:3px;margin-bottom:26px}
+  #content{font-size:26px;line-height:1.45;min-height:110px;font-weight:bold}
+  #static-canvas{position:fixed;inset:0;z-index:1;opacity:0;transition:opacity .25s}
+  #hints{position:fixed;bottom:18px;left:0;right:0;text-align:center;color:#555;
+         font-size:13px;letter-spacing:2px;z-index:40}
+  #startgate{position:fixed;inset:0;background:#000;z-index:60;display:flex;
+    align-items:center;justify-content:center;flex-direction:column;cursor:pointer}
+  #startgate .big{font-size:46px;font-weight:bold;letter-spacing:4px;color:var(--teal)}
+  #startgate .small{color:#777;margin-top:16px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<canvas id="static-canvas"></canvas>
+<div class="bracket tl"></div><div class="bracket tr"></div>
+<div class="bracket bl"></div><div class="bracket br"></div>
+
+<div id="startgate">
+  <div class="big">KWTF 88.8</div>
+  <div class="small">CLICK TO POWER ON THE RECEIVER (audio warning: the internet is on some of these stations)</div>
+</div>
+
+<div id="stage">
+  <div class="kicker">YOU ARE TUNING</div>
+  <div id="freq">88.8</div>
+  <div id="band">FM · THE STOOPID REALM · CLEAR CHANNEL</div>
+  <div id="dialwrap"><div id="scale"></div>
+    <div id="dialhint">← → tune · hold SHIFT to scan fast · 1-5 jump to stations · M mute</div>
+  </div>
+  <div id="card">
+    <div id="stationname"></div>
+    <div id="stationtag"></div>
+    <div id="content"></div>
+  </div>
+</div>
+<div id="hints">H hide this · a public service of THE STOOPID REALM · protect your peace</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const MIN=87.5, MAX=108.0;
+let freq=87.5, muted=false;
+
+const STATIONS=[
+ {f:88.8,name:"KWTF 88.8",color:"var(--teal)",tag:"THE SIGNAL · absurd on the surface, peaceful underneath",
+  tone:{type:"sine",hz:110,gain:.03},period:5200,lines:[
+   "You're listening to KWTF 88.8. The signal is fine. You're fine. Probably.",
+   "Broadcasting from a garage the internet never noticed. Built it anyway.",
+   "“Play beats panic.” — EP02. That's the weather, the traffic, and the news.",
+   "Reality is user generated. Today's reality brought to you by: you.",
+   "“Absurdity is one of the last true forms of freedom.” — EP06",
+   "Station management reminds you: nobody owes you a reply. No Touchy For Free™.",
+   "The portal is open. Wipe your feet.",
+   "“The milestone was a trap. So I moved it.” — EP20. Back after this."]},
+ {f:91.3,name:"THE CRAZIES",color:"var(--red)",tag:"ALL OUTRAGE · ALL THE TIME · SPONSORED BY CORTISOL",
+  tone:{type:"sawtooth",hz:55,gain:.045},period:3400,lines:[
+   "BREAKING: AREA MAN FURIOUS AT WEATHER APP. DEMANDS APOLOGY FROM SKY.",
+   "EVERYTHING IS A PSYOP, SAYS MAN SELLING PSYOP-DETECTION COURSE ($499).",
+   "STRANGERS ARGUE ONLINE FOR NINE HOURS. NOBODY WINS. PLANET CONTINUES.",
+   "OUTRAGE AT THING CLARIFIED TO BE OTHER THING. OUTRAGE CONTINUES UNCHANGED.",
+   "POLL: 97% OF PEOPLE YELLING HAVE NOT READ THE ARTICLE. ARTICLE ALSO YELLING.",
+   "MAN QUOTE-TWEETS HIMSELF FROM ALT TO START BEEF. LOSES ARGUMENT.",
+   "COMING UP: WHY EVERYTHING YOU LOVE IS SECRETLY BAD (HOUR 6 OF 24)."]},
+ {f:95.5,name:"HU$TLE FM",color:"var(--white)",tag:"RISE & GRIND · SLEEP IS FOR EXIT LIQUIDITY",
+  tone:{type:"square",hz:220,gain:.02},period:3800,lines:[
+   "Sleep is a scam invented by Big Mattress. Back to work.",
+   "Monetize your grief. Then monetize the monetization. That's arbitrage, king.",
+   "If your toddler isn't an LLC by age 4, are you even a parent?",
+   "Your grandma calls it 'dinner.' We call it an unmonetized content opportunity.",
+   "Passive income tip #47: charge your family a subscription. Loved ones love recurring revenue.",
+   "Reminder: the man in your mirror is your competition. Also your landlord, mindset-wise.",
+   "This hustle hour brought to you by: a course about this hustle hour."]},
+ {f:99.1,name:"THE ANGELS",color:"var(--orange)",tag:"EARNED SINCERITY · BROADCASTING QUIETLY SINCE FOREVER",
+  tone:{type:"sine",hz:174,gain:.035},period:6000,lines:[
+   "Somewhere today, a guy fixed a stranger's tire and didn't film it.",
+   "A kid thinks you hung the moon. Honestly? You kind of did.",
+   "Someone kept your secret. You'll never know which one. That's the whole gift.",
+   "A neighbor waved with the whole arm today. No agenda detected.",
+   "A dad answered “how are you” honestly, and somebody finally exhaled.",
+   "A woman re-read your message and smiled. You were just being you.",
+   "Someone built it anyway. Even when nobody was watching. (Somebody saw.)"]},
+ {f:103.7,name:"LATE-NIGHT FREQUENCY",color:"var(--purple)",tag:"THE 2AM CHANNEL · SLOW ON PURPOSE",
+  tone:{type:"sine",hz:82,gain:.04},period:7500,lines:[
+   "it's quieter here.",
+   "you don't have to say anything.",
+   "the internet will still be there tomorrow. unfortunately. but so will we.",
+   "whatever it is — it can wait until morning. you can't. rest.",
+   "protect your peace. that's the whole forecast.",
+   "somebody else is up too. that's what this station is for.",
+   "signal received. goodnight, dumb dumb. (affectionate.)"]}
+];
+
+// ---------- dial scale ----------
+const scale=$("#scale");
+function pct(f){ return (f-MIN)/(MAX-MIN)*100; }
+for(let f=Math.ceil(MIN);f<=MAX;f++){
+  const t=document.createElement("div");
+  t.className="tick"+(f%4===0?" major":""); t.style.left=pct(f)+"%"; scale.appendChild(t);
+  if(f%4===0){ const l=document.createElement("div"); l.className="ticklabel";
+    l.style.left=pct(f)+"%"; l.textContent=f; scale.appendChild(l); }
+}
+STATIONS.forEach(s=>{ const m=document.createElement("div"); m.className="stationmark";
+  m.style.left=pct(s.f)+"%"; m.style.background=s.color; scale.appendChild(m); });
+const needle=document.createElement("div"); needle.id="needle"; scale.appendChild(needle);
+
+// ---------- audio ----------
+let actx=null,noiseGain=null,osc=null,oscGain=null;
+function initAudio(){
+  actx=new (window.AudioContext||window.webkitAudioContext)();
+  const len=actx.sampleRate*2, buf=actx.createBuffer(1,len,actx.sampleRate),
+        d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  const src=actx.createBufferSource(); src.buffer=buf; src.loop=true;
+  noiseGain=actx.createGain(); noiseGain.gain.value=.06;
+  src.connect(noiseGain).connect(actx.destination); src.start();
+  osc=actx.createOscillator(); oscGain=actx.createGain(); oscGain.gain.value=0;
+  osc.connect(oscGain).connect(actx.destination); osc.start();
+}
+function setAudio(station,dist){
+  if(!actx) return;
+  const n=muted?0:(station? .004+dist*.15 : .05);
+  noiseGain.gain.linearRampToValueAtTime(n,actx.currentTime+.15);
+  if(station&&!muted){ osc.type=station.tone.type;
+    osc.frequency.linearRampToValueAtTime(station.tone.hz,actx.currentTime+.1);
+    oscGain.gain.linearRampToValueAtTime(station.tone.gain,actx.currentTime+.2);
+  } else { oscGain.gain.linearRampToValueAtTime(0,actx.currentTime+.15); }
+}
+
+// ---------- static canvas ----------
+const cv=$("#static-canvas"),cx=cv.getContext("2d");
+function sizeCanvas(){cv.width=innerWidth/3;cv.height=innerHeight/3;}
+sizeCanvas(); addEventListener("resize",sizeCanvas);
+setInterval(()=>{ if(cv.style.opacity==="0") return;
+  const img=cx.createImageData(cv.width,cv.height);
+  for(let i=0;i<img.data.length;i+=4){ const v=Math.random()*255;
+    img.data[i]=v;img.data[i+1]=v;img.data[i+2]=v;img.data[i+3]=255; }
+  cx.putImageData(img,0,0); },60);
+
+// ---------- tuning ----------
+let lineTimer=null,lineIdx=0,currentStation=null;
+function nearest(){ let best=null,bd=9;
+  STATIONS.forEach(s=>{ const d=Math.abs(s.f-freq); if(d<bd){bd=d;best=s;} });
+  return {s:best,d:bd}; }
+function render(){
+  needle.style.left=pct(freq)+"%";
+  $("#freq").textContent=freq.toFixed(1);
+  const {s,d}=nearest(), locked=d<=.25;
+  cv.style.opacity=locked?0:Math.min(.5,.15+d*.1);
+  setAudio(locked?s:null,d);
+  if(locked&&currentStation!==s){ currentStation=s; tuneTo(s); }
+  else if(!locked&&currentStation){ currentStation=null; clearInterval(lineTimer);
+    $("#stationname").textContent=""; $("#stationtag").textContent="";
+    $("#content").innerHTML='<span style="color:#555">［ static — keep tuning ］</span>';
+    $("#freq").style.color="var(--white)"; }
+}
+function tuneTo(s){
+  clearInterval(lineTimer); lineIdx=0;
+  $("#stationname").textContent=s.name; $("#stationname").style.color=s.color;
+  $("#stationtag").textContent=s.tag;
+  $("#freq").style.color=s.color;
+  const show=()=>{ $("#content").textContent=s.lines[lineIdx%s.lines.length];
+    $("#content").style.color=s.color; lineIdx++; };
+  show(); lineTimer=setInterval(show,s.period);
+}
+function tune(delta){ freq=Math.min(MAX,Math.max(MIN,+(freq+delta).toFixed(1))); render(); }
+
+document.addEventListener("keydown",e=>{
+  const step=e.shiftKey? .5 : .1;
+  if(e.key==="ArrowRight") tune(step);
+  else if(e.key==="ArrowLeft") tune(-step);
+  else if(/^[1-5]$/.test(e.key)){ freq=STATIONS[+e.key-1].f; render(); }
+  else if(e.key==="m"||e.key==="M"){ muted=!muted; render(); }
+  else if(e.key==="h"||e.key==="H"){ const h=$("#hints");
+    h.style.display=h.style.display==="none"?"block":"none"; }
+});
+// drag the needle
+let dragging=false;
+scale.addEventListener("mousedown",e=>{dragging=true;dragTo(e)});
+addEventListener("mousemove",e=>{if(dragging)dragTo(e)});
+addEventListener("mouseup",()=>dragging=false);
+function dragTo(e){ const r=scale.getBoundingClientRect();
+  freq=+(MIN+(MAX-MIN)*Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))).toFixed(1); render(); }
+
+$("#startgate").addEventListener("click",()=>{
+  $("#startgate").style.display="none"; initAudio(); render(); });
+</script>
+</body>
+</html>

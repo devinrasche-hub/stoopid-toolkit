@@ -10,6 +10,9 @@ Public brand tools for **THE STOOPID SHOW** (@stoopidshow) — hosted free on Gi
 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
 | [Stoopid Defense](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_defense.html) | Neon laser tower defense — defend the signal from waves of slop; every collapse gets a verdict |
 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
+| [The Courtroom (Live)](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_courtroom_live.html) | Run your own STOOPID vs STUPID trials — streaming ballots, gavel sounds, verdict stamp with the margin |
+| [KWTF 88.8 — The Dial](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_kwtf_dial.html) | The internet as an FM band — tune through the crazies, the hustle, the angels, the 2AM channel |
+| [The Credits Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_credits_roll.html) | Roll your own fake-serious end credits — paste names, SPACE, record the clip |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
