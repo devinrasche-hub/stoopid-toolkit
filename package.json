@@ -1,0 +1,11 @@
+{
+  "name": "stoopid-toolkit",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:registry": "node --test \"registry/test/*.test.js\""
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
