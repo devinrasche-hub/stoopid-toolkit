@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NO TOUCHY FOR FREE™ — INVOICE GENERATOR</title>
 <meta property="og:title" content="No Touchy For Free™ — Emotional Labor Invoice Generator">
 <meta property="og:description" content="Emotional labor has a cover charge now. Bill it. — THE STOOPID SHOW">
+<meta property="og:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/assets/no_touchy_invoice_og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/assets/no_touchy_invoice_og.png">
 <style>
   :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 — orange = earned sincerity / the Flip landing */
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -55,30 +59,30 @@
   <div class="panel">
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
 
-    <label>BILL TO (WHO DUMPED THE BACKPACK)</label>
+    <label for="billto">BILL TO (WHO DUMPED THE BACKPACK)</label>
     <input id="billto" maxlength="40" placeholder="e.g. THE GUY WHO BROUGHT THE RAGE" value="THE GUY WHO BROUGHT THE RAGE">
 
-    <label>LABOR PERFORMED — ITEM 1</label>
+    <label for="item1">LABOR PERFORMED — ITEM 1</label>
     <input id="item1" maxlength="60" placeholder="e.g. absorbed a rage he already brought" value="absorbed a rage he already brought">
 
-    <label>ITEM 2 (OPTIONAL)</label>
+    <label for="item2">ITEM 2 (OPTIONAL)</label>
     <input id="item2" maxlength="60" placeholder="e.g. nodded through a 40-min vent">
 
-    <label>ITEM 3 (OPTIONAL)</label>
+    <label for="item3">ITEM 3 (OPTIONAL)</label>
     <input id="item3" maxlength="60" placeholder="e.g. held the backpack full of rocks">
 
     <label>STAMP</label>
     <div class="stamp-btns">
-      <button class="sbtn pastdue active" id="s-past" onclick="setStamp('PAST DUE',this)">PAST DUE</button>
-      <button class="sbtn cover" id="s-cover" onclick="setStamp('COVER CHARGE APPLIES',this)">COVER CHARGE</button>
-      <button class="sbtn final" id="s-final" onclick="setStamp('FINAL NOTICE',this)">FINAL NOTICE</button>
+      <button class="sbtn pastdue active" id="s-past" aria-pressed="true" onclick="setStamp('PAST DUE',this)">PAST DUE</button>
+      <button class="sbtn cover" id="s-cover" aria-pressed="false" onclick="setStamp('COVER CHARGE APPLIES',this)">COVER CHARGE</button>
+      <button class="sbtn final" id="s-final" aria-pressed="false" onclick="setStamp('FINAL NOTICE',this)">FINAL NOTICE</button>
     </div>
 
     <label>FORMAT</label>
     <div class="ratio-btns">
-      <button class="rbtn active" id="r-sq" onclick="setRatio(1080,1080,this)">1:1 SQUARE</button>
-      <button class="rbtn" id="r-vt" onclick="setRatio(1080,1920,this)">9:16 VERTICAL</button>
-      <button class="rbtn" id="r-wd" onclick="setRatio(1920,1080,this)">16:9 WIDE</button>
+      <button class="rbtn active" id="r-sq" aria-pressed="true" onclick="setRatio(1080,1080,this)">1:1 SQUARE</button>
+      <button class="rbtn" id="r-vt" aria-pressed="false" onclick="setRatio(1080,1920,this)">9:16 VERTICAL</button>
+      <button class="rbtn" id="r-wd" aria-pressed="false" onclick="setRatio(1920,1080,this)">16:9 WIDE</button>
     </div>
 
     <button class="dl" onclick="download()">DOWNLOAD PNG</button>
@@ -86,7 +90,7 @@
     <div class="hint">POST opens a pre-written post on X — attach the PNG you just downloaded. The invoice does the talking.</div>
   </div>
 
-  <canvas id="preview" width="1080" height="1080"></canvas>
+  <canvas id="preview" width="1080" height="1080" role="img" aria-label="Invoice preview"></canvas>
 </div>
 
 <div class="footer">FROM EP16 — THE 92. PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET — WHATEVER DEVICE WAS CHARGED</div>
@@ -101,14 +105,16 @@ const UNITS=[["HRS",42.50],["SIGHS",12.00],["NODS",8.75],["MIN",1.85],["DEEP BRE
 
 function setStamp(s,btn){
   stamp=s;
-  document.querySelectorAll(".sbtn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".sbtn").forEach(b=>{b.classList.remove("active"); b.setAttribute("aria-pressed","false");});
   btn.classList.add("active");
+  btn.setAttribute("aria-pressed","true");
   draw();
 }
 function setRatio(w,h,btn){
   W=w; H=h; cv.width=w; cv.height=h;
-  document.querySelectorAll(".rbtn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".rbtn").forEach(b=>{b.classList.remove("active"); b.setAttribute("aria-pressed","false");});
   btn.classList.add("active");
+  btn.setAttribute("aria-pressed","true");
   draw();
 }
 ["billto","item1","item2","item3"].forEach(id=>document.getElementById(id).addEventListener("input",draw));
@@ -165,7 +171,7 @@ function glitchText(text, x, y, size, color){
 function money(n){ return "$"+n.toFixed(2); }
 
 function draw(){
-  const billto=(document.getElementById("billto").value||"UNKNOWN DEBTOR").toUpperCase().trim();
+  const billto=(document.getElementById("billto").value.trim()||"UNKNOWN DEBTOR").toUpperCase();
   const rows=items();
   const color=STAMP_COLORS[stamp];
   const seedText=rows.map(r=>r.desc).join("|")||"blank";
@@ -232,13 +238,15 @@ function draw(){
   const drawRows=rows.length?rows:[{desc:"…", qty:0, unit:"HRS", rate:0, amount:0}];
   drawRows.forEach(r=>{
     subtotal+=r.amount;
+    const rt=r.qty+" "+r.unit+" × "+money(r.rate)+"   "+money(r.amount);
+    ctx.font=rowFont;
+    const maxDescW=(right-ctx.measureText(rt).width-S*0.02)-left;
     ctx.fillStyle="#fff";
     ctx.textAlign="left";
-    ctx.font=rowFont;
-    ctx.fillText(truncate(r.desc, W*0.40, rowFont), left, y);
+    ctx.fillText(truncate(r.desc, maxDescW, rowFont), left, y);
     ctx.textAlign="right";
     ctx.fillStyle="#bbb";
-    ctx.fillText(r.qty+" "+r.unit+" × "+money(r.rate)+"   "+money(r.amount), right, y);
+    ctx.fillText(rt, right, y);
     y+=S*0.042;
   });
   dash(y-S*0.014);

@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>STOOPID VERDICT CARD GENERATOR</title>
 <style>
   :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 — orange = earned sincerity / the Flip landing */
@@ -47,26 +49,26 @@
   <div class="panel">
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
 
-    <label>ON TRIAL (THE BEHAVIOR)</label>
+    <label for="trial">ON TRIAL (THE BEHAVIOR)</label>
     <input id="trial" maxlength="60" placeholder="e.g. ARGUING WITH STRANGERS AT 2AM" value="ARGUING WITH STRANGERS AT 2AM">
 
-    <label>THE VERDICT</label>
-    <div class="verdict-btns">
+    <label id="verdict-label">THE VERDICT</label>
+    <div class="verdict-btns" role="group" aria-labelledby="verdict-label">
       <button class="vbtn stoopid active" id="b-stoopid" onclick="setVerdict('STOOPID')">STOOPID</button>
       <button class="vbtn stupid" id="b-stupid" onclick="setVerdict('STUPID')">STUPID</button>
     </div>
 
-    <label>RULING (ONE LINE, OPTIONAL)</label>
+    <label for="ruling">RULING (ONE LINE, OPTIONAL)</label>
     <input id="ruling" maxlength="90" placeholder="e.g. absurd but human. keep it." value="absurd but human. keep it.">
 
-    <label>EPISODE TAG (OPTIONAL)</label>
+    <label for="ep">EPISODE TAG (OPTIONAL)</label>
     <input id="ep" maxlength="20" placeholder="S2E03">
 
-    <label>SEASON TALLY (OPTIONAL)</label>
+    <label for="tally">SEASON TALLY (OPTIONAL)</label>
     <input id="tally" maxlength="30" placeholder="STOOPID 7 — STUPID 4">
 
-    <label>FORMAT</label>
-    <div class="ratio-btns">
+    <label id="format-label">FORMAT</label>
+    <div class="ratio-btns" role="group" aria-labelledby="format-label">
       <button class="rbtn active" id="r-sq" onclick="setRatio(1080,1080,this)">1:1 SQUARE</button>
       <button class="rbtn" id="r-vt" onclick="setRatio(1080,1920,this)">9:16 VERTICAL</button>
       <button class="rbtn" id="r-wd" onclick="setRatio(1920,1080,this)">16:9 WIDE</button>
@@ -75,7 +77,7 @@
     <button class="dl" onclick="download()">DOWNLOAD PNG</button>
   </div>
 
-  <canvas id="preview" width="1080" height="1080"></canvas>
+  <canvas id="preview" width="1080" height="1080" role="img" aria-label="Verdict card preview">Verdict card preview</canvas>
 </div>
 
 <div class="footer">PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET — WHATEVER DEVICE WAS CHARGED</div>
@@ -177,38 +179,48 @@ function draw(){
   tLines.forEach((ln,i)=>ctx.fillText(ln, cx, H*0.32 + i*tSize*1.25));
 
   // VERDICT stamp
+  // S scales the lower block: equals W in 1:1 / 9:16, capped by height in 16:9
+  // so the stamp, ruling, tally and footer can't outgrow the canvas.
+  const S=Math.min(W, H*1.2);
   const vy=H*0.55;
   ctx.fillStyle="#666";
   ctx.font=(W*0.022)+"px 'Courier New',monospace";
-  ctx.fillText("THE VERDICT:", cx, vy-W*0.075);
-  glitchText(verdict, cx, vy+W*0.05, W*0.135, color);
+  ctx.fillText("THE VERDICT:", cx, vy-S*0.075);
+  glitchText(verdict, cx, vy+S*0.05, S*0.135, color);
 
   // box around verdict
   const vw=ctx.measureText(verdict).width;
-  ctx.strokeStyle=color; ctx.lineWidth=Math.max(4,Math.round(W*0.005));
-  ctx.strokeRect(cx-vw/2-W*0.04, vy-W*0.065, vw+W*0.08, W*0.155);
+  ctx.strokeStyle=color; ctx.lineWidth=Math.max(4,Math.round(S*0.005));
+  ctx.strokeRect(cx-vw/2-S*0.04, vy-S*0.065, vw+S*0.08, S*0.155);
+  let lastY=vy+S*0.09; // bottom edge of the verdict box
 
-  // ruling
+  // ruling — flows below the verdict box instead of a fixed H fraction
   if(ruling){
     ctx.fillStyle=ORANGE; // the ruling is the flip landing
-    ctx.font="italic "+(W*0.03)+"px 'Courier New',monospace";
-    const rLines=wrapLines('"'+ruling+'"', W*0.78, "italic "+(W*0.03)+"px 'Courier New',monospace");
-    rLines.forEach((ln,i)=>ctx.fillText(ln, cx, H*0.72 + i*W*0.04));
+    const rFont="italic "+(S*0.03)+"px 'Courier New',monospace";
+    ctx.font=rFont;
+    const rLines=wrapLines('"'+ruling+'"', W*0.78, rFont);
+    const rY=Math.max(H*0.72, lastY+S*0.05);
+    rLines.forEach((ln,i)=>ctx.fillText(ln, cx, rY + i*S*0.04));
+    lastY=rY+(rLines.length-1)*S*0.04;
   }
 
-  // tally
+  // tally — sits below the last ruling line
   if(tally){
     ctx.fillStyle="#999";
-    ctx.font=(W*0.024)+"px 'Courier New',monospace";
-    ctx.fillText("[ SEASON TALLY: "+tally+" ]", cx, H*0.81);
+    ctx.font=(S*0.024)+"px 'Courier New',monospace";
+    const tyY=Math.max(H*0.81, lastY+S*0.045);
+    ctx.fillText("[ SEASON TALLY: "+tally+" ]", cx, tyY);
+    lastY=tyY;
   }
 
-  // footer
+  // footer — sits below whatever came last
+  const fY=Math.max(H*0.9, lastY+S*0.05);
   ctx.fillStyle="#555";
-  ctx.font=(W*0.02)+"px 'Courier New',monospace";
-  ctx.fillText((ep?ep+"  —  ":"")+"@STOOPIDSHOW  —  SIGNAL RECEIVED", cx, H*0.9);
+  ctx.font=(S*0.02)+"px 'Courier New',monospace";
+  ctx.fillText((ep?ep+"  —  ":"")+"@STOOPIDSHOW  —  SIGNAL RECEIVED", cx, fY);
   ctx.fillStyle=color;
-  ctx.fillText("STOOPID but TRUE", cx, H*0.935);
+  ctx.fillText("STOOPID but TRUE", cx, fY+S*0.035);
 }
 
 function download(){

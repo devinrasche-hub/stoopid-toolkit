@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>THE PRESS ME CUBE — THE STOOPID SHOW</title>
 <meta property="og:title" content="THE PRESS ME CUBE">
 <meta property="og:description" content="Six faces. Six clues. One goblin. Reality is user generated — so is this cube. — THE STOOPID SHOW">
+<meta property="og:url" content="https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_press_me_cube.html">
+<meta property="og:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/assets/press_me_cube_og.png">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root {
     --black: #000000;
@@ -366,12 +370,12 @@
   <span>TIME <b id="hudTime">0:00</b></span>
 </div>
 
-<div class="clue" data-n="1" id="clueBox"></div>
+<div class="clue" data-n="1" id="clueBox" aria-live="polite"></div>
 <div class="goblinwrap">
   <pre id="gFace" aria-hidden="true"> ,_,
 (o,o)
 /)__)</pre>
-  <div class="goblin" id="goblinBox">the goblin is watching. press wisely.</div>
+  <div class="goblin" id="goblinBox" aria-live="polite">the goblin is watching. press wisely.</div>
 </div>
 
 <div class="stage">
@@ -494,9 +498,11 @@
 
       const cols = document.createElement("div");
       cols.className = "coords cols";
+      cols.setAttribute("aria-hidden", "true");
       cols.innerHTML = "<span>1</span><span>2</span><span>3</span><span>4</span>";
       const rows = document.createElement("div");
       rows.className = "coords rows";
+      rows.setAttribute("aria-hidden", "true");
       rows.innerHTML = "<span>1</span><span>2</span><span>3</span><span>4</span>";
       el.appendChild(cols); el.appendChild(rows);
 
@@ -505,12 +511,24 @@
         t.className = "tile";
         t.textContent = "PRESS ME";
         t.dataset.idx = i;
+        t.setAttribute("aria-label",
+          "press me — row " + (Math.floor(i / 4) + 1) + ", column " + ((i % 4) + 1));
         t.addEventListener("click", () => press(f, i, t, el));
         el.appendChild(t);
       }
       cube.appendChild(el);
     });
     cube.style.transform = FACE_TRANSFORMS[0];
+    setActiveFace();
+  }
+
+  // only the active face's tiles are pressable / reachable by keyboard & AT
+  function setActiveFace() {
+    Array.from(cube.children).forEach((faceEl, f) => {
+      faceEl.querySelectorAll(".tile").forEach((t) => {
+        t.disabled = done || f !== faceIdx;
+      });
+    });
   }
 
   // ── game logic ─────────────────────────────────────────
@@ -533,6 +551,7 @@
           hudFace.textContent = faceIdx + 1;
           clueBox.dataset.n = faceIdx + 1;
           clueBox.textContent = FACES[faceIdx].clue;
+          setActiveFace();
         }, 800);
       }
     } else {
@@ -633,6 +652,10 @@
     // they ever do), the cube opens, and the line stands alone in orange.
     document.body.classList.remove("irk1", "irk2");
     document.body.classList.add("flip");
+    setActiveFace();
+    // clear the inline placement transforms so the .cube.open CSS rules
+    // (the fly-apart) actually apply — inline styles would override them
+    Array.from(cube.children).forEach((el) => { el.style.transform = ""; });
     cube.classList.add("open");
     say("the goblin says nothing.", true);
     setFace("respect", true);
@@ -731,6 +754,7 @@
 
   // reposition faces if the cube resizes (mobile rotation etc.)
   window.addEventListener("resize", () => {
+    if (cube.classList.contains("open")) return; // don't re-pin faces mid-finale
     const z = halfSize();
     const placements = [
       `rotateY(0deg) translateZ(${z}px)`,   `rotateY(90deg) translateZ(${z}px)`,

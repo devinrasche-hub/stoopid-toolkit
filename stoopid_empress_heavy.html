@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EMPRESS HEAVY · Launch</title>
   <style>
@@ -735,7 +736,7 @@
       </div>
       <div class="hud-item">
         <span class="label">PHASE</span>
-        <strong id="phase" class="status-idle">PAD</strong>
+        <strong id="phase" class="status-idle" role="status" aria-live="polite">PAD</strong>
       </div>
     </div>
 
@@ -769,7 +770,7 @@
         <div class="countdown-num" id="countdownNum">3</div>
       </div>
 
-      <div class="world">
+      <div class="world" aria-hidden="true">
 <pre class="tower">  ║
   ║
   ║
@@ -837,7 +838,7 @@
     Press launch and watch her climb.
     Keys: <kbd>Space</kbd> launch · <kbd>R</kbd> reset
   </p>
-  <p class="log" id="log">Systems go. Awaiting go for launch.</p>
+  <p class="log" id="log" role="status" aria-live="polite">Systems go. Awaiting go for launch.</p>
 
   <script>
     const ROCKET = `      /\\
@@ -921,6 +922,7 @@
     const VANISH_AT = 0.90;
 
     let state = "idle";
+    let launchGen = 0;
     let alt = 0, vel = 0, t = 0;
     let raf = null, last = 0;
     let exhaustFrame = 0, exhaustTimer = 0;
@@ -1231,6 +1233,7 @@
           alt = MAX_ALT;
           vel = 0;
           state = "orbit";
+          btnLaunch.disabled = false;
           if (!vanished) triggerStarVanish();
           setExhaust(false);
           let extra = 0;
@@ -1268,6 +1271,7 @@
     async function launch() {
       if (!["idle", "orbit"].includes(state)) return;
       resetVisual(false);
+      const gen = ++launchGen;
       state = "countdown";
       btnLaunch.disabled = true;
       setPhase("COUNTDOWN", "status-boost");
@@ -1280,6 +1284,7 @@
         countdownEl.classList.add("show");
         log(n === "IGNITION" ? "Ignition sequence start." : `T-${n}…`);
         await wait(n === "IGNITION" ? 650 : 800);
+        if (gen !== launchGen) return;
       }
       countdownEl.classList.remove("show");
 
@@ -1307,6 +1312,7 @@
     }
 
     function resetVisual(full = true) {
+      launchGen++;
       if (raf) cancelAnimationFrame(raf);
       raf = null; last = 0;
       state = "idle";

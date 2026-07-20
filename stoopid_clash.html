@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STOOPID CLASH — THE STOOPID SHOW</title>
 <meta property="og:title" content="STOOPID CLASH">
@@ -150,6 +151,7 @@
 <div class="controls" id="villageControls">
   <button class="btn" id="shopBtn">BUILD</button>
   <button class="btn warn" id="raidBtn">RAID →</button>
+  <button class="btn small alt" id="cancelPlaceBtn" style="display:none">CANCEL</button>
   <span class="help" id="armyLine">army: nobody. train some guys in the garage.</span>
 </div>
 
@@ -335,7 +337,7 @@ function newGame(){
   mk('hall',11,11,1); mk('beanfarm',7,12,1); mk('dish',17,12,1);
   return s;
 }
-function save(){ if(S){ S.last = now(); try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} } }
+function save(){ if(S){ if(!document.hidden) S.last = now(); try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} } }
 function load(){
   try{ const raw = localStorage.getItem(SAVE_KEY); if(raw){ const s = JSON.parse(raw); if(s && s.v===1) return s; } }catch(e){}
   return null;
@@ -439,6 +441,7 @@ function tryBuy(t){
   const cost=def.cost[0];
   if(S.res.beans<cost){ setStatus('not enough beans. the farm is trying its best.','bad'); return; }
   placing={t:t, x:Math.floor(T/2), y:Math.floor(T/2), moving:null};
+  $('cancelPlaceBtn').style.display='';
   shopModal.classList.remove('show');
   setStatus('tap a spot for the '+def.n.toLowerCase()+'. green means yes.');
   closePanel();
@@ -455,7 +458,7 @@ function confirmPlace(){
     S.b.push(b);
     setStatus(def.n.toLowerCase()+(def.time[0]>0?' under construction. the wait begins.':' built. instantly. suspicious.'),'good');
   }
-  placing=null; save(); updateHUD();
+  placing=null; $('cancelPlaceBtn').style.display='none'; save(); updateHUD();
 }
 function startUpgrade(b){
   const def=B[b.t];
@@ -583,6 +586,10 @@ function startMatch(free){
   if(armyCount()<1){ setStatus('no army. the garage awaits your signal.','bad'); return; }
   if(!free){ if(S.res.beans<20){ setStatus('matchmaking costs 20 beans. the algorithm has a fee schedule.','bad'); return; } S.res.beans-=20; updateHUD(); }
   const e=genEnemy();
+  S.pendingMatch=e; save();
+  showMatch(e);
+}
+function showMatch(e){
   matchModal._enemy=e;
   mName.textContent=e.name;
   mLvl.textContent='SIGNAL TOWER LEVEL '+e.hall+' · '+e.list.filter(b=>b.t==='wall').length+' walls (not free)';
@@ -592,12 +599,15 @@ function startMatch(free){
 }
 function beginRaid(){
   const e=matchModal._enemy; matchModal.classList.remove('show');
+  S.pendingMatch=null;
   R={phase:'deploy', E:e.list, name:e.name, hall:e.hall, t:RAID_TIME, started:false,
      troops:[], projs:[], loot:{b:0,s:0}, lootAvail:{b:e.lootB,s:e.lootS},
      totalNW:e.list.filter(b=>b.t!=='wall').length, destroyed:0, hallDead:false,
      armyLeft:Object.assign({},S.army), speed:1};
-  trayPick=null; sel=null; placing=null; closePanel();
+  matchModal._enemy=null; save();
+  trayPick=null; sel=null; placing=null; $('cancelPlaceBtn').style.display='none'; closePanel();
   villageControls.style.display='none'; raidControls.style.display='flex';
+  $('speedBtn').textContent='SPEED x1';
   buildTray();
   setStatus('scout complete. deploy on the outer edge. the guys are ready. the guys are always ready.');
 }
@@ -640,11 +650,11 @@ function deploy(t,tx,ty){
   const edge = tx<2||ty<2||tx>=T-2||ty>=T-2;
   if(!edge){ setStatus('deploy zone is the outer edge. the middle is their whole thing.','bad'); return; }
   const m=occMap(R.E); if(m[ty][tx]){ setStatus('occupied. even the edge has landlords.','bad'); return; }
-  R.armyLeft[t]--; S.army[t]--; if(S.army[t]<=0) delete S.army[t];
+  R.armyLeft[t]--;
   const def=TR[t];
   R.troops.push({type:t,def:def,x:tx+0.5,y:ty+0.5,hp:def.hp,target:null,path:null,pi:0,sub:null,cd:0,dead:false});
   if(!R.started){ R.started=true; R.phase='live'; }
-  buildTray(); updateArmyLine(); save();
+  buildTray();
 }
 function tickRaid(dt){
   if(!R||R.phase!=='live') return;
@@ -759,7 +769,8 @@ function endRaid(){
   const gotS=Math.max(0, Math.min(R.loot.s, capOf('signal')-S.res.signal));
   S.res.beans+=gotB; S.res.signal+=gotS;
   S.stats.raids++; S.stats.stars+=stars; S.stats.lootB+=gotB;
-  save(); updateHUD();
+  S.army={}; for(const k in R.armyLeft) if(R.armyLeft[k]>0) S.army[k]=R.armyLeft[k];
+  save(); updateHUD(); updateArmyLine();
   // card
   rStars.textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
   rVerdict.textContent = stars>0?'STOOPID':'STUPID';
@@ -954,7 +965,7 @@ function openPanel(b){
   if(b.up>0) addBtn('SKIP THE WAIT (FREE*)','warn',()=>skipWait(b));
   else if(b.t!=='wall'&&b.lvl>=1&&b.lvl<B[b.t].cost.length)
     addBtn('UPGRADE — '+def.cost[b.lvl]+' BEANS · '+fmtT(def.time[b.lvl]),'',()=>startUpgrade(b), S.res.beans<def.cost[b.lvl]);
-  addBtn('MOVE','alt',()=>{ placing={t:b.t,x:b.x,y:b.y,moving:b}; closePanel(); setStatus('tap a new spot. confirm with the button.'); });
+  addBtn('MOVE','alt',()=>{ placing={t:b.t,x:b.x,y:b.y,moving:b}; $('cancelPlaceBtn').style.display=''; closePanel(); setStatus('tap a new spot to confirm.'); });
   addBtn('CLOSE','',()=>closePanel());
   panel.classList.add('show');
 }
@@ -1023,7 +1034,10 @@ cv.addEventListener('click',ev=>{
 /* buttons */
 $('shopBtn').onclick=openShop;
 $('shopClose').onclick=()=>shopModal.classList.remove('show');
-$('raidBtn').onclick=()=>startMatch(true);
+$('raidBtn').onclick=()=>{ const p=matchModal._enemy||S.pendingMatch; if(p){ showMatch(p); return; } startMatch(true); };
+function cancelPlacing(){ if(!placing) return; placing=null; $('cancelPlaceBtn').style.display='none'; setStatus('placement cancelled. the tiles remain neutral.'); }
+$('cancelPlaceBtn').onclick=cancelPlacing;
+document.addEventListener('keydown',ev=>{ if(ev.key==='Escape') cancelPlacing(); });
 $('invAck').onclick=()=>{
   const b=invModal._target;
   if(b&&b.up>0){ b.lvl=b.pend; b.up=0; b.pend=0; }
@@ -1032,9 +1046,9 @@ $('invAck').onclick=()=>{
   save(); refreshPanel(); updateHUD();
 };
 $('mAttack').onclick=beginRaid;
-$('mNext').onclick=()=>{ matchModal.classList.remove('show'); startMatch(false); };
+$('mNext').onclick=()=>startMatch(false); // charge first; on failure the current match stays on screen
 $('mHome').onclick=()=>matchModal.classList.remove('show');
-$('endRaidBtn').onclick=()=>{ if(R&&R.phase!=='done') endRaid(); };
+$('endRaidBtn').onclick=()=>{ if(!R||R.phase==='done') return; if(!R.started){ exitRaid(); setStatus('raid called off. nobody deployed. nobody has to know.'); return; } endRaid(); };
 $('speedBtn').onclick=()=>{ if(R){ R.speed=R.speed===1?2:1; $('speedBtn').textContent='SPEED x'+R.speed; } };
 $('rHome').onclick=exitRaid;
 $('rPost').onclick=()=>{
@@ -1054,7 +1068,10 @@ function loop(ms){
   requestAnimationFrame(loop);
 }
 setInterval(save,5000);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ save(); }
+  else { if(!R) offlineCatchup(); save(); updateHUD(); updateArmyLine(); }
+});
 
 /* boot */
 S = load() || newGame();

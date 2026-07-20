@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIGNAL ACKNOWLEDGED — STOOPID</title>
 <style>
@@ -69,7 +70,7 @@
     <span class="corner bl"></span><span class="corner br"></span>
     <h2>// TRANSMISSION</h2>
 
-    <label>SUBSCRIBER HANDLES <span style="color:#555">(one per line or comma-separated)</span></label>
+    <label for="handles">SUBSCRIBER HANDLES <span style="color:#555">(one per line or comma-separated)</span></label>
     <textarea id="handles" spellcheck="false">@stoopidfan
 @teal_gremlin
 @beansforever
@@ -80,11 +81,11 @@
 
     <div class="row">
       <div>
-        <label>EPISODE</label>
+        <label for="episode">EPISODE</label>
         <input id="episode" type="number" value="20" min="1" max="99">
       </div>
       <div>
-        <label>SEASON</label>
+        <label for="season">SEASON</label>
         <input id="season" type="number" value="1" min="1" max="9">
       </div>
     </div>
@@ -94,12 +95,12 @@
       <button id="rec" class="rec">⏺ Record</button>
       <button id="stop" disabled>■ Stop</button>
     </div>
-    <div class="status" id="status">Ready. Paste handles and hit play.</div>
+    <div class="status" id="status" role="status" aria-live="polite">Ready. Paste handles and hit play.</div>
     <div class="hint">RECORD renders the full sequence and downloads a <b style="color:#777">.webm</b> you can drop straight into CapCut. For a clean screen-grab instead, hit PLAY and capture the canvas.</div>
   </div>
 
   <div class="stagewrap">
-    <canvas id="stage" width="1280" height="720"></canvas>
+    <canvas id="stage" width="1280" height="720" role="img" aria-label="Shout-out animation preview, 1280 by 720">Shout-out animation preview (canvas not supported in this browser).</canvas>
     <div class="stagefoot">1280×720 · REALITY IS USER GENERATED</div>
   </div>
 </div>
@@ -128,6 +129,7 @@ const ACK_PHRASES = [
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let raf = null, playing = false, recorder = null, chunks = [], recording = false;
+let recMime = "video/webm", recExt = "webm", recAborted = false;
 const el = id => document.getElementById(id);
 
 function parseHandles(){
@@ -295,20 +297,34 @@ function drawRain(dt, t, T, handles, resolve){
 
 function rollLayout(handles){
   const N = handles.length;
-  const COLS = N>12 ? 2 : 1;
+  const startY = 90, availH = H - startY - 60;
+  const COLS = N>24 ? 3 : (N>12 ? 2 : 1);
   const colW = (W-120)/COLS;
   const rowsPerCol = Math.ceil(N/COLS);
-  const LH = 48, startY = 90;
-  const maxVisible = ((H - startY - 60)/LH)|0;
-  const scrollNeeded = Math.max(0, rowsPerCol - maxVisible);
-  return {N,COLS,colW,rowsPerCol,LH,startY,maxVisible,scrollNeeded};
+  // scale rows down so EVERY handle fits on screen — no scrolling, no dropped signals
+  let LH = 48, font = 32, ackFont = 16, ackDY = 36;
+  if(rowsPerCol*LH > availH){
+    const k = availH/(rowsPerCol*LH);
+    LH = availH/rowsPerCol;
+    font    = Math.max(12, (32*k)|0);
+    ackFont = Math.max(8,  (16*k)|0);
+    ackDY   = Math.max(font+2, (36*k)|0);
+  }
+  // clamp horizontally too: the longest handle must fit its column
+  // (Courier ~0.6em per char; leave a 20px gutter)
+  const maxLen = handles.reduce((m,h)=>Math.max(m,h.length), 1);
+  const maxFont = (colW-20)/(maxLen*0.6);
+  if(font > maxFont){
+    const k2 = maxFont/font;
+    font    = Math.max(8, maxFont|0);
+    ackFont = Math.max(6, (ackFont*k2)|0);
+  }
+  return {N,COLS,colW,rowsPerCol,LH,startY,font,ackFont,ackDY};
 }
 
 function drawRoll(t, T, handles, ackMap){
   const L = rollLayout(handles);
   const localT = t - T.tResolveEnd;                 // seconds into roll
-  const prog = Math.min(1, localT / T.ROLL);
-  const scroll = Math.min(prog*L.scrollNeeded*1.2, L.scrollNeeded)|0;
 
   ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
   header("EP."+String(el("episode").value).padStart(2,"0")+"  S"+
@@ -317,9 +333,7 @@ function drawRoll(t, T, handles, ackMap){
 
   for(let ni=0; ni<L.N; ni++){
     const row = ni % L.rowsPerCol, col = (ni / L.rowsPerCol)|0;
-    const dispRow = row - scroll;
-    if(dispRow<0 || dispRow>=L.maxVisible) continue;
-    const x = 60 + col*L.colW, y = L.startY + dispRow*L.LH;
+    const x = 60 + col*L.colW, y = (L.startY + row*L.LH)|0;
     const handle = handles[ni], ack = ackMap[ni];
     const startF = T.rollStart[ni];
     const typeT = Math.max(0.18, handle.length/22);
@@ -329,19 +343,20 @@ function drawRoll(t, T, handles, ackMap){
     if(since <= typeT){
       const cc = Math.min(handle.length, ((since/typeT)*handle.length)|0);
       const disp = handle.slice(0,cc);
-      glowText(disp, x, y, 32, PINK, 16);
+      glowText(disp, x, y, L.font, PINK, 16);
       // blinking cursor
       if(((localT*6)|0)%2===0){
-        ctx.font="bold 32px 'Courier New', monospace";
+        ctx.font="bold "+L.font+"px 'Courier New', monospace";
         const w = disp?ctx.measureText(disp).width:0;
-        ctx.fillStyle = PINK; ctx.fillRect(x+w+3, y+3, 14, 30);
+        ctx.fillStyle = PINK;
+        ctx.fillRect(x+w+3, y+3, Math.max(6,(L.font*0.44)|0), Math.max(10,(L.font*0.94)|0));
       }
     } else {
-      glowText(handle, x, y, 32, PINK, 16);
+      glowText(handle, x, y, L.font, PINK, 16);
       const ackSince = since - typeT;
       const ackTypeT = Math.max(0.1, ack.length/40);
       const ac = ackSince<=ackTypeT ? (((ackSince/ackTypeT)*ack.length)|0) : ack.length;
-      plainText(ack.slice(0,ac), x+4, y+36, 16, PINK_DIM, false);
+      plainText(ack.slice(0,ac), x+4, y+L.ackDY, L.ackFont, PINK_DIM, false);
     }
   }
   footer("REALITY IS USER GENERATED  //  "+L.N+" SIGNALS RECEIVED  //  @stoopidshow");
@@ -356,14 +371,11 @@ function drawHold(t, T, handles, ackMap){
          String(el("season").value).padStart(2,"0")+
          "  //  SIGNAL ACKNOWLEDGED  //  THE STOOPID SHOW");
 
-  const scroll = L.scrollNeeded;
   for(let ni=0; ni<L.N; ni++){
     const row = ni % L.rowsPerCol, col = (ni / L.rowsPerCol)|0;
-    const dispRow = row - scroll;
-    if(dispRow<0 || dispRow>=L.maxVisible) continue;
-    const x = 60 + col*L.colW, y = L.startY + dispRow*L.LH;
-    glowText(handles[ni], x, y, 32, PINK, 16);
-    plainText(ackMap[ni], x+4, y+36, 16, PINK_DIM, false);
+    const x = 60 + col*L.colW, y = (L.startY + row*L.LH)|0;
+    glowText(handles[ni], x, y, L.font, PINK, 16);
+    plainText(ackMap[ni], x+4, y+L.ackDY, L.ackFont, PINK_DIM, false);
   }
   // pulse SIGNAL RECEIVED
   const pulse = 0.4 + 0.6*Math.abs(Math.sin(localT*Math.PI*3));
@@ -422,14 +434,26 @@ function begin(record){
   el("play").disabled = true; el("rec").disabled = true; el("stop").disabled = false;
 
   if(record){
-    chunks = [];
-    const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-      ? "video/webm;codecs=vp9" : "video/webm";
-    const stream = cv.captureStream(30);
-    recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
-    recorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-    recorder.onstop = downloadClip;
-    recorder.start();
+    chunks = []; recAborted = false;
+    try{
+      if(typeof MediaRecorder === "undefined") throw new Error("MediaRecorder unavailable");
+      const mime = ["video/webm;codecs=vp9","video/webm","video/mp4"]
+        .find(m => MediaRecorder.isTypeSupported(m));
+      if(!mime) throw new Error("no supported recording format");
+      recMime = mime.split(";")[0];
+      recExt  = recMime.includes("mp4") ? "mp4" : "webm";
+      const stream = cv.captureStream(30);
+      recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+      recorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+      recorder.onstop = downloadClip;
+      recorder.start();
+    }catch(err){
+      playing = false; recorder = null;
+      cancelAnimationFrame(raf);
+      el("play").disabled=false; el("rec").disabled=false; el("stop").disabled=true;
+      setStatus("Recording not supported in this browser — use <b>PLAY</b> + screen capture.");
+      return;
+    }
     recording = true;
     setStatus("<b>● REC</b> rendering "+handles.length+" signals ("+T.total.toFixed(1)+"s)…");
   } else {
@@ -446,19 +470,21 @@ function finish(){
 }
 function stopAll(){
   playing=false; cancelAnimationFrame(raf);
-  if(recording && recorder){ recorder.stop(); recording=false; }
+  if(recording && recorder){ recAborted = true; recorder.stop(); recording=false; }
   el("play").disabled=false; el("rec").disabled=false; el("stop").disabled=true;
   setStatus("Stopped.");
 }
 function downloadClip(){
-  const blob = new Blob(chunks, { type:"video/webm" });
+  const blob = new Blob(chunks, { type: recMime });
   const url = URL.createObjectURL(blob);
   const ep = String(el("episode").value).padStart(2,"0");
+  const name = "signal_acknowledged_EP"+ep+"."+recExt;
   const a = document.createElement("a");
-  a.href = url; a.download = "signal_acknowledged_EP"+ep+".webm";
+  a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 4000);
-  setStatus("Saved <b>signal_acknowledged_EP"+ep+".webm</b> — drop into CapCut.");
+  if(recAborted) setStatus("Stopped — partial clip saved as <b>"+name+"</b> (cut off mid-sequence).");
+  else setStatus("Saved <b>"+name+"</b> — drop into CapCut.");
 }
 function setStatus(html){ el("status").innerHTML = html; }
 

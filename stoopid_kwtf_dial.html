@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KWTF 88.8 — THE DIAL</title>
 <style>
   :root{--black:#000;--white:#fff;--teal:#00FFC6;--purple:#8A2BE2;--red:#FF2D2D;--orange:#CC5500}
@@ -18,11 +20,11 @@
   #stage{height:100vh;display:flex;flex-direction:column;align-items:center;
          justify-content:center;padding:30px;position:relative;z-index:2}
   .kicker{letter-spacing:6px;font-size:14px;color:#888;margin-bottom:6px}
-  #freq{font-size:110px;font-weight:bold;letter-spacing:4px;line-height:1}
+  #freq{font-size:clamp(48px,14vw,110px);font-weight:bold;letter-spacing:4px;line-height:1}
   #band{font-size:16px;letter-spacing:8px;color:#666;margin-top:4px}
   /* dial */
   #dialwrap{width:min(1000px,90vw);margin-top:40px}
-  #scale{position:relative;height:70px;border-bottom:2px solid #333}
+  #scale{position:relative;height:70px;border-bottom:2px solid #333;touch-action:none}
   .tick{position:absolute;bottom:0;width:1px;height:14px;background:#444}
   .tick.major{height:26px;background:#777}
   .ticklabel{position:absolute;bottom:32px;transform:translateX(-50%);color:#666;font-size:13px}
@@ -34,12 +36,13 @@
   #card{margin-top:46px;width:min(900px,88vw);min-height:220px;text-align:center}
   #stationname{font-size:30px;font-weight:bold;letter-spacing:6px;margin-bottom:8px}
   #stationtag{font-size:14px;color:#888;letter-spacing:3px;margin-bottom:26px}
-  #content{font-size:26px;line-height:1.45;min-height:110px;font-weight:bold}
+  #content{font-size:clamp(18px,5vw,26px);line-height:1.45;min-height:110px;font-weight:bold}
   #static-canvas{position:fixed;inset:0;z-index:1;opacity:0;transition:opacity .25s}
   #hints{position:fixed;bottom:18px;left:0;right:0;text-align:center;color:#555;
          font-size:13px;letter-spacing:2px;z-index:40}
   #startgate{position:fixed;inset:0;background:#000;z-index:60;display:flex;
-    align-items:center;justify-content:center;flex-direction:column;cursor:pointer}
+    align-items:center;justify-content:center;flex-direction:column;cursor:pointer;
+    border:none;color:var(--white);font-family:inherit;width:100%}
   #startgate .big{font-size:46px;font-weight:bold;letter-spacing:4px;color:var(--teal)}
   #startgate .small{color:#777;margin-top:16px;letter-spacing:2px}
 </style>
@@ -49,10 +52,10 @@
 <div class="bracket tl"></div><div class="bracket tr"></div>
 <div class="bracket bl"></div><div class="bracket br"></div>
 
-<div id="startgate">
-  <div class="big">KWTF 88.8</div>
-  <div class="small">CLICK TO POWER ON THE RECEIVER (audio warning: the internet is on some of these stations)</div>
-</div>
+<button id="startgate" type="button">
+  <span class="big">KWTF 88.8</span>
+  <span class="small">CLICK TO POWER ON THE RECEIVER (audio warning: the internet is on some of these stations)</span>
+</button>
 
 <div id="stage">
   <div class="kicker">YOU ARE TUNING</div>
@@ -62,9 +65,9 @@
     <div id="dialhint">← → tune · hold SHIFT to scan fast · 1-5 jump to stations · M mute</div>
   </div>
   <div id="card">
-    <div id="stationname"></div>
+    <div id="stationname" aria-live="polite"></div>
     <div id="stationtag"></div>
-    <div id="content"></div>
+    <div id="content" aria-live="polite"></div>
   </div>
 </div>
 <div id="hints">H hide this · a public service of THE STOOPID REALM · protect your peace</div>
@@ -163,6 +166,7 @@ function setAudio(station,dist){
 const cv=$("#static-canvas"),cx=cv.getContext("2d");
 function sizeCanvas(){cv.width=innerWidth/3;cv.height=innerHeight/3;}
 sizeCanvas(); addEventListener("resize",sizeCanvas);
+cv.style.opacity="0";
 setInterval(()=>{ if(cv.style.opacity==="0") return;
   const img=cx.createImageData(cv.width,cv.height);
   for(let i=0;i<img.data.length;i+=4){ const v=Math.random()*255;
@@ -208,14 +212,18 @@ document.addEventListener("keydown",e=>{
 });
 // drag the needle
 let dragging=false;
-scale.addEventListener("mousedown",e=>{dragging=true;dragTo(e)});
-addEventListener("mousemove",e=>{if(dragging)dragTo(e)});
-addEventListener("mouseup",()=>dragging=false);
+scale.addEventListener("pointerdown",e=>{dragging=true;scale.setPointerCapture(e.pointerId);dragTo(e)});
+scale.addEventListener("pointermove",e=>{if(dragging)dragTo(e)});
+scale.addEventListener("pointerup",()=>dragging=false);
+scale.addEventListener("pointercancel",()=>dragging=false);
+if(matchMedia("(pointer:coarse)").matches)
+  $("#dialhint").textContent="drag the dial to tune";
 function dragTo(e){ const r=scale.getBoundingClientRect();
   freq=+(MIN+(MAX-MIN)*Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))).toFixed(1); render(); }
 
 $("#startgate").addEventListener("click",()=>{
   $("#startgate").style.display="none"; initAudio(); render(); });
+$("#startgate").focus();
 </script>
 </body>
 </html>

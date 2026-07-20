@@ -2,10 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STOOPID DEFENSE — THE STOOPID SHOW</title>
 <meta property="og:title" content="STOOPID DEFENSE">
 <meta property="og:description" content="Neon laser tower defense. The slop is coming for your signal. Protect your peace. — THE STOOPID SHOW">
+<meta property="og:url" content="https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_defense.html">
+<meta property="og:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/assets/stoopid_defense_og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/assets/stoopid_defense_og.png">
+<meta name="description" content="Neon laser tower defense. The slop is coming for your signal. Protect your peace. — THE STOOPID SHOW">
 <style>
   :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 */
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -919,7 +925,7 @@
   async function regLoad(hl){
     $("registry").style.display="";
     try{
-      const r=await fetch(REG_URL+"/top?n=10",{cache:"no-store"});
+      const r=await fetch(REG_URL+"/top?n=10",{cache:"no-store",signal:AbortSignal.timeout(6000)});
       const j=await r.json();
       if(!j.ok) throw 0;
       $("regList").innerHTML = j.top.map(e=>
@@ -938,7 +944,7 @@
     $("regBtn").disabled=true; $("regStatus").textContent="transmitting…";
     try{
       const r=await fetch(REG_URL+"/submit",{method:"POST",headers:{"content-type":"application/json"},
-        body:JSON.stringify({name:nm,score:score,wave:wave})});
+        body:JSON.stringify({name:nm,score:score,wave:wave}),signal:AbortSignal.timeout(6000)});
       const j=await r.json();
       if(j.ok){
         regSubmitted=true;
@@ -960,7 +966,7 @@
   // persistent top-3 — the podium watches you play
   async function syncTopBoard(){
     try{
-      const r=await fetch(REG_URL+"/top?n=3",{cache:"no-store"});
+      const r=await fetch(REG_URL+"/top?n=3",{cache:"no-store",signal:AbortSignal.timeout(6000)});
       const j=await r.json();
       if(!j.ok || !j.top.length){ $("topBoard").style.display="none"; return; }
       $("topBoardList").innerHTML=j.top.map(e=>

@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>THE CREDITS MACHINE</title>
 <style>
   :root{--black:#000;--white:#fff;--teal:#00FFC6;--purple:#8A2BE2;--red:#FF2D2D;--orange:#CC5500}
@@ -38,6 +40,9 @@
   .r-end .quiet{font-size:30px;color:var(--white);font-weight:bold;line-height:1.5}
   .r-end .invite{font-size:26px;color:var(--teal);margin-top:30px;letter-spacing:2px}
   .r-end .sig{font-size:18px;color:var(--orange);margin-top:60px;letter-spacing:4px}
+  #rollctl{position:absolute;top:14px;right:14px;display:flex;gap:10px;z-index:60}
+  #rollctl button{background:transparent;border:1px solid #444;color:#777;font-family:inherit;
+    font-size:18px;width:42px;height:42px;cursor:pointer}
   #hints{position:fixed;bottom:16px;left:0;right:0;text-align:center;color:#444;
          font-size:13px;letter-spacing:2px;z-index:60}
 </style>
@@ -49,19 +54,25 @@
   <div class="sub">Paste community names (one per line — grab them from the bot's <b>/pullcredits</b> post,
     or freestyle). Every name gets a fake-serious title. SPACE rolls it. Screen-record the roll —
     that's your end card. This is the loop: hang out in the Discord → end up IN the show.</div>
-  <textarea id="names" spellcheck="false">@bean_sentinel
+  <textarea id="names" spellcheck="false" aria-label="Community names, one per line">@bean_sentinel
 @grass_toucher_9
 @sock_archivist
 @whole_arm_waver
 @late_night_larry</textarea>
   <div class="row">
-    <span>ROLL SPEED</span><input type="range" id="speed" min="20" max="120" value="55">
+    <span>ROLL SPEED</span><input type="range" id="speed" min="20" max="120" value="55" aria-label="Roll speed">
     <label><input type="checkbox" id="endcard" checked> include Discord end card</label>
   </div>
   <button id="gobtn">▶ ROLL THE CREDITS (SPACE)</button>
 </div>
 
-<div id="theatre"><div id="roll"></div></div>
+<div id="theatre"><div id="roll"></div>
+  <div id="rollctl">
+    <button id="slower" aria-label="Slow down">−</button>
+    <button id="faster" aria-label="Speed up">+</button>
+    <button id="exitbtn" aria-label="Back to setup">✕</button>
+  </div>
+</div>
 <div id="hints">SPACE roll · ESC back to setup · ↑↓ speed while rolling</div>
 
 <script>
@@ -123,6 +134,9 @@ document.addEventListener("keydown",e=>{
   else if(rolling && e.key==="ArrowDown"){ speed=Math.max(10,speed-10); }
 });
 $("#gobtn").addEventListener("click",start);
+$("#exitbtn").addEventListener("click",stop);
+$("#faster").addEventListener("click",()=>{ speed=Math.min(200,speed+10); });
+$("#slower").addEventListener("click",()=>{ speed=Math.max(10,speed-10); });
 </script>
 </body>
 </html>

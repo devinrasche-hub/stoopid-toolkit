@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STOOPID SNAKE — THE STOOPID SHOW</title>
 <meta property="og:title" content="STOOPID SNAKE">
@@ -112,7 +113,7 @@
   <span>SIGNAL STRENGTH <b id="hudScore">0</b></span>
   <span>PEAK SIGNAL <b id="hudBest">0</b></span>
 </div>
-<div class="status" id="statusBox">press TRANSMIT. the beans are waiting.</div>
+<div class="status" id="statusBox" role="status" aria-live="polite">press TRANSMIT. the beans are waiting.</div>
 
 <div class="stage">
   <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
@@ -133,7 +134,7 @@
   </div>
 </div>
 
-<div class="result" id="resultCard">
+<div class="result" id="resultCard" aria-live="polite">
   <div class="label">OFFICIAL RUN REPORT</div>
   <div class="verdict" id="resVerdict"></div>
   <div class="ruling" id="resRuling"></div>
@@ -213,6 +214,7 @@
   let score=0, beans=0, best=Number(localStorage.getItem(bestKey)||0);
   let timer=null, running=false, cause="", glitching=false;
   let counting=false, countdownTimer=null;
+  let glitchTimer=null, resultTimer=null;
 
   hudBest.textContent=best;
 
@@ -283,6 +285,9 @@
     spawnFood();
     if(timer)clearInterval(timer);
     if(countdownTimer)clearTimeout(countdownTimer);
+    if(glitchTimer)clearInterval(glitchTimer);
+    if(resultTimer)clearTimeout(resultTimer);
+    glitchTimer=null; resultTimer=null;
     running=false;
     startBtn.textContent="RE-TRANSMIT";
     runCountdown();
@@ -365,7 +370,7 @@
     snap.width=canvas.width; snap.height=canvas.height;
     snap.getContext("2d").drawImage(canvas,0,0);
     let frame=0;
-    const g=setInterval(()=>{
+    glitchTimer=setInterval(()=>{
       frame++;
       ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
       for(let y=0; y<canvas.height; y+=14){
@@ -376,7 +381,8 @@
       ctx.drawImage(snap, 3,0); ctx.drawImage(snap, -3,1);
       ctx.globalAlpha=1;
       if(frame>=6){
-        clearInterval(g);
+        clearInterval(glitchTimer);
+        glitchTimer=null;
         glitching=false;
         drawDeath();
         showResult();
@@ -483,7 +489,7 @@
     } else {
       logRow.classList.remove("show");
     }
-    setTimeout(()=>{
+    resultTimer=setTimeout(()=>{
       resultCard.classList.add("show");
       resultCard.scrollIntoView({behavior:"smooth", block:"center"});
     }, 600);
@@ -561,13 +567,15 @@
   startBtn.addEventListener("click", startGame);
 
   function setDirection(x,y){
-    if(!running)return;
+    if(!running && !counting)return; // during countdown, queue the direction for GO
     if(direction.x===-x && direction.y===-y)return;
     nextDirection={x,y};
   }
 
   document.addEventListener("keydown",(e)=>{
+    if(e.target.tagName==="INPUT") return; // typing initials — hands off the keys
     const k=e.key.toLowerCase();
+    if(k===" " && e.target.closest("button")) return; // let Space activate the focused button
     if(["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"," "].includes(k)) e.preventDefault();
     if(k==="arrowup"||k==="w") setDirection(0,-1);
     else if(k==="arrowdown"||k==="s") setDirection(0,1);
