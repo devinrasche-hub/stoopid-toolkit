@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>THE COURTROOM — LIVE</title>
 <style>
   :root{
@@ -65,6 +67,18 @@
   #custom .kicker{margin-bottom:24px}
   .footer{position:fixed;bottom:52px;left:0;right:0;text-align:center;color:#333;
           font-size:12px;letter-spacing:3px;z-index:40}
+  #touchbar{position:fixed;bottom:86px;left:0;right:0;text-align:center;z-index:45;display:none}
+  #touchbar button{background:#000;border:2px solid var(--teal);color:var(--teal);
+    font-family:inherit;font-size:14px;letter-spacing:2px;padding:10px 14px;margin:0 5px}
+  @media (pointer:coarse){ #touchbar{display:block} }
+  @media (max-width:700px){
+    h1{font-size:34px}
+    #casetext{font-size:22px}
+    #stampbox{font-size:34px;padding:16px 24px}
+    #margin{font-size:18px}
+    .barlabel{width:80px;font-size:15px}
+    .count{width:44px;font-size:15px}
+  }
 </style>
 </head>
 <body>
@@ -94,13 +108,13 @@
         <div class="bartrack"><div class="barfill"></div></div>
         <div class="count" style="color:var(--red)">0</div>
       </div>
-      <div id="ticker">&nbsp;</div>
+      <div id="ticker" aria-live="polite">&nbsp;</div>
       <div id="ballots">BALLOTS ON RECORD: 0</div>
     </div>
   </div>
 </div>
 
-<div id="stamp">
+<div id="stamp" role="status" aria-live="assertive">
   <div id="stampbox"></div>
   <div id="margin"></div>
   <div id="verdictsub"></div>
@@ -108,9 +122,14 @@
 
 <div id="custom">
   <div class="kicker">FILE A CUSTOM CASE</div>
-  <input id="custominput" placeholder="describe the behavior on trial… (ENTER to file, ESC to cancel)" maxlength="180">
+  <input id="custominput" aria-label="Describe the behavior on trial" placeholder="describe the behavior on trial… (ENTER to file, ESC to cancel)" maxlength="180">
 </div>
 
+<div id="touchbar">
+  <button type="button" id="tb-next">NEXT CASE</button>
+  <button type="button" id="tb-custom">CUSTOM CASE</button>
+  <button type="button" id="tb-mute">MUTE</button>
+</div>
 <div class="footer">PRODUCED BY @STOOPIDSHOW &amp; THE INTERNET · THE ALGORITHM (BARELY)</div>
 <div id="hints">SPACE advance · N next case · C custom case · M mute · H hide this</div>
 
@@ -213,26 +232,48 @@ function rule(){
   setTimeout(()=>{ $("#verdictsub").textContent=sub; $("#verdictsub").style.opacity=1; },1400);
 }
 
+function advance(){
+  if(state==="title"||state==="verdict") nextCase();
+  else if(state==="case") startVoting();
+  else if(state==="readyToRule") rule();
+}
+function openCustom(){ if(voteTimer)clearInterval(voteTimer);
+  $("#custom").style.display="flex"; $("#custominput").value=""; $("#custominput").focus(); }
+function closeCustom(){
+  $("#custom").style.display="none";
+  if(state==="voting"){ state="readyToRule";
+    $("#ticker").innerHTML="polls closed. <b>press SPACE to bring the gavel.</b>"; }
+}
+function fileCustom(){
+  const v=$("#custominput").value.trim();
+  if(v){ idx++; DOCKET.splice(idx,0,[v,0]); showCase(v,0);
+    $("#custom").style.display="none"; }
+  else closeCustom();
+}
+
 document.addEventListener("keydown",e=>{
   if($("#custom").style.display==="flex"){
-    if(e.key==="Enter"){ const v=$("#custominput").value.trim();
-      if(v){ idx++; DOCKET.splice(idx,0,[v,0]); showCase(v,0); }
-      $("#custom").style.display="none"; }
-    if(e.key==="Escape"){ $("#custom").style.display="none"; }
+    if(e.key==="Enter"){ fileCustom(); }
+    if(e.key==="Escape"){ closeCustom(); }
     return;
   }
-  if(e.code==="Space"){ e.preventDefault();
-    if(state==="title"||state==="verdict") nextCase();
-    else if(state==="case") startVoting();
-    else if(state==="readyToRule") rule();
-  }
+  if(e.code==="Space"){ e.preventDefault(); advance(); }
   else if(e.key==="n"||e.key==="N"){ if(voteTimer)clearInterval(voteTimer); nextCase(); }
-  else if(e.key==="c"||e.key==="C"){ if(voteTimer)clearInterval(voteTimer);
-    $("#custom").style.display="flex"; $("#custominput").value=""; $("#custominput").focus(); }
+  else if(e.key==="c"||e.key==="C"){ e.preventDefault(); openCustom(); }
   else if(e.key==="m"||e.key==="M"){ muted=!muted; }
   else if(e.key==="h"||e.key==="H"){ const h=$("#hints");
     h.style.display=h.style.display==="none"?"block":"none"; }
 });
+
+// touch / pointer equivalents
+$("#stage").addEventListener("click",advance);
+$("#stamp").addEventListener("click",advance);
+$("#tb-next").addEventListener("click",e=>{ e.stopPropagation();
+  if(voteTimer)clearInterval(voteTimer); nextCase(); });
+$("#tb-custom").addEventListener("click",e=>{ e.stopPropagation(); openCustom(); });
+$("#tb-mute").addEventListener("click",e=>{ e.stopPropagation(); muted=!muted;
+  $("#tb-mute").textContent=muted?"UNMUTE":"MUTE"; });
+$("#custom").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeCustom(); });
 </script>
 </body>
 </html>

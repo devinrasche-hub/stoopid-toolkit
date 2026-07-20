@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — STOOPID TOOLKIT</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{ --teal:#00FFC6; --red:#FF2D2D; } /* SIGNAL palette v2 */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; padding:32px 24px; min-height:100vh;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  h1{font-size:28px; letter-spacing:4px;}
+  h1 span{color:var(--red);}
+  .sub{color:#888; font-size:12px; letter-spacing:2px; margin:6px 0 32px;}
+  a.tool{display:block; width:300px; max-width:100%; border:1px solid #333; padding:20px 16px; position:relative;
+    color:#fff; text-decoration:none;}
+  a.tool:hover{border-color:var(--teal);}
+  .corner{position:absolute; width:12px; height:12px; border:2px solid var(--teal);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  .tool h2{font-size:15px; letter-spacing:2px; margin-bottom:8px; color:var(--teal);}
+  .tool p{font-size:12px; color:#888; line-height:1.5;}
+  .footer{margin-top:48px; font-size:11px; color:#888; letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>STOOPID <span>[ 404 ]</span></h1>
+<div class="sub">SIGNAL LOST — THIS FREQUENCY DOES NOT EXIST</div>
+
+<a class="tool" href="/stoopid-toolkit/">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <h2>BACK TO THE TOOLKIT</h2>
+  <p>The page you dialed is dead air. The tools are still where you left them.</p>
+</a>
+
+<div class="footer">NO SIGNAL. TRY THE DIAL.</div>
+</body>
+</html>

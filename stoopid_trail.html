@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>THE STOOPID TRAIL</title>
 <style>
@@ -410,6 +411,7 @@ let keyHandler = null;
 let menuItems = [];
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function show(html){
+  SCR.onclick = null;
   SCR.innerHTML = html;
   SCR.scrollTop = 0;
   menuItems = [];
@@ -451,6 +453,7 @@ function askText(prompt, fn, maxlen, prefill){
   inp.type="text"; inp.maxLength=maxlen||24; inp.autocomplete="off";
   inp.spellcheck=false;
   if(prefill) inp.value=prefill;
+  inp.setAttribute("aria-label", prompt||"YOUR ANSWER");
   d.appendChild(inp);
   SCR.appendChild(d);
   inp.focus();
@@ -678,7 +681,7 @@ function cityScreen(msg){
     if(hit && hit.n==="Davenport" && hit.st==="IA"){ alreadyHere(); return; }
     if(!hit){ voidConfirm(v); return; }
     confirmCity(hit);
-  },40);
+  },40).setAttribute("aria-label","YOUR STARTING CITY");
 }
 function confirmCity(c){
   show('<div class="gap"></div>YOU WILL DEPART FROM:<div class="gap"></div>'+
@@ -1025,7 +1028,7 @@ function eventPool(){
   W(3,()=>{ const what=ri(0,2);
     if(what===0&&G.clothing>0){const q=ri(1,Math.min(3,G.clothing));G.clothing-=q;
       return {msg:"A THIEF CAME IN THE NIGHT AND TOOK "+q+" SET"+(q>1?"S":"")+" OF CLOTHING.", bad:true};}
-    if(what===1&&G.bullets>0){const q=ri(20,Math.min(80,G.bullets));G.bullets-=q;
+    if(what===1&&G.bullets>0){const q=ri(Math.min(20,G.bullets),Math.min(80,G.bullets));G.bullets=Math.max(0,G.bullets-q);
       return {msg:"A THIEF TOOK "+q+" BULLETS. QUIETLY. WHICH IS THE ONLY WAY TO TAKE BULLETS.", bad:true};}
     if(G.food>0){const q=ri(10,Math.min(60,Math.max(10,G.food)));G.food=Math.max(0,G.food-q);
       return {msg:"A THIEF TOOK "+q+" POUNDS OF FOOD.", bad:true};}
@@ -1155,11 +1158,12 @@ function goTravel(){
   cv.width=640; cv.height=120; cv.style.width="min(640px,96%)";
   SCR.appendChild(cv);
   const note=document.createElement("div");
-  note.className="c dim"; note.innerHTML='<span class="blink">TRAVELING — PRESS ENTER TO STOP</span>';
+  note.className="c dim"; note.innerHTML='<span class="blink">TRAVELING — PRESS ENTER OR TAP TO STOP</span>';
   SCR.appendChild(note);
   drawTrail(cv,true);
   let stopped=false;
   keyHandler=()=>{stopped=true;return true;};
+  SCR.onclick=()=>{SND.start(); stopped=true; SCR.onclick=null;};
   function dayStep(){
     if(stopped){ travelScreen(); return; }
     const deaths=[];
@@ -1205,7 +1209,7 @@ function checkpointOrContinue(){
 }
 function eventScreen(ev){
   show('<div class="gap2"></div>'+statusBar()+
-    '<div class="gap"></div><div class="c '+(ev.bad?"":"")+'">'+ev.msg+'</div>');
+    '<div class="gap"></div><div class="c '+(ev.bad?"r":"")+'">'+ev.msg+'</div>');
   anyKey(()=>checkpointOrContinue());
 }
 
@@ -1269,7 +1273,7 @@ function rationScreen(){
 function restScreen(){
   show('<div class="gap"></div><div class="med w">STOP TO REST</div>'+
     '<div class="dim">HOW MANY DAYS? (1-9)</div>');
-  askText("",v=>{
+  const restInp=askText("",v=>{
     const d=Math.max(1,Math.min(9,parseInt(v||"1",10)||1));
     for(let i=0;i<d;i++){
       advanceDate();consumeFood();
@@ -1281,6 +1285,7 @@ function restScreen(){
       '<div class="c dim">THE OXEN PRETEND TO SLEEP. HEALTH IS NOW '+healthWord()+'.</div>');
     anyKey(travelScreen);
   },1);
+  restInp.setAttribute("aria-label","HOW MANY DAYS? (1-9)");
 }
 function tradeScreen(){
   if(!chance(0.65)){

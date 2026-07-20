@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>STOOPID FLIP FINDER</title>
 <style>
   :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; } /* SIGNAL palette v2 — orange = the Flip landing */
@@ -47,16 +49,16 @@
 
 <div class="cols">
   <div class="left">
-    <label>TRANSCRIPT / DRAFT</label>
+    <label for="txt">TRANSCRIPT / DRAFT</label>
     <textarea id="txt" placeholder="Paste the whole thing here…"></textarea>
     <div class="row">
-      <div><label>TARGET RUNTIME (MINUTES)</label><input id="mins" type="number" value="2" min="0.5" step="0.5"></div>
-      <div><label>WORDS PER MINUTE (DELIVERY)</label><input id="wpm" type="number" value="150" min="80"></div>
+      <div><label for="mins">TARGET RUNTIME (MINUTES)</label><input id="mins" type="number" value="2" min="0.5" step="0.5"></div>
+      <div><label for="wpm">WORDS PER MINUTE (DELIVERY)</label><input id="wpm" type="number" value="150" min="80"></div>
     </div>
     <button onclick="analyze()">RUN THE SPINE CHECK</button>
   </div>
 
-  <div class="right" id="out" style="display:none">
+  <div class="right" id="out" aria-live="polite" style="display:none">
     <div class="verdicts" id="verdicts"></div>
     <label>REHOOK MAP — EACH BLOCK ≈ 30s. TEAL = REHOOK SIGNAL DETECTED.</label>
     <div class="rehook-map" id="rehookmap"></div>
@@ -85,7 +87,7 @@ function sentences(t){
   return t.replace(/\r/g,"").split(/(?<=[.!?])\s+|\n{2,}/).map(s=>s.trim()).filter(s=>s.length>1);
 }
 function analyze(){
-  const t=document.getElementById("txt").value.trim();
+  const t=document.getElementById("txt").value.trim().replace(/[‘’ʼ]/g,"'").replace(/[“”]/g,'"');
   if(!t){alert("Insufficient nonsense. Paste a transcript.");return;}
   const sents=sentences(t);
   const words=t.split(/\s+/).length;
@@ -129,9 +131,11 @@ function analyze(){
   const blocks=Math.max(1,Math.ceil(estMin*2));
   const perBlock=Math.ceil(sents.length/blocks);
   const map=document.getElementById("rehookmap"); map.innerHTML="";
-  let coldStreak=0, maxCold=0, hotCount=0;
+  let coldStreak=0, maxCold=0, hotCount=0, shown=0;
   for(let b=0;b<blocks;b++){
     const chunk=sents.slice(b*perBlock,(b+1)*perBlock).join(" ");
+    if(!chunk) break; // sentences ran out — don't count phantom blocks as cold
+    shown++;
     const hot=REHOOK_MARKERS.some(re=>re.test(chunk));
     if(hot){hotCount++;coldStreak=0;}else{coldStreak++;maxCold=Math.max(maxCold,coldStreak);}
     const d=document.createElement("div");
@@ -140,7 +144,7 @@ function analyze(){
     map.appendChild(d);
   }
   document.getElementById("rehooklegend").textContent=
-    `${blocks} blocks (~${estMin.toFixed(1)} min @ ${wpm} wpm) — ${hotCount} with rehook signals — longest cold stretch: ${maxCold*0.5} min`;
+    `${shown} blocks (~${estMin.toFixed(1)} min @ ${wpm} wpm) — ${hotCount} with rehook signals — longest cold stretch: ${maxCold*0.5} min`;
 
   // verdicts panel
   const v=[];

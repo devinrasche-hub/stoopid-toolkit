@@ -1,6 +1,9 @@
 // STOOPID SIGNAL REGISTRY — global hi-scores for STOOPID DEFENSE
 // all scores are self-reported. like engagement.
 
+import { validateSubmission } from "./validate.js";
+import { RATE_LIMITED_INSERT } from "./sql.js";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
@@ -18,8 +21,10 @@ function json(obj, status = 200, cacheSec = 0) {
   });
 }
 
-async function ipHash(ip) {
-  const data = new TextEncoder().encode("stoopid-grid-salt::" + ip);
+async function ipHash(ip, env) {
+  // salt lives in a Worker secret (wrangler secret put IP_SALT), not in the repo
+  const salt = (env && env.IP_SALT) || "stoopid-grid-salt";
+  const data = new TextEncoder().encode(salt + "::" + ip);
   const buf = await crypto.subtle.digest("SHA-256", data);
   return [...new Uint8Array(buf)].slice(0, 8).map(b => b.toString(16).padStart(2, "0")).join("");
 }
@@ -39,30 +44,16 @@ export default {
 
       if (req.method === "POST" && url.pathname === "/submit") {
         const body = await req.json().catch(() => null);
-        if (!body) return json({ ok: false, error: "bad json" }, 400);
+        const v = validateSubmission(body);
+        if (!v.ok) return json({ ok: false, error: v.error }, v.status);
+        const { name, score, wave } = v;
 
-        let { name, score, wave } = body;
-        name = String(name || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
-        score = Math.floor(Number(score));
-        wave = Math.floor(Number(wave));
-
-        if (name.length < 1 || !Number.isFinite(score) || !Number.isFinite(wave))
-          return json({ ok: false, error: "bad fields" }, 400);
-        // plausibility gate — the registry is trusting, not gullible
-        if (score < 0 || wave < 1 || wave > 99 || score > 250000 || score > wave * 3000 + 5000)
-          return json({ ok: false, error: "the registry doubts you" }, 422);
-
-        const iph = await ipHash(req.headers.get("cf-connecting-ip") || "0");
+        const iph = await ipHash(req.headers.get("cf-connecting-ip") || "0", env);
         const hour = Math.floor(Date.now() / 3600000);
-        const rl = await env.DB.prepare(
-          "SELECT COUNT(*) AS cnt FROM scores WHERE iph=?1 AND hour=?2"
-        ).bind(iph, hour).first();
-        if (rl.cnt >= 12)
+        const ins = await env.DB.prepare(RATE_LIMITED_INSERT)
+          .bind(name, score, wave, Date.now(), iph, hour).run();
+        if (!ins.meta || ins.meta.changes < 1)
           return json({ ok: false, error: "rate limited. protect your peace." }, 429);
-
-        await env.DB.prepare(
-          "INSERT INTO scores (name, score, wave, ts, iph, hour) VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
-        ).bind(name, score, wave, Date.now(), iph, hour).run();
 
         const r = await env.DB.prepare(
           "SELECT COUNT(*) + 1 AS rank FROM scores WHERE score > ?1"
