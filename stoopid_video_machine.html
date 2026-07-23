@@ -65,6 +65,8 @@
   .chip.on{border-color:var(--teal); color:var(--teal);}
   .chip.lofi.on{border-color:var(--pink); color:var(--pink);}
   .chip.tog.on{border-color:var(--orange); color:var(--orange);}
+  .chip.user.on{border-color:var(--purple); color:#c9a0ff;}
+  .chip.addloop{border-style:dashed; color:#888;}
   .mainrow{display:flex; gap:8px; padding:7px 14px 0;}
   .big{
     flex:1; font-family:inherit; font-size:12px; letter-spacing:2px; padding:13px 6px;
@@ -155,6 +157,7 @@
   </div>
   <div id="hint">PRESS REC — the track restarts from the top and the machine films until the song ends. The video saves to your phone.</div>
   <input type="file" id="fileInput" accept="audio/*,.mp3,.m4a,.wav">
+  <input type="file" id="videoInput" accept="video/*,.mp4,.mov,.webm" multiple>
 </div>
 
 <div id="saveSheet">
@@ -714,17 +717,81 @@ window.addEventListener('orientationchange', function(){ setTimeout(fitStage, 30
 
 /* ---------- UI wiring ---------- */
 var sceneRow = document.getElementById('sceneRow');
-SCENES.forEach(function(s, i){
-  var b = document.createElement('button');
-  b.className = 'chip' + (s.lofi ? ' lofi' : '') + (i === 0 ? ' on' : '');
-  b.textContent = s.name;
-  b.addEventListener('click', function(){
-    sceneIdx = i;
-    sceneRow.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
-    b.classList.add('on');
-    rebuildScene();
+
+function selectScene(i, chip){
+  sceneIdx = i;
+  sceneRow.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+  chip.classList.add('on');
+  // user loops: only the visible one should be decoding video
+  SCENES.forEach(function(s, k){
+    if (!s.videoEl) return;
+    if (k === i) s.videoEl.play().catch(function(){});
+    else s.videoEl.pause();
   });
-  sceneRow.appendChild(b);
+  rebuildScene();
+}
+
+function makeSceneChip(s, i, extraClass){
+  var b = document.createElement('button');
+  b.className = 'chip' + (extraClass || '') + (i === sceneIdx ? ' on' : '');
+  b.textContent = s.name;
+  b.addEventListener('click', function(){ selectScene(i, b); });
+  return b;
+}
+
+SCENES.forEach(function(s, i){
+  sceneRow.appendChild(makeSceneChip(s, i, s.lofi ? ' lofi' : ''));
+});
+
+/* ---- your own loops in the catalogue ---- */
+var videoInput = document.getElementById('videoInput');
+var addLoopChip = document.createElement('button');
+addLoopChip.className = 'chip addloop';
+addLoopChip.textContent = '+ ADD YOUR LOOP';
+addLoopChip.addEventListener('click', function(){ videoInput.click(); });
+sceneRow.appendChild(addLoopChip);
+
+function addUserLoop(file){
+  var v = document.createElement('video');
+  v.muted = true; v.loop = true; v.playsInline = true;
+  v.setAttribute('playsinline','');
+  v.setAttribute('muted','');
+  v.src = URL.createObjectURL(file);
+  // keep it in the DOM offscreen — iOS won't reliably decode detached videos
+  v.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none;';
+  document.body.appendChild(v);
+  var name = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').toUpperCase();
+  if (name.length > 16) name = name.slice(0, 15) + '…';
+  var scene = {
+    name: '▸ ' + name,
+    videoEl: v,
+    draw: function(st, t){
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+      if (v.readyState >= 2 && v.videoWidth){
+        // cover-fit: fill the frame, crop the overflow
+        var sc = Math.max(W / v.videoWidth, H / v.videoHeight);
+        var dw = v.videoWidth * sc, dh = v.videoHeight * sc;
+        ctx.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      } else {
+        ctx.fillStyle = '#555';
+        ctx.font = '28px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('LOADING LOOP…', W / 2, H / 2);
+        ctx.textAlign = 'left';
+      }
+    }
+  };
+  SCENES.push(scene);
+  var idx = SCENES.length - 1;
+  var chip = makeSceneChip(scene, idx, ' user');
+  sceneRow.insertBefore(chip, addLoopChip);
+  selectScene(idx, chip);
+  sceneRow.scrollLeft = sceneRow.scrollWidth;
+}
+
+videoInput.addEventListener('change', function(){
+  for (var i = 0; i < videoInput.files.length; i++) addUserLoop(videoInput.files[i]);
+  videoInput.value = '';
 });
 
 function wireToggle(id, fn){
