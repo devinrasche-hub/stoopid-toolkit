@@ -13,6 +13,7 @@ Public brand tools for **THE STOOPID SHOW** (@stoopidshow) — hosted free on Gi
 | [The Courtroom (Live)](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_courtroom_live.html) | Run your own STOOPID vs STUPID trials — streaming ballots, gavel sounds, verdict stamp with the margin |
 | [KWTF 88.8 — The Dial](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_kwtf_dial.html) | The internet as an FM band — tune through the crazies, the hustle, the angels, the 2AM channel |
 | [The Credits Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_credits_roll.html) | Roll your own fake-serious end credits — paste names, SPACE, record the clip |
+| [The Video Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_video_machine.html) | Music video maker for your phone — load an mp3, pick a music-reactive scene (geometric or lofi), toggle waveform layers, press REC, save the video |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
