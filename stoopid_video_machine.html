@@ -76,11 +76,11 @@
   .big.purple{border-color:var(--purple); color:#c9a0ff;}
   #trackName{font-size:10px; color:#666; letter-spacing:1px; padding:6px 14px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   #trackName b{color:var(--teal); font-weight:normal;}
-  #titleInput{
+  .txtin{
     flex:1; background:#000; border:1px solid #333; color:#fff; font-family:inherit;
     font-size:12px; letter-spacing:1px; padding:11px 10px; min-width:0;
   }
-  #titleInput:focus{outline:none; border-color:var(--teal);}
+  .txtin:focus{outline:none; border-color:var(--teal);}
   /* ---------- save sheet ---------- */
   #saveSheet{
     position:fixed; left:0; right:0; bottom:0; background:#0d0d0d; border-top:2px solid var(--teal);
@@ -148,7 +148,13 @@
 
   <div class="row">
     <span class="lbl">TITLE</span>
-    <input id="titleInput" type="text" maxlength="40" placeholder="track title on screen (optional)" autocomplete="off">
+    <input id="titleInput" class="txtin" type="text" maxlength="40" placeholder="track title on screen (optional)" autocomplete="off">
+  </div>
+
+  <div class="row">
+    <span class="lbl">CREDITS</span>
+    <input id="artistInput" class="txtin" type="text" maxlength="30" placeholder="artist (optional)" autocomplete="off">
+    <input id="albumInput" class="txtin" type="text" maxlength="30" placeholder="album (optional)" autocomplete="off">
   </div>
 
   <div class="mainrow">
@@ -194,7 +200,7 @@ var A = { bass:0, mid:0, treb:0, level:0, beat:0, _bassAvg:0.001 };
 var showWave = false, showBars = false, showFilm = true;
 var SPD = 0.65, animT = 0, lastNow = 0;   // global tempo: scenes run on animT, not wall time
 var sceneIdx = 0;
-var titleText = '';
+var titleText = '', artistText = '', albumText = '';
 
 /* ---------- audio graph ---------- */
 function ensureAudio(){
@@ -660,18 +666,34 @@ function drawFilm(t){
 }
 
 function drawTitle(){
-  if (!titleText) return;
+  if (!titleText && !artistText && !albumText) return;
   var fs = Math.round(Math.min(W,H) * 0.037);
+  var x = Math.round(W * 0.055), y = H - Math.round(H * 0.045);
   ctx.save();
-  ctx.font = fs + 'px "Courier New", monospace';
   ctx.textBaseline = 'bottom';
   ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
-  var x = Math.round(W * 0.055), y = H - Math.round(H * 0.045);
-  ctx.fillStyle = '#00FFC6';
-  ctx.fillText('▸ ' + titleText.toUpperCase(), x, y);
-  ctx.font = Math.round(fs * 0.62) + 'px "Courier New", monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('STOOPID BUT TRUE', x, y + fs * 0.85);
+  // stack upward from the bottom anchor: tag, album, artist, title
+  ctx.font = Math.round(fs * 0.55) + 'px "Courier New", monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText('STOOPID BUT TRUE', x, y);
+  y -= Math.round(fs * 0.55 * 1.7);
+  if (albumText){
+    ctx.font = Math.round(fs * 0.68) + 'px "Courier New", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(albumText.toUpperCase(), x, y);
+    y -= Math.round(fs * 0.68 * 1.5);
+  }
+  if (artistText){
+    ctx.font = Math.round(fs * 0.8) + 'px "Courier New", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillText(artistText.toUpperCase(), x, y);
+    y -= Math.round(fs * 0.8 * 1.5);
+  }
+  if (titleText){
+    ctx.font = fs + 'px "Courier New", monospace';
+    ctx.fillStyle = '#00FFC6';
+    ctx.fillText('▸ ' + titleText.toUpperCase(), x, y);
+  }
   ctx.restore();
 }
 
@@ -825,6 +847,12 @@ document.querySelectorAll('[data-spd]').forEach(function(b){
 
 document.getElementById('titleInput').addEventListener('input', function(e){
   titleText = e.target.value;
+});
+document.getElementById('artistInput').addEventListener('input', function(e){
+  artistText = e.target.value;
+});
+document.getElementById('albumInput').addEventListener('input', function(e){
+  albumText = e.target.value;
 });
 
 /* ---------- file load / playback ---------- */
