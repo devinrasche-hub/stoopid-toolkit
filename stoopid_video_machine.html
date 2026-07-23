@@ -359,8 +359,8 @@ var SCENES = [
   var sky = ctx.createLinearGradient(0,0,0,hor);
   sky.addColorStop(0, '#06001a'); sky.addColorStop(1, '#2b0a3d');
   ctx.fillStyle = sky; ctx.fillRect(0,0,W,hor);
-  // sun
-  var sr = Math.min(W,H) * (0.16 + A.bass * 0.05);
+  // sun — steady, no bounce; this scene ignores the song on purpose
+  var sr = Math.min(W,H) * 0.17;
   var sx = W/2, sy = hor - sr * 0.25;
   ctx.save();
   ctx.beginPath(); ctx.rect(0,0,W,hor); ctx.clip();
@@ -370,8 +370,8 @@ var SCENES = [
   ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#06001a';
   for (var b = 0; b < 6; b++){
-    var by = sy - sr + sr * 2 * (0.45 + b * 0.09) + Math.sin(t * 2 + b) * 2;
-    ctx.fillRect(sx - sr - 4, by, sr * 2 + 8, 2 + b * 1.5 + A.mid * 6);
+    var by = sy - sr + sr * 2 * (0.45 + b * 0.09);
+    ctx.fillRect(sx - sr - 4, by, sr * 2 + 8, 2.5 + b * 1.8);
   }
   ctx.restore();
   // floor
@@ -379,10 +379,10 @@ var SCENES = [
   fg.addColorStop(0,'#0d0221'); fg.addColorStop(1,'#000');
   ctx.fillStyle = fg; ctx.fillRect(0,hor,W,H - hor);
   ctx.lineWidth = 2;
-  var glow = 55 + A.beat * 30;
-  // horizontal lines rushing at you
+  var glow = 58;
+  // horizontal lines on a constant slow roll
   for (var i = 0; i < 16; i++){
-    var z = ((i / 16) + t * (0.25 + A.bass * 0.35)) % 1;
+    var z = ((i / 16) + t * 0.16) % 1;
     var y = hor + Math.pow(z, 2.4) * (H - hor);
     ctx.strokeStyle = hsla(315, 100, glow, clamp(z * 1.4, 0.06, 1));
     ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
