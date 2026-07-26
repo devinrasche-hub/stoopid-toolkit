@@ -4,7 +4,7 @@ Public brand tools for **THE STOOPID SHOW** (@stoopidshow) — hosted free on Gi
 
 **Live site:** https://devinrasche-hub.github.io/stoopid-toolkit/
 
-The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmark, signal dust, and **THE VAULT**: all 14 tools catalogued as artifacts across four wings (The Courthouse, The Arcade, The Broadcast Floor, The Writers Room), each with its own live animated preview. Every tool page carries a `◂ THE VAULT` tab back to the studio.
+The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmark, signal dust, and **THE VAULT**: all 15 tools catalogued as artifacts across four wings (The Courthouse, The Arcade, The Broadcast Floor, The Writers Room), each with its own live animated preview. Every tool page carries a `◂ THE VAULT` tab back to the studio.
 
 | # | Artifact | What it does |
 |---|---|---|
@@ -16,12 +16,13 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 | 006 | [Stoopid Clash](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_clash.html) | Build the base, wait the wait, raid the void — skipping a timer just costs an invoice |
 | 007 | [The Stoopid Trail](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_trail.html) | The classic trail, one correction: the promised land is the World Famous Davenport, IA |
 | 008 | [The Press Me Cube](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_press_me_cube.html) | Six faces, six clues, one goblin taking notes |
-| 009 | [KWTF 88.8 — The Dial](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_kwtf_dial.html) | The internet as an FM band — tune through the crazies, the hustle, the angels, the 2AM channel |
-| 010 | [The Video Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_video_machine.html) | Music video maker — load an mp3, pick a music-reactive scene, press REC, save the video |
-| 011 | [Signal Acknowledged](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_signal_ack.html) | Subscriber shout-out generator — hot-pink name rain resolves into the roll, record the clip |
-| 012 | [The Credits Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_credits_roll.html) | Roll your own fake-serious end credits — paste names, SPACE, record the clip |
-| 013 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
-| 014 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
+| 009 | [The Stoopid Mine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_mine.html) | Eat the coin, re-mint the coin — an idle clicker that generates value from pure belief. Proof of Work is out, Proof of Stoopid is in. Blockchain not included |
+| 010 | [KWTF 88.8 — The Dial](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_kwtf_dial.html) | The internet as an FM band — tune through the crazies, the hustle, the angels, the 2AM channel |
+| 011 | [The Video Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_video_machine.html) | Music video maker — load an mp3, pick a music-reactive scene, press REC, save the video |
+| 012 | [Signal Acknowledged](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_signal_ack.html) | Subscriber shout-out generator — hot-pink name rain resolves into the roll, record the clip |
+| 013 | [The Credits Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_credits_roll.html) | Roll your own fake-serious end credits — paste names, SPACE, record the clip |
+| 014 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
+| 015 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
