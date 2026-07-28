@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Double Pendulum</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+  #warm .b{font-family:'Bebas Neue';} #warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">BEBAS</span><span class="m">MONO</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF';
+const PAL=[[0,255,198],[138,43,226],[255,45,45],[204,85,0],[255,255,255]]; // teal,purple,red,orange,white
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const CX=540, PY=640, LPX=205;                  // pivot + arm length (px)
+
+// physics: state [t1,t2,w1,w2]
+const g=1.0, L1=1, L2=1, m1=1, m2=1;
+function deriv(s){
+  const [t1,t2,w1,w2]=s;
+  const d=2*m1+m2 - m2*Math.cos(2*t1-2*t2);
+  const a1=(-g*(2*m1+m2)*Math.sin(t1) - m2*g*Math.sin(t1-2*t2)
+            - 2*Math.sin(t1-t2)*m2*(w2*w2*L2 + w1*w1*L1*Math.cos(t1-t2)))/(L1*d);
+  const a2=(2*Math.sin(t1-t2)*(w1*w1*L1*(m1+m2) + g*(m1+m2)*Math.cos(t1)
+            + w2*w2*L2*m2*Math.cos(t1-t2)))/(L2*d);
+  return [w1,w2,a1,a2];
+}
+function rk4(s,dt){
+  const k1=deriv(s);
+  const k2=deriv(s.map((v,i)=>v+0.5*dt*k1[i]));
+  const k3=deriv(s.map((v,i)=>v+0.5*dt*k2[i]));
+  const k4=deriv(s.map((v,i)=>v+dt*k3[i]));
+  return s.map((v,i)=>v+(dt/6)*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+
+const NP=12, DTH=0.0009;                         // pendulums + start spread (rad)
+let states=[], prevTip=[];
+function reset(){
+  states=[]; prevTip=[];
+  for(let i=0;i<NP;i++){ states.push([2.30+i*DTH, 2.30, 0, 0]); prevTip.push(null); }
+  tbx.clearRect(0,0,1080,1920);
+}
+function colOf(i){ const t=i/(NP-1)*(PAL.length-1), a=Math.floor(t), f=t-a;
+  const c1=PAL[a], c2=PAL[Math.min(a+1,PAL.length-1)];
+  return [c1[0]+(c2[0]-c1[0])*f, c1[1]+(c2[1]-c1[1])*f, c1[2]+(c2[2]-c1[2])*f]; }
+
+// trail buffer (fades each frame)
+const tb=document.createElement('canvas'); tb.width=1080; tb.height=1920;
+const tbx=tb.getContext('2d'); tbx.lineCap="round";
+
+const INTRO=0.8, TOTAL=34, SUB=10, DT=0.012;
+let startT=null, paused=false, pauseAt=0;
+function setLS(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function watermark(){ ctx.save(); ctx.font="30px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(255,255,255,0.40)"; ctx.textAlign="center"; setLS(2);
+  ctx.fillText("@stoopidshow", CX, 70); setLS(0); ctx.restore(); }
+function kicker(txt){ ctx.save(); ctx.font="26px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(0,255,198,0.55)"; ctx.textAlign="center"; setLS(3);
+  ctx.fillText(txt, CX, 120); setLS(0); ctx.restore(); }
+function credit(){ ctx.save(); ctx.font="24px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(0,255,198,0.55)"; ctx.textAlign="left"; setLS(1);
+  ctx.fillText("DOUBLE PENDULUM // 12 STARTS, Δθ = 0.0009 RAD", 40, 1876); setLS(0); ctx.restore(); }
+function nameCard(txt){ ctx.save(); ctx.font="118px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE; ctx.textAlign="center"; setLS(14);
+  ctx.fillText(txt, CX+7, 1620); setLS(0); ctx.restore(); }
+function payoff(){ ctx.save(); ctx.font="90px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE; ctx.textAlign="center"; ctx.shadowColor="rgb(138,43,226)"; ctx.shadowBlur=18;
+  setLS(8); ctx.fillText("A ROUNDING ERROR IS THE WHOLE DIFFERENCE", CX+4, 1620); setLS(0); ctx.restore(); }
+
+function tip(s){
+  const x1=CX+LPX*Math.sin(s[0]), y1=PY+LPX*Math.cos(s[0]);
+  const x2=x1+LPX*Math.sin(s[1]), y2=y1+LPX*Math.cos(s[1]);
+  return [x1,y1,x2,y2];
+}
+
+function frame(now){
+  if(startT===null){ startT=now; reset(); }
+  let t = paused ? pauseAt : (now-startT)/1000;
+  if(t>=TOTAL){ startT=now; t=0; reset(); }
+
+  // advance physics
+  if(t>=INTRO && !paused){
+    for(let k=0;k<SUB;k++) for(let i=0;i<NP;i++) states[i]=rk4(states[i],DT);
+  }
+
+  // fade trail buffer, draw new tip segments
+  tbx.fillStyle="rgba(0,0,0,0.05)"; tbx.fillRect(0,0,1080,1920);
+  for(let i=0;i<NP;i++){
+    const [ , , x2,y2]=tip(states[i]); const col=colOf(i);
+    if(prevTip[i]){ tbx.strokeStyle=`rgba(${col[0]|0},${col[1]|0},${col[2]|0},0.9)`; tbx.lineWidth=2.4;
+      tbx.beginPath(); tbx.moveTo(prevTip[i][0],prevTip[i][1]); tbx.lineTo(x2,y2); tbx.stroke(); }
+    prevTip[i]=[x2,y2];
+  }
+
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,1080,1920);
+  ctx.drawImage(tb,0,0);
+  watermark(); credit(); kicker("SENSITIVE DEPENDENCE ON INITIAL CONDITIONS");
+
+  // live arms + bobs on top
+  for(let i=0;i<NP;i++){
+    const [x1,y1,x2,y2]=tip(states[i]); const col=colOf(i);
+    const cs=`rgba(${col[0]|0},${col[1]|0},${col[2]|0},0.55)`;
+    ctx.strokeStyle=cs; ctx.lineWidth=2; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(CX,PY); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.fillStyle=`rgb(${col[0]|0},${col[1]|0},${col[2]|0})`;
+    ctx.beginPath(); ctx.arc(x2,y2,5,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle=WHITE; ctx.beginPath(); ctx.arc(CX,PY,6,0,Math.PI*2); ctx.fill();
+
+  if(t<3) nameCard("DOUBLE PENDULUM");
+  else if(t>TOTAL-4.5) payoff();
+
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault();
+    if(!paused){ paused=true; pauseAt=(performance.now()-startT)/1000; }
+    else { paused=false; startT=performance.now()-pauseAt*1000; } }
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); reset(); paused=false; }
+});
+function boot(){ requestAnimationFrame(frame); }
+if(document.fonts && document.fonts.ready)
+  Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r,1500))]).then(boot);
+else boot();
+</script>
+</body>
+</html>

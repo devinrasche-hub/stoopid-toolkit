@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Phyllotaxis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+  #warm .b{font-family:'Bebas Neue';} #warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">BEBAS</span><span class="m">MONO</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL=[0,255,198], ORANGE=[204,85,0], RED=[255,45,45];
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+
+const CX=540, CY=900, TARGET=430;
+const N=1400;                                   // seeds
+const GOLD=137.50776, BAD=135.0;                // golden angle vs a clean 3/8-turn
+const c = TARGET/Math.sqrt(N);                  // radial spacing
+const BANDS=6;
+
+// precompute per-seed sqrt(n) and contiguous radius bands (band is monotonic in n)
+const SQ=new Float32Array(N);
+for(let n=0;n<N;n++) SQ[n]=Math.sqrt(n);
+const bandStart=[], bandEnd=[];
+for(let b=0;b<BANDS;b++){
+  bandStart[b]=Math.ceil(N*(b/BANDS)**2);
+  bandEnd[b]  =Math.floor(N*((b+1)/BANDS)**2);
+}
+const PX=new Float32Array(N), PY=new Float32Array(N);
+
+// ---- timeline ----
+const INTRO=0.8, GROW=8.0, HOLD=3.0, DRIFT_OUT=6.0, DRIFT_HOLD=3.0, SNAP=2.5, PAY=3.5;
+const INTRO_END=INTRO, GROW_END=INTRO_END+GROW, HOLD_END=GROW_END+HOLD;
+const DRIFT_OUT_END=HOLD_END+DRIFT_OUT, DRIFT_END=DRIFT_OUT_END+DRIFT_HOLD;
+const SNAP_END=DRIFT_END+SNAP, TOTAL=SNAP_END+PAY;
+let startT=null, paused=false, pauseAt=0;
+
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const smooth=t=>t*t*(3-2*t);
+function lerp(a,b,t){return a+(b-a)*t;}
+function lerpC(c1,c2,t){return [lerp(c1[0],c2[0],t),lerp(c1[1],c2[1],t),lerp(c1[2],c2[2],t)];}
+function rgb(c){return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;}
+
+function angleAt(t){
+  if(t<=HOLD_END) return GOLD;
+  if(t<DRIFT_OUT_END) return lerp(GOLD,BAD,(t-HOLD_END)/DRIFT_OUT);
+  if(t<DRIFT_END) return BAD;
+  if(t<SNAP_END) return lerp(BAD,GOLD,smooth((t-DRIFT_END)/SNAP));
+  return GOLD;
+}
+function revealAt(t){
+  if(t<INTRO_END) return 0;
+  if(t<GROW_END) return Math.floor(N*(t-INTRO_END)/GROW);
+  return N;
+}
+
+function setLS(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function watermark(){ ctx.save(); ctx.font="30px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(255,255,255,0.40)"; ctx.textAlign="center"; setLS(2);
+  ctx.fillText("@stoopidshow", CX, 70); setLS(0); ctx.restore(); }
+function readout(deg, n){ ctx.save(); ctx.font="30px 'Share Tech Mono', monospace";
+  const off=clamp(Math.abs(deg-GOLD)/2.5,0,1);
+  ctx.fillStyle= off>0.02 ? `rgba(255,45,45,${0.55+0.4*off})` : "rgba(0,255,198,0.70)";
+  ctx.textAlign="center"; setLS(3);
+  ctx.fillText(`θ = ${deg.toFixed(2)}°   ·   n = ${n}`, CX, 118); setLS(0); ctx.restore(); }
+function credit(){ ctx.save(); ctx.font="24px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(0,255,198,0.55)"; ctx.textAlign="left"; setLS(1);
+  ctx.fillText("PHYLLOTAXIS // GOLDEN ANGLE φ", 40, 1876); setLS(0); ctx.restore(); }
+function nameCard(txt){ ctx.save(); ctx.font="112px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE; ctx.textAlign="center"; setLS(12);
+  ctx.fillText(txt, CX+6, 1600); setLS(0); ctx.restore(); }
+function payoff(){ ctx.save(); ctx.font="104px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE; ctx.textAlign="center"; ctx.shadowColor=rgb(TEAL); ctx.shadowBlur=18;
+  setLS(10); ctx.fillText("THE PLANT DID THE MATH", CX+5, 1600); setLS(0); ctx.restore(); }
+
+function computePositions(reveal, angDeg){
+  const a=angDeg*Math.PI/180;
+  for(let n=0;n<reveal;n++){
+    const r=c*SQ[n], th=n*a;
+    PX[n]=CX+r*Math.cos(th); PY[n]=CY+r*Math.sin(th);
+  }
+}
+function drawSeeds(reveal, dev){
+  const R=5.5;
+  for(let b=0;b<BANDS;b++){
+    const s=bandStart[b], e=Math.min(bandEnd[b], reveal);
+    if(e<=s) continue;
+    const base=lerpC(TEAL,ORANGE,b/(BANDS-1));   // sunflower gradient
+    ctx.fillStyle=rgb(lerpC(base,RED,dev));        // reddens as angle leaves golden
+    ctx.beginPath();
+    for(let n=s;n<e;n++){ ctx.moveTo(PX[n]+R,PY[n]); ctx.arc(PX[n],PY[n],R,0,Math.PI*2); }
+    ctx.fill();
+  }
+}
+// Fibonacci parastichies: connecting every 34th (orange) and 21st (teal) seed
+function drawSpirals(reveal, alpha){
+  ctx.save(); ctx.lineWidth=1.6; ctx.lineCap="round";
+  for(const [step,col] of [[34,ORANGE],[21,TEAL]]){
+    ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},${alpha})`;
+    ctx.beginPath();
+    for(let n=0;n+step<reveal;n++){ ctx.moveTo(PX[n],PY[n]); ctx.lineTo(PX[n+step],PY[n+step]); }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function frame(now){
+  if(startT===null) startT=now;
+  let t = paused ? pauseAt : (now-startT)/1000;
+  if(t>=TOTAL){ startT=now; t=0; }
+
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,1080,1920);
+  watermark(); credit();
+
+  if(t<INTRO_END){
+    ctx.save(); ctx.fillStyle=rgb(TEAL); ctx.shadowColor=rgb(TEAL); ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.arc(CX,CY,6,0,Math.PI*2); ctx.fill(); ctx.restore();
+    return requestAnimationFrame(frame);
+  }
+
+  const deg=angleAt(t), reveal=revealAt(t), dev=clamp(Math.abs(deg-GOLD)/2.5,0,1);
+  computePositions(reveal, deg);
+  drawSeeds(reveal, dev);
+
+  // Fibonacci spiral overlay fades in during the golden hold
+  if(t>=GROW_END && t<HOLD_END){
+    const a=smooth(clamp((t-GROW_END)/1.2,0,1))*0.5;
+    drawSpirals(reveal, a);
+  }
+
+  readout(deg, reveal);
+  if(t<HOLD_END) nameCard("PHYLLOTAXIS");
+  else if(t>=SNAP_END) payoff();
+
+  requestAnimationFrame(frame);
+}
+
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault();
+    if(!paused){ paused=true; pauseAt=(performance.now()-startT)/1000; }
+    else { paused=false; startT=performance.now()-pauseAt*1000; } }
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); paused=false; }
+});
+
+function boot(){ requestAnimationFrame(frame); }
+if(document.fonts && document.fonts.ready)
+  Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r,1500))]).then(boot);
+else boot();
+</script>
+</body>
+</html>

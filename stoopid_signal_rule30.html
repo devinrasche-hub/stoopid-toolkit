@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Rule 30</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+  #warm .b{font-family:'Bebas Neue';} #warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">BEBAS</span><span class="m">MONO</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', ORANGE='#CC5500';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const CX=540;
+const COLS=161, ROWS=250, CP=6, XS=(1080-COLS*CP)/2, YS=286;
+
+// precompute the whole automaton:  new = left XOR (center OR right)
+const grid=[]; { let row=new Uint8Array(COLS); row[(COLS-1)/2]=1; grid.push(row);
+  for(let r=1;r<ROWS;r++){ const p=grid[r-1], n=new Uint8Array(COLS);
+    for(let i=0;i<COLS;i++){ const L=i>0?p[i-1]:0, C=p[i], R=i<COLS-1?p[i+1]:0; n[i]=L^(C|R); }
+    grid.push(n);
+  } }
+
+// persistent buffer: draw each revealed row once (constant per-frame cost)
+const buf=document.createElement('canvas'); buf.width=1080; buf.height=1920;
+const bctx=buf.getContext('2d');
+let drawnRows=0;
+function resetBuf(){ bctx.clearRect(0,0,1080,1920); drawnRows=0; }
+function extendBuf(upto){
+  bctx.fillStyle=TEAL;
+  for(let r=drawnRows;r<upto;r++){ const row=grid[r], y=YS+r*CP;
+    bctx.beginPath();
+    for(let i=0;i<COLS;i++) if(row[i]) bctx.rect(XS+i*CP, y, CP, CP);
+    bctx.fill();
+  }
+  drawnRows=upto;
+}
+
+const INTRO=0.8, BUILD=14.0, HOLD=3.6, TOTAL=INTRO+BUILD+HOLD;
+let startT=null, paused=false, pauseAt=0;
+function setLS(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function watermark(){ ctx.save(); ctx.font="30px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(255,255,255,0.40)"; ctx.textAlign="center"; setLS(2);
+  ctx.fillText("@stoopidshow", CX, 70); setLS(0); ctx.restore(); }
+function rule(){ ctx.save(); ctx.font="28px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(0,255,198,0.65)"; ctx.textAlign="center"; setLS(2);
+  ctx.fillText("new = L XOR ( C OR R )", CX, 122); setLS(0); ctx.restore(); }
+function credit(){ ctx.save(); ctx.font="24px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(0,255,198,0.55)"; ctx.textAlign="left"; setLS(1);
+  ctx.fillText("RULE 30 // ONE SEED, ONE RULE", 40, 1876); setLS(0); ctx.restore(); }
+function nameCard(txt){ ctx.save(); ctx.font="120px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE; ctx.textAlign="center"; setLS(14);
+  ctx.fillText(txt, CX+7, 220); setLS(0); ctx.restore(); }
+function payoff(){ ctx.save(); ctx.font="104px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE; ctx.textAlign="center"; ctx.shadowColor=TEAL; ctx.shadowBlur=18;
+  setLS(10); ctx.fillText("ONE RULE. INFINITE NOISE.", CX+5, 1840); setLS(0); ctx.restore(); }
+
+function frame(now){
+  if(startT===null) startT=now;
+  let t = paused ? pauseAt : (now-startT)/1000;
+  if(t>=TOTAL){ startT=now; t=0; }
+
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,1080,1920);
+  watermark(); credit(); rule();
+
+  if(t<INTRO){ if(drawnRows>0) resetBuf();
+    ctx.fillStyle=ORANGE; ctx.fillRect(XS+((COLS-1)/2)*CP, YS, CP, CP);
+    nameCard("RULE 30"); return requestAnimationFrame(frame);
+  }
+  const p=Math.min(1,(t-INTRO)/BUILD);
+  const upto=Math.max(1, Math.floor(p*ROWS));
+  extendBuf(upto);
+  ctx.drawImage(buf,0,0);
+
+  // highlight the row being computed
+  if(upto<ROWS){ const row=grid[upto-1], y=YS+(upto-1)*CP; ctx.fillStyle=ORANGE;
+    ctx.beginPath(); for(let i=0;i<COLS;i++) if(row[i]) ctx.rect(XS+i*CP,y,CP,CP); ctx.fill(); }
+
+  if(t<INTRO+2.4) nameCard("RULE 30");
+  else if(t>=INTRO+BUILD) payoff();
+
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault();
+    if(!paused){ paused=true; pauseAt=(performance.now()-startT)/1000; }
+    else { paused=false; startT=performance.now()-pauseAt*1000; } }
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); paused=false; }
+});
+function boot(){ requestAnimationFrame(frame); }
+if(document.fonts && document.fonts.ready)
+  Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r,1500))]).then(boot);
+else boot();
+</script>
+</body>
+</html>

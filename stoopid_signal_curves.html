@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Curve Math</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  /* font warm-up (invisible, forces the two webfonts to load before canvas draws) */
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+  #warm .b{font-family:'Bebas Neue';}
+  #warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">BEBAS</span><span class="m">MONO</span></div>
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ---- SIGNAL palette (6 colors, locked) ----
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', RED='#FF2D2D', ORANGE='#CC5500', GRAY='#808080';
+
+const CX = 540, CY = 900;          // mechanism center (internal 1080x1920 space)
+const TARGET = 360;                 // max curve reach maps to this radius
+const N = 2400;                     // samples per curve
+
+// ---- the nine curves (R normalized to 1) ----
+// type: 'hypo' rolls inside, 'epi' rolls outside. r = rolling radius, d = pen distance.
+const CURVES = [
+  { name:'LINE',         type:'hypo', r:1/2,  d:1/2,  turns:1 },  // Tusi couple → straight diameter
+  { name:'ELLIPSE',      type:'hypo', r:1/2,  d:1/4,  turns:1 },  // same roller, pen pulled in
+  { name:'CIRCLE',       type:'hypo', r:1/2,  d:0,    turns:1 },  // pen at roller center
+  { name:'DELTOID',      type:'hypo', r:1/3,  d:1/3,  turns:1 },  // 3 cusps
+  { name:'ASTROID',      type:'hypo', r:1/4,  d:1/4,  turns:1 },  // 4 cusps
+  { name:'HYPOTROCHOID', type:'hypo', r:2/5,  d:0.25, turns:2 },  // 5/2 looped
+  { name:'NEPHROID',     type:'epi',  r:1/2,  d:1/2,  turns:1 },  // 2 cusps, outside
+  { name:'EPITROCHOID',  type:'epi',  r:1/3,  d:0.17, turns:1 },  // rounded 3-lobe, outside
+  { name:'ROSETTE',      type:'hypo', r:3/7,  d:0.40, turns:3 },  // 7-lobe spirograph
+];
+
+// evaluate the roulette at parameter t (normalized units)
+function evalCurve(c, t){
+  let cx, cy, px, py;
+  if(c.type==='hypo'){
+    const k=(1-c.r)/c.r;
+    cx=(1-c.r)*Math.cos(t); cy=(1-c.r)*Math.sin(t);
+    px=cx + c.d*Math.cos(k*t);
+    py=cy - c.d*Math.sin(k*t);
+  } else {
+    const k=(1+c.r)/c.r;
+    cx=(1+c.r)*Math.cos(t); cy=(1+c.r)*Math.sin(t);
+    px=cx - c.d*Math.cos(k*t);
+    py=cy - c.d*Math.sin(k*t);
+  }
+  return {cx,cy,px,py};
+}
+
+// precompute normalized points, framing scale, and mini-icon transform for each curve
+for(const c of CURVES){
+  c.tmax = c.turns * 2 * Math.PI;
+  const pts=[]; let maxR=0;
+  let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+  for(let i=0;i<=N;i++){
+    const t=c.tmax*i/N;
+    const {px,py}=evalCurve(c,t);
+    pts.push([px,py]);
+    const rr=Math.hypot(px,py); if(rr>maxR)maxR=rr;
+    if(px<minx)minx=px; if(px>maxx)maxx=px; if(py<miny)miny=py; if(py>maxy)maxy=py;
+  }
+  c.pts=pts;
+  // frame by the WHOLE mechanism's outer envelope (fixed circle, roller, pen),
+  // not just the pen reach — otherwise the fixed circle blows off-screen when the
+  // pen path is small (CIRCLE/ELLIPSE). rollerOuter = |rollerCenter| + r.
+  const rollerOuter = (c.type==='hypo' ? (1-c.r) : (1+c.r)) + c.r;
+  const extent = Math.max(1, rollerOuter, maxR);   // 1 = fixed circle radius R
+  c.scale = TARGET / extent;               // every curve fills the same envelope
+  c.bounds=[minx,miny,maxx,maxy];
+  // screen-space points (cached)
+  c.spts = pts.map(([x,y])=>[CX+x*c.scale, CY+y*c.scale]);
+}
+
+// ---- timeline ----
+const INTRO=1.1, DRAW=4.3, HOLD=1.1, CYCLE=DRAW+HOLD, OUTRO=2.6;
+const LAST_END = INTRO + CURVES.length*CYCLE;
+const TOTAL = LAST_END + OUTRO;
+
+let startT=null, paused=false, pauseAt=0;
+
+// ---------- drawing helpers ----------
+function setLetterSpacing(px){ if('letterSpacing' in ctx) ctx.letterSpacing = px+'px'; }
+
+function watermark(){
+  ctx.save();
+  ctx.font="30px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(255,255,255,0.40)";
+  ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+  setLetterSpacing(2);
+  ctx.fillText("@stoopidshow", CX, 70);
+  setLetterSpacing(0);
+  ctx.restore();
+}
+
+function credit(){
+  ctx.save();
+  ctx.font="26px 'Share Tech Mono', monospace";
+  ctx.fillStyle="rgba(0,255,198,0.60)";
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  setLetterSpacing(1);
+  ctx.fillText("CURVE MATH AFTER @THEMATHFLOW", 40, 1878);
+  setLetterSpacing(0);
+  ctx.restore();
+}
+
+function nameCard(text){
+  ctx.save();
+  ctx.font="118px 'Bebas Neue', sans-serif";
+  ctx.fillStyle=WHITE;
+  ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+  setLetterSpacing(14);
+  ctx.fillText(text, CX+7, 250);   // +7 optical nudge for the letter-spacing pad
+  setLetterSpacing(0);
+  ctx.restore();
+}
+
+function legend(finished){
+  // accumulating burnt-orange mini icons, evenly spaced bottom row
+  const y=1745, box=74, startX=140, gap=100;
+  for(let i=0;i<finished;i++){
+    const c=CURVES[i];
+    const [minx,miny,maxx,maxy]=c.bounds;
+    const w=maxx-minx||1, h=maxy-miny||1;
+    const s=box/Math.max(w,h);
+    const bx=startX+i*gap, by=y;
+    ctx.save();
+    ctx.strokeStyle=ORANGE; ctx.lineWidth=2.4;
+    ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.beginPath();
+    for(let k=0;k<c.pts.length;k++){
+      const [x,yy]=c.pts[k];
+      const sx=bx + (x-(minx+maxx)/2)*s;
+      const sy=by + (yy-(miny+maxy)/2)*s;
+      k===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// draw the mechanism + traced path for curve c at progress p (0..1)
+function drawMechanism(c, p){
+  const s=c.scale;
+  const R=1*s, rr=c.r*s;
+  const M=Math.max(1, Math.floor(p*N));
+
+  // 1) traced red path (accumulated so far), faint glow
+  ctx.save();
+  ctx.strokeStyle=RED; ctx.lineWidth=5;
+  ctx.lineJoin="round"; ctx.lineCap="round";
+  ctx.shadowColor=RED; ctx.shadowBlur=20;
+  ctx.beginPath();
+  for(let k=0;k<=M;k++){
+    const [sx,sy]=c.spts[k];
+    k===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 2) fixed teal circle
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.lineWidth=2.6;
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  // current mechanism pose
+  const t=c.tmax*p;
+  const {cx,cy,px,py}=evalCurve(c,t);
+  const rcx=CX+cx*s, rcy=CY+cy*s, rpx=CX+px*s, rpy=CY+py*s;
+
+  // 3) rolling white circle
+  ctx.save();
+  ctx.strokeStyle=WHITE; ctx.lineWidth=2.8;
+  ctx.beginPath(); ctx.arc(rcx,rcy,rr,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  // 4) white radius arm (roller center → pen)
+  ctx.save();
+  ctx.strokeStyle=WHITE; ctx.lineWidth=3.4;
+  ctx.beginPath(); ctx.moveTo(rcx,rcy); ctx.lineTo(rpx,rpy); ctx.stroke();
+  // roller center pip
+  ctx.fillStyle=WHITE; ctx.beginPath(); ctx.arc(rcx,rcy,4.5,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // 5) bright red pen point (glow)
+  ctx.save();
+  ctx.fillStyle=RED; ctx.shadowColor=RED; ctx.shadowBlur=22;
+  ctx.beginPath(); ctx.arc(rpx,rpy,11,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// draw a fully completed curve (used during hold + outro)
+function drawFinished(c){ drawMechanism(c, 1); }
+
+// ---------- main loop ----------
+function frame(now){
+  if(startT===null) startT=now;
+  let t = paused ? pauseAt : (now-startT)/1000;
+  if(t>=TOTAL){ startT=now; t=0; }   // loop
+
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,1080,1920);
+  watermark();
+  credit();
+
+  // how many curves are fully finished (for the legend)
+  let finished=0;
+  for(let i=0;i<CURVES.length;i++){
+    const st=INTRO+i*CYCLE;
+    if(t >= st+DRAW) finished++;
+  }
+  legend(finished);
+
+  if(t < INTRO){
+    // intro: first curve's fixed circle + resting mechanism
+    drawMechanism(CURVES[0], 0);
+  } else if(t < LAST_END){
+    let i=Math.floor((t-INTRO)/CYCLE);
+    if(i>CURVES.length-1) i=CURVES.length-1;
+    const local=(t-INTRO)-i*CYCLE;
+    const p=Math.min(local/DRAW, 1);   // linear roll, zero easing
+    const c=CURVES[i];
+    nameCard(c.name);
+    drawMechanism(c, p);
+  } else {
+    // outro: last curve complete, full legend holds
+    drawFinished(CURVES[CURVES.length-1]);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+// keyboard: Space = pause/resume, R = restart
+addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault();
+    if(!paused){ paused=true; pauseAt=(performance.now()-startT)/1000; }
+    else { paused=false; startT=performance.now()-pauseAt*1000; }
+  }
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); paused=false; }
+});
+
+// start once both webfonts are ready (so canvas text isn't a fallback flash)
+function boot(){ requestAnimationFrame(frame); }
+if(document.fonts && document.fonts.ready){
+  Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r,1500))]).then(boot);
+} else { boot(); }
+</script>
+</body>
+</html>

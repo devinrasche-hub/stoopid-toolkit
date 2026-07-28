@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Game of Life</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .b{font-family:'Bebas Neue';}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">B</span><span class="m">M</span></div>
+<script>
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6',ORANGE='#CC5500';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const CP=10, COLS=108, ROWS=176, XS=(1080-COLS*CP)/2, YS=170;
+let grid=new Uint8Array(COLS*ROWS), age=new Uint16Array(COLS*ROWS), gen=0;
+const idx=(x,y)=>y*COLS+x;
+// Gosper glider gun — a finite seed that emits gliders forever
+const GUN=[[0,4],[0,5],[1,4],[1,5],[10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],[14,5],[15,3],[15,7],[16,4],[16,5],[16,6],[17,5],[20,2],[20,3],[20,4],[21,2],[21,3],[21,4],[22,1],[22,5],[24,0],[24,1],[24,5],[24,6],[34,2],[34,3],[35,2],[35,3]];
+function seed(){ grid=new Uint8Array(COLS*ROWS); age=new Uint16Array(COLS*ROWS); gen=0;
+  const ox=6,oy=6; for(const [x,y] of GUN){ grid[idx(ox+x,oy+y)]=1; }
+  // a second gun lower-right, mirrored, for cross-traffic
+  const ox2=COLS-42, oy2=ROWS-46; for(const [x,y] of GUN){ const gx=ox2+(36-x), gy=oy2+(9-y); if(gx>=0&&gx<COLS&&gy>=0&&gy<ROWS) grid[idx(gx,gy)]=1; }
+}
+function step(){ const n=new Uint8Array(COLS*ROWS);
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){ let c=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ if(!dx&&!dy)continue;
+      const nx=x+dx,ny=y+dy; if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS&&grid[idx(nx,ny)])c++; }
+    const a=grid[idx(x,y)]; const alive=(a&&(c===2||c===3))||(!a&&c===3); n[idx(x,y)]=alive?1:0;
+    age[idx(x,y)]=alive?(a?Math.min(age[idx(x,y)]+1,999):1):0;
+  }
+  grid=n; gen++;
+}
+const INTRO=0.6, TOTAL=42, STEPDT=0.085;
+let startT=null,paused=false,pauseAt=0,acc=0,lastNow=0;
+function setLS(px){if('letterSpacing' in ctx)ctx.letterSpacing=px+'px';}
+function wm(){ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);ctx.fillText("@stoopidshow",540,70);setLS(0);ctx.restore();}
+function readout(){ctx.save();ctx.font="28px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.62)";ctx.textAlign="center";setLS(3);ctx.fillText(`GENERATION ${gen}`,540,120);setLS(0);ctx.restore();}
+function credit(){ctx.save();ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";setLS(1);ctx.fillText("GAME OF LIFE // 4 RULES, NO PLAYER",40,1876);setLS(0);ctx.restore();}
+function nameCard(t){ctx.save();ctx.font="118px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";setLS(14);ctx.fillText(t,547,222);setLS(0);ctx.restore();}
+function payoff(){ctx.save();ctx.font="98px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";ctx.shadowColor=TEAL;ctx.shadowBlur=18;setLS(9);ctx.fillText("IT LOOKS ALIVE. IT'S JUST RULES.",545,1860);setLS(0);ctx.restore();}
+function frame(now){
+  if(startT===null){startT=now;lastNow=now;seed();}
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;seed();}
+  if(!paused && t>=INTRO){ acc+=(now-lastNow)/1000; while(acc>=STEPDT){step();acc-=STEPDT;} }
+  lastNow=now;
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,1080,1920);wm();credit();
+  // live cells: fresh = orange, settled = teal
+  ctx.fillStyle=TEAL;ctx.beginPath();
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(grid[idx(x,y)]&&age[idx(x,y)]>1)ctx.rect(XS+x*CP,YS+y*CP,CP-1,CP-1);
+  ctx.fill();
+  ctx.fillStyle=ORANGE;ctx.beginPath();
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(grid[idx(x,y)]&&age[idx(x,y)]<=1)ctx.rect(XS+x*CP,YS+y*CP,CP-1,CP-1);
+  ctx.fill();
+  readout();
+  if(t<INTRO+2.4)nameCard("GAME OF LIFE"); else if(t>TOTAL-4)payoff();
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;lastNow=performance.now();}}if(e.key==='r'||e.key==='R'){startT=performance.now();lastNow=performance.now();seed();paused=false;}});
+function boot(){requestAnimationFrame(frame);}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>

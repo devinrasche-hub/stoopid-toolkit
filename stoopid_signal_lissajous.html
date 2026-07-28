@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Lissajous</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .b{font-family:'Bebas Neue';}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">B</span><span class="m">M</span></div>
+<script>
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6',RED='#FF2D2D';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const CX=540,CY=940,AX=430,AY=430;
+const RATIOS=[[1,1],[1,2],[2,3],[3,4],[3,5],[4,5],[5,6],[5,4],[2,1]];
+const STEP=4.6;                                  // seconds per ratio
+const INTRO=0.8, TOTAL=INTRO+RATIOS.length*STEP;
+let startT=null,paused=false,pauseAt=0;
+function setLS(px){if('letterSpacing' in ctx)ctx.letterSpacing=px+'px';}
+function wm(){ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);ctx.fillText("@stoopidshow",CX,70);setLS(0);ctx.restore();}
+function readout(a,b,ph){ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.68)";ctx.textAlign="center";setLS(3);ctx.fillText(`a:b = ${a}:${b}   ·   δ = ${(ph/Math.PI).toFixed(2)}π`,CX,122);setLS(0);ctx.restore();}
+function credit(){ctx.save();ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";setLS(1);ctx.fillText("LISSAJOUS // TWO WAVES, ONE SHAPE",40,1876);setLS(0);ctx.restore();}
+function nameCard(t){ctx.save();ctx.font="116px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";setLS(13);ctx.fillText(t,CX+7,210);setLS(0);ctx.restore();}
+function payoff(){ctx.save();ctx.font="104px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";ctx.shadowColor=TEAL;ctx.shadowBlur=18;setLS(10);ctx.fillText("FREQUENCY IS A SHAPE",CX+5,1740);setLS(0);ctx.restore();}
+function frame(now){
+  if(startT===null)startT=now;
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;}
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,1080,1920);
+  wm();credit();
+  if(t<INTRO){nameCard("LISSAJOUS");return requestAnimationFrame(frame);}
+  const idx=Math.min(RATIOS.length-1,Math.floor((t-INTRO)/STEP));
+  const [a,b]=RATIOS[idx];
+  const ph=(t*0.55)%(2*Math.PI);                 // phase drifts → figure morphs
+  // full curve, glow + crisp
+  ctx.beginPath();
+  const N=1600;
+  for(let i=0;i<=N;i++){const u=2*Math.PI*i/N;
+    const x=CX+AX*Math.sin(a*u+ph), y=CY+AY*Math.sin(b*u);
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.lineJoin="round";ctx.lineCap="round";
+  ctx.strokeStyle="rgba(0,255,198,0.14)";ctx.lineWidth=9;ctx.stroke();
+  ctx.strokeStyle="rgba(0,255,198,0.95)";ctx.lineWidth=2.6;ctx.stroke();
+  // running pen dot
+  const pu=(t*2.2)%(2*Math.PI);
+  const px=CX+AX*Math.sin(a*pu+ph), py=CY+AY*Math.sin(b*pu);
+  ctx.save();ctx.fillStyle=RED;ctx.shadowColor=RED;ctx.shadowBlur=18;ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);ctx.fill();ctx.restore();
+  readout(a,b,ph);
+  if(t>TOTAL-4) payoff();
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;}}if(e.key==='r'||e.key==='R'){startT=performance.now();paused=false;}});
+function boot(){requestAnimationFrame(frame);}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>

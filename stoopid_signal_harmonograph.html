@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Harmonograph</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .b{font-family:'Bebas Neue';}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">B</span><span class="m">M</span></div>
+<script>
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const CX=540,CY=960;
+// two-pendulum harmonograph: x,y each a sum of two damped sinusoids
+const P={ f1:2.001,f2:3.000,f3:3.002,f4:2.000, p1:0,p2:Math.PI/2,p3:Math.PI/4,p4:0,
+         d1:0.0042,d2:0.0042,d3:0.0042,d4:0.0042, A:230 };
+const TMAX=140, N=9000;
+const pts=new Float32Array(N*2); let maxr=0;
+for(let i=0;i<N;i++){ const t=TMAX*i/N;
+  const x=P.A*Math.sin(P.f1*t+P.p1)*Math.exp(-P.d1*t)+P.A*Math.sin(P.f2*t+P.p2)*Math.exp(-P.d2*t);
+  const y=P.A*Math.sin(P.f3*t+P.p3)*Math.exp(-P.d3*t)+P.A*Math.sin(P.f4*t+P.p4)*Math.exp(-P.d4*t);
+  pts[i*2]=x; pts[i*2+1]=y; const r=Math.hypot(x,y); if(r>maxr)maxr=r;
+}
+const SC=430/maxr;
+const SX=new Float32Array(N),SY=new Float32Array(N);
+for(let i=0;i<N;i++){ SX[i]=CX+pts[i*2]*SC; SY[i]=CY+pts[i*2+1]*SC; }
+
+const buf=document.createElement('canvas');buf.width=1080;buf.height=1920;
+const bctx=buf.getContext('2d');bctx.lineJoin="round";bctx.lineCap="round";
+let drawn=0; function resetBuf(){bctx.clearRect(0,0,1080,1920);drawn=0;}
+function extend(upto){ if(upto<=drawn)return; const from=Math.max(0,drawn);
+  bctx.beginPath();bctx.moveTo(SX[from],SY[from]);
+  for(let k=from+1;k<=upto;k++)bctx.lineTo(SX[k],SY[k]);
+  bctx.strokeStyle="rgba(0,255,198,0.10)";bctx.lineWidth=6;bctx.stroke();
+  bctx.strokeStyle="rgba(0,255,198,0.85)";bctx.lineWidth=1.7;bctx.stroke(); drawn=upto; }
+
+const INTRO=0.8,BUILD=17.0,HOLD=3.6,TOTAL=INTRO+BUILD+HOLD;
+let startT=null,paused=false,pauseAt=0;
+function setLS(px){if('letterSpacing' in ctx)ctx.letterSpacing=px+'px';}
+function wm(){ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);ctx.fillText("@stoopidshow",CX,70);setLS(0);ctx.restore();}
+function credit(){ctx.save();ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";setLS(1);ctx.fillText("HARMONOGRAPH // TWO PENDULUMS, WINDING DOWN",40,1876);setLS(0);ctx.restore();}
+function nameCard(t){ctx.save();ctx.font="112px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";setLS(12);ctx.fillText(t,CX+6,200);setLS(0);ctx.restore();}
+function payoff(){ctx.save();ctx.font="96px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";ctx.shadowColor=TEAL;ctx.shadowBlur=18;setLS(9);ctx.fillText("IT WINDS DOWN. IT STILL DRAWS.",CX+5,200);setLS(0);ctx.restore();}
+function frame(now){
+  if(startT===null)startT=now;
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;}
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,1080,1920);wm();credit();
+  if(t<INTRO){if(drawn>0)resetBuf();nameCard("HARMONOGRAPH");return requestAnimationFrame(frame);}
+  const p=Math.min(1,(t-INTRO)/BUILD);const upto=Math.max(1,Math.floor(p*(N-1)));
+  extend(upto);ctx.drawImage(buf,0,0);
+  if(t<INTRO+2.6)nameCard("HARMONOGRAPH"); else if(t>=INTRO+BUILD)payoff();
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;}}if(e.key==='r'||e.key==='R'){startT=performance.now();paused=false;}});
+function boot(){requestAnimationFrame(frame);}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>

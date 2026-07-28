@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Reaction Diffusion</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .b{font-family:'Bebas Neue';}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">B</span><span class="m">M</span></div>
+<script>
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=true;
+// Gray-Scott on a low-res grid, scaled up
+const W=192, H=340;
+const off=document.createElement('canvas');off.width=W;off.height=H;
+const octx=off.getContext('2d'); const img=octx.createImageData(W,H);
+const DA=0.16, DB=0.08, F=0.037, K=0.060, DT=1.0;  // stable Gray-Scott (D·dt ≤ 0.25)
+let A=new Float32Array(W*H), B=new Float32Array(W*H), A2=new Float32Array(W*H), B2=new Float32Array(W*H);
+const ix=(x,y)=>y*W+x;
+function seed(){ A.fill(1); B.fill(0);
+  for(let i=0;i<W*H;i++){ if(Math.random()<0.0016){ B[i]=1; A[i]=0.4; } }   // random nuclei
+  // a couple of guaranteed seed blobs so it always develops
+  for(const [cx,cy] of [[W/2|0,H/2|0],[W*0.3|0,H*0.7|0],[W*0.7|0,H*0.3|0]])
+    for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){ const x=cx+dx,y=cy+dy;
+      if(x>=0&&x<W&&y>=0&&y<H){ B[ix(x,y)]=1; A[ix(x,y)]=0.3; } }
+}
+function step(){
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const i=ix(x,y);
+    const xm=(x-1+W)%W, xp=(x+1)%W, ym=(y-1+H)%H, yp=(y+1)%H;
+    const lapA=A[ix(xm,y)]+A[ix(xp,y)]+A[ix(x,ym)]+A[ix(x,yp)]-4*A[i];
+    const lapB=B[ix(xm,y)]+B[ix(xp,y)]+B[ix(x,ym)]+B[ix(x,yp)]-4*B[i];
+    const a=A[i], b=B[i], abb=a*b*b;
+    A2[i]=a+(DA*lapA-abb+F*(1-a))*DT;
+    B2[i]=b+(DB*lapB+abb-(K+F)*b)*DT;
+  }
+  [A,A2]=[A2,A]; [B,B2]=[B2,B];
+}
+const RAMP=[[0,0,0],[8,40,40],[0,120,110],[0,255,198],[255,255,255]];
+function ramp(t){ t=Math.max(0,Math.min(0.9999,t))*(RAMP.length-1);const a=Math.floor(t),f=t-a;const c1=RAMP[a],c2=RAMP[a+1];return[c1[0]+(c2[0]-c1[0])*f,c1[1]+(c2[1]-c1[1])*f,c1[2]+(c2[2]-c1[2])*f];}
+function paint(){ const d=img.data;
+  for(let i=0;i<W*H;i++){ const c=ramp(B[i]*2.4); const o=i*4; d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255; }
+  octx.putImageData(img,0,0);
+}
+const INTRO=0.6, RUN=40, TOTAL=INTRO+RUN, STEPS_PER_FRAME=10;
+let startT=null,paused=false,pauseAt=0;
+function setLS(px){if('letterSpacing' in ctx)ctx.letterSpacing=px+'px';}
+function wm(){ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.55)";ctx.textAlign="center";setLS(2);ctx.fillText("@stoopidshow",540,70);setLS(0);ctx.restore();}
+function credit(){ctx.save();ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.75)";ctx.textAlign="left";setLS(1);ctx.fillText("REACTION–DIFFUSION // TURING, 1952",40,1876);setLS(0);ctx.restore();}
+function nameCard(t){ctx.save();ctx.font="106px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";ctx.shadowColor="#000";ctx.shadowBlur=16;setLS(11);ctx.fillText(t,547,210);setLS(0);ctx.restore();}
+function payoff(){ctx.save();ctx.font="98px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";ctx.shadowColor="#000";ctx.shadowBlur=20;setLS(9);ctx.fillText("THE SPOTS DO THE MATH",545,1000);setLS(0);ctx.restore();}
+function frame(now){
+  if(startT===null){startT=now;seed();}
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;seed();}
+  if(!paused && t>=INTRO) for(let s=0;s<STEPS_PER_FRAME;s++) step();
+  paint();
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,1080,1920);
+  ctx.drawImage(off,0,0,1080,1920);
+  wm();credit();
+  if(t<INTRO+2.6)nameCard("REACTION–DIFFUSION"); else if(t>TOTAL-4)payoff();
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;}}if(e.key==='r'||e.key==='R'){startT=performance.now();seed();paused=false;}});
+function boot(){requestAnimationFrame(frame);}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>

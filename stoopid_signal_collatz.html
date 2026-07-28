@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Collatz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .b{font-family:'Bebas Neue';}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">B</span><span class="m">M</span></div>
+<script>
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const NMAX=3600, AE=0.108, AO=-0.328, STEP=1;    // even/odd turn angles
+// build each number's Collatz path (walked from 1 outward so shared tails overlap → trunk)
+const paths=[]; let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+for(let n=2;n<=NMAX;n++){
+  const seq=[n]; let v=n; while(v!==1){ v=(v%2===0)?v/2:3*v+1; seq.push(v); }
+  seq.reverse();                                  // 1 → n
+  let x=0,y=0,ang=-Math.PI/2; const pts=[[0,0]];
+  for(let k=1;k<seq.length;k++){ ang += (seq[k]%2===0)?AE:AO; x+=STEP*Math.cos(ang); y+=STEP*Math.sin(ang); pts.push([x,y]);
+    if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y; }
+  paths.push(pts);
+}
+// fit to canvas
+const w=maxx-minx,h=maxy-miny, SC=Math.min(920/w, 1360/h);
+const OX=540-(minx+maxx)/2*SC, OY=980-(miny+maxy)/2*SC;
+const SP=paths.map(p=>p.map(([x,y])=>[OX+x*SC,OY+y*SC]));
+
+const buf=document.createElement('canvas');buf.width=1080;buf.height=1920;
+const bctx=buf.getContext('2d');bctx.lineCap="round";bctx.lineJoin="round";
+let drawn=0; function resetBuf(){bctx.clearRect(0,0,1080,1920);drawn=0;}
+function extend(upto){
+  for(let i=drawn;i<upto;i++){ const p=SP[i]; if(p.length<2)continue;
+    const dep=Math.min(1,p.length/90);
+    bctx.strokeStyle=`rgba(${(0+138*dep)|0},${(255-212*dep)|0},${(198+28*dep)|0},0.22)`;
+    bctx.lineWidth=1.2; bctx.beginPath(); bctx.moveTo(p[0][0],p[0][1]);
+    for(let k=1;k<p.length;k++)bctx.lineTo(p[k][0],p[k][1]); bctx.stroke();
+  }
+  drawn=upto;
+}
+const INTRO=0.8,BUILD=15,HOLD=3.6,TOTAL=INTRO+BUILD+HOLD;
+let startT=null,paused=false,pauseAt=0;
+function setLS(px){if('letterSpacing' in ctx)ctx.letterSpacing=px+'px';}
+function wm(){ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);ctx.fillText("@stoopidshow",540,70);setLS(0);ctx.restore();}
+function readout(n){ctx.save();ctx.font="28px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.62)";ctx.textAlign="center";setLS(3);ctx.fillText(`${n} NUMBERS · ALL REACH 1`,540,120);setLS(0);ctx.restore();}
+function credit(){ctx.save();ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";setLS(1);ctx.fillText("COLLATZ // 3n+1 · EVEN→n/2",40,1876);setLS(0);ctx.restore();}
+function nameCard(t){ctx.save();ctx.font="118px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";setLS(14);ctx.fillText(t,547,210);setLS(0);ctx.restore();}
+function payoff(){ctx.save();ctx.font="104px 'Bebas Neue'";ctx.fillStyle=WHITE;ctx.textAlign="center";ctx.shadowColor=TEAL;ctx.shadowBlur=18;setLS(10);ctx.fillText("EVERY NUMBER FALLS TO ONE",545,1760);setLS(0);ctx.restore();}
+function frame(now){
+  if(startT===null)startT=now;
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;}
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,1080,1920);wm();credit();
+  if(t<INTRO){if(drawn>0)resetBuf();nameCard("COLLATZ");return requestAnimationFrame(frame);}
+  const p=Math.min(1,(t-INTRO)/BUILD);const upto=Math.max(1,Math.floor(p*SP.length));
+  extend(upto);ctx.drawImage(buf,0,0);readout(upto+1);
+  if(t<INTRO+2.4)nameCard("COLLATZ"); else if(t>=INTRO+BUILD)payoff();
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;}}if(e.key==='r'||e.key==='R'){startT=performance.now();paused=false;}});
+function boot(){requestAnimationFrame(frame);}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>
