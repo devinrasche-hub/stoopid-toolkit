@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID SIGNAL — Your Life at Light Speed</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Caveat:wght@600&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#07080c;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+  #warm .b{font-family:'Bebas Neue';} #warm .m{font-family:'Share Tech Mono';} #warm .c{font-family:'Caveat';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">BEBAS</span><span class="m">MONO</span><span class="c">CAVEAT</span></div>
+<script>
+"use strict";
+/* ============================================================
+   YOUR LIFE AT LIGHT SPEED
+   One photon. One straight line up. A camera that never stops
+   pulling back. The speed never changes — only the room does.
+   Everything is drawn by hand, on chalk, at 10 frames of boil.
+   ============================================================ */
+
+var CW=1080, CH=1920;
+var cv=document.getElementById('c'), ctx=cv.getContext('2d');
+
+/* ---------------- palette ---------------- */
+var PAPER='#07080c', CHALK='#f2eee2', PINK='#ff40cd', TEAL='#00ffc6', AMBER='#ffb95c', DIM='rgba(242,238,226,0.34)';
+
+/* ---------------- physics (all SI, all true) ---------------- */
+var C_LIGHT = 299792458;
+var RE   = 6371000;        // earth radius
+var DEARTH = 12742000;     // earth diameter — the first milestone past you
+var RMOON = 1737400,  DMOON = 384400000;
+var RSUN  = 695700000, DSUN = 149600000000;
+var HUMAN = 1.8;
+
+/* ---------------- timeline (seconds of screen time) ----------------
+   Travel segments run the photon at a steady rate; transition
+   segments run it geometrically so it stays framed while the
+   scale explodes underneath it. Junction values match exactly. */
+var SEG = [
+  {t0:1.20, t1:4.40,  d0:0,          d1:HUMAN,  lin:true },   // 0  YOU
+  {t0:4.40, t1:5.60,  d0:HUMAN,      d1:3.0e5,  lin:false},   //    pull back
+  {t0:5.60, t1:8.60,  d0:3.0e5,      d1:DEARTH, lin:true },   // 2  EARTH
+  {t0:8.60, t1:9.80,  d0:DEARTH,     d1:4.5e7,  lin:false},   //    pull back
+  {t0:9.80, t1:12.60, d0:4.5e7,      d1:DMOON,  lin:true },   // 4  MOON
+  {t0:12.60,t1:13.80, d0:DMOON,      d1:1.5e9,  lin:false},   //    pull back
+  {t0:13.80,t1:17.20, d0:1.5e9,      d1:DSUN,   lin:true },   // 6  SUN
+  {t0:17.20,t1:19.80, d0:DSUN,       d1:DSUN,   lin:true }    //    payoff
+];
+var TOTAL = 19.80;
+
+/* camera keys: [screen t, world centre y, world height of frame] */
+var CAM = [
+  [1.20, RE+0.9,  3.2],
+  [4.40, RE+0.9,  3.2],
+  [5.60, 3.5e6,   4.2e7],
+  [8.60, 3.5e6,   4.2e7],
+  [9.80, 1.45e8,  6.96e8],
+  [12.60,1.45e8,  6.96e8],
+  [13.80,5.64e10, 2.71e11],
+  [17.20,5.64e10, 2.71e11],
+  [19.80,5.64e10, 3.05e11]
+];
+
+/* the four chapters, and the honest timelapse each one runs at */
+var CHAP = [
+  {seg:0, t0:1.35, t1:5.45,  title:'YOU',        sub:'One-point-eight metres of person. Head to toe, light does it in six billionths of a second.'},
+  {seg:2, t0:5.45, t1:9.55,  title:'EARTH',      sub:'Straight through the whole planet in 42 milliseconds. It laps the place seven and a half times a second.'},
+  {seg:4, t0:9.55, t1:13.55, title:'THE MOON',   sub:'384,400 km out. Every "copy that" from Apollo took 2.6 seconds round trip. Nobody could do a thing about it.'},
+  {seg:6, t0:13.55,t1:17.35, title:'THE SUN',    sub:'Eight minutes, nineteen seconds. Every sunrise you have ever seen was already eight minutes old.'}
+];
+for(var ci=0; ci<CHAP.length; ci++){
+  var s = SEG[CHAP[ci].seg];
+  CHAP[ci].rate = ((s.d1 - s.d0)/C_LIGHT)/(s.t1 - s.t0);   // real seconds per screen second
+}
+
+/* ---------------- the hand ----------------
+   One deterministic hash, keyed per element so a shape keeps its
+   own wobble while the whole drawing re-boils ten times a second. */
+var BOIL = 0;
+function R(key,i){ var s=Math.sin(key*127.1 + i*311.7 + BOIL*74.713)*43758.5453; return s-Math.floor(s); }
+function J(key,i,amp){ return (R(key,i)*2-1)*amp; }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function smooth(f){ f=clamp(f,0,1); return f*f*f*(f*(f*6-15)+10); }
+function ease(f,k){ f=clamp(f,0,1); return f + (smooth(f)-f)*k; }
+
+function chalkStroke(w,col,alpha){
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=col; ctx.lineWidth=w; ctx.globalAlpha=alpha;
+}
+
+/* a single wobbly pass between two points */
+function linePath(key,x1,y1,x2,y2,amp,rev){
+  var L=Math.hypot(x2-x1,y2-y1);
+  var n=Math.max(2, Math.min(30, Math.round(L/24)));
+  var over = amp*0.9;
+  var ux=(x2-x1)/(L||1), uy=(y2-y1)/(L||1);
+  x1-=ux*over; y1-=uy*over; x2+=ux*over; y2+=uy*over;
+  rev = rev===undefined?1:clamp(rev,0,1);
+  ctx.beginPath();
+  var last = n*rev;
+  for(var i=0;i<=n;i++){
+    var f=Math.min(i,last)/n, w=Math.sin(f*Math.PI)*0.85+0.15;
+    var x=x1+(x2-x1)*f + J(key,i,amp)*w;
+    var y=y1+(y2-y1)*f + J(key,i+91,amp)*w;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    if(i>last) break;
+  }
+}
+/* drawn twice, like anything drawn by a person */
+function roughLine(key,x1,y1,x2,y2,w,col,amp,rev){
+  chalkStroke(w,col,0.9);  linePath(key,x1,y1,x2,y2,amp,rev); ctx.stroke();
+  chalkStroke(w*0.55,col,0.42); linePath(key+7.7,x1,y1,x2,y2,amp*1.5,rev); ctx.stroke();
+  ctx.globalAlpha=1;
+}
+
+function circlePath(key,cx,cy,r,amp,a0,sweep){
+  var n=clamp(Math.round(r*0.55)+22, 26, 420);
+  var p1=R(key,1)*6.283, p2=R(key,2)*6.283, p3=R(key,3)*6.283;
+  ctx.beginPath();
+  for(var i=0;i<=n;i++){
+    var a=a0+sweep*i/n;
+    var wob=Math.sin(a*2+p1)*0.55+Math.sin(a*3+p2)*0.30+Math.sin(a*5+p3)*0.15;
+    var rr=r+wob*amp+J(key,i,amp*0.35);
+    var x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+}
+function roughCircle(key,cx,cy,r,w,col,amp,a0,sweep){
+  a0=a0||0; sweep=sweep===undefined?6.2832:sweep;
+  chalkStroke(w,col,0.9);  circlePath(key,cx,cy,r,amp,a0,sweep); ctx.stroke();
+  chalkStroke(w*0.55,col,0.4); circlePath(key+3.3,cx,cy,r,amp*1.7,a0,sweep); ctx.stroke();
+  ctx.globalAlpha=1;
+}
+function fillCircle(key,cx,cy,r,col,amp,alpha){
+  ctx.globalAlpha=alpha===undefined?1:alpha; ctx.fillStyle=col;
+  circlePath(key,cx,cy,r,amp,0,6.2832); ctx.fill(); ctx.globalAlpha=1;
+}
+function polyPath(key,pts,amp,close){
+  ctx.beginPath();
+  for(var i=0;i<pts.length;i++){
+    var a=pts[i], b=pts[(i+1)%pts.length];
+    if(i===0) ctx.moveTo(a[0]+J(key,i,amp), a[1]+J(key,i+40,amp));
+    if(i===pts.length-1 && !close) break;
+    var mx=(a[0]+b[0])/2 + J(key,i+70,amp*1.3), my=(a[1]+b[1])/2 + J(key,i+110,amp*1.3);
+    ctx.quadraticCurveTo(mx,my, b[0]+J(key,i+1,amp), b[1]+J(key,i+41,amp));
+  }
+  if(close) ctx.closePath();
+}
+function roughPoly(key,pts,w,col,amp,fill){
+  if(fill){ ctx.fillStyle=col; polyPath(key,pts,amp,true); ctx.fill(); }
+  chalkStroke(w,col,0.85); polyPath(key+2.1,pts,amp*1.2,true); ctx.stroke();
+  ctx.globalAlpha=1;
+}
+/* parallel scratch shading, clipped */
+function hatch(key,x,y,w,h,step,col,alpha,amp){
+  ctx.save(); ctx.globalAlpha=alpha;
+  chalkStroke(1.6,col,alpha);
+  for(var i=0, n=Math.ceil((w+h)/step); i<n; i++){
+    var o=-h + i*step;
+    linePath(key+i*0.37, x+o, y, x+o+h, y+h, amp); ctx.stroke();
+  }
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+/* ---------------- paper ---------------- */
+var grain=document.createElement('canvas'); grain.width=270; grain.height=480;
+(function(){
+  var g=grain.getContext('2d'), im=g.createImageData(270,480), d=im.data;
+  for(var i=0;i<d.length;i+=4){
+    var v=Math.random(); var a= v>0.82 ? (v-0.82)*900 : 0;
+    d[i]=242; d[i+1]=238; d[i+2]=226; d[i+3]=a;
+  }
+  g.putImageData(im,0,0);
+})();
+function paper(){
+  ctx.fillStyle=PAPER; ctx.fillRect(0,0,CW,CH);
+  ctx.save(); ctx.globalAlpha=0.09; ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(grain,0,0,CW,CH); ctx.restore();
+  var g=ctx.createRadialGradient(CW/2,CH*0.45,CH*0.18, CW/2,CH*0.45,CH*0.72);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.55)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,CW,CH);
+}
+
+/* ---------------- stars ---------------- */
+var STARS=[];
+(function(){ for(var i=0;i<170;i++) STARS.push({x:R(9.1,i)*CW, y:R(9.2,i)*CH, s:R(9.3,i), k:R(9.4,i)}); })();
+function stars(t, vh, fade){
+  if(fade<=0.01) return;
+  var drift = (Math.log(vh)/Math.LN10)*46;
+  for(var i=0;i<STARS.length;i++){
+    var s=STARS[i];
+    var y=(s.y + drift*(0.35+s.k*0.9)) % (CH+80) ; if(y<-40) y+=CH+80;
+    var tw = 0.45+0.55*Math.sin(t*1.7 + s.k*9.0);
+    ctx.globalAlpha = fade*(0.18+s.s*0.55)*tw;
+    if(s.s>0.93){
+      chalkStroke(1.5,CHALK,ctx.globalAlpha);
+      var r=3+s.k*4;
+      ctx.beginPath(); ctx.moveTo(s.x-r,y); ctx.lineTo(s.x+r,y);
+      ctx.moveTo(s.x,y-r); ctx.lineTo(s.x,y+r); ctx.stroke();
+    } else {
+      ctx.fillStyle=CHALK;
+      ctx.fillRect(s.x, y, 1+s.s*2, 1+s.s*2);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ---------------- camera ---------------- */
+var cam={cy:RE+0.9, vh:3.2, wpp:3.2/1920};
+function logLerp(a,b,f){ return Math.exp(Math.log(a)+(Math.log(b)-Math.log(a))*f); }
+function camAt(t, yph){
+  var i=0; while(i<CAM.length-2 && t>CAM[i+1][0]) i++;
+  var a=CAM[i], b=CAM[i+1];
+  var f=smooth((t-a[0])/(b[0]-a[0]));
+  if(t<=CAM[0][0]) f=0;
+  var vh=logLerp(a[2],b[2],f), cy=logLerp(a[1],b[1],f);
+  /* never let the photon leave the frame */
+  cy = clamp(cy, yph-0.40*vh, yph+0.42*vh);
+  cam.cy=cy; cam.vh=vh; cam.wpp=vh/CH;
+}
+function SX(wx){ return CW/2 + wx/cam.wpp; }
+function SY(wy){ return CH/2 - (wy-cam.cy)/cam.wpp; }
+
+/* ---------------- the photon's distance from your feet ---------------- */
+function distAt(t){
+  if(t<=SEG[0].t0) return 0;
+  for(var i=0;i<SEG.length;i++){
+    var s=SEG[i];
+    if(t<=s.t1 || i===SEG.length-1){
+      var f=clamp((t-s.t0)/(s.t1-s.t0),0,1);
+      if(s.lin) return s.d0 + (s.d1-s.d0)*ease(f,0.65);
+      return logLerp(Math.max(s.d0,1e-3), s.d1, smooth(f));
+    }
+  }
+  return DSUN;
+}
+function chapterAt(t){
+  var c=null;
+  for(var i=0;i<CHAP.length;i++) if(t>=CHAP[i].t0 && t<CHAP[i].t1) c=CHAP[i];
+  if(!c && t>=CHAP[3].t1) c=CHAP[3];
+  return c;
+}
+
+/* ---------------- readouts ---------------- */
+function grp(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmtDist(m){
+  if(m<1000) return m.toFixed(2)+' m';
+  if(m<1e9)  return grp(Math.round(m/1000))+' km';
+  return (m/1e9).toFixed(1)+' million km';
+}
+function fmtTime(s){
+  if(s<1e-6) return (s*1e9).toFixed(1)+' nanoseconds';
+  if(s<1e-3) return (s*1e6).toFixed(1)+' microseconds';
+  if(s<1)    return (s*1e3).toFixed(1)+' milliseconds';
+  if(s<60)   return s.toFixed(2)+' seconds';
+  return Math.floor(s/60)+' min '+Math.round(s%60)+' sec';
+}
+function fmtRate(r){
+  if(r<1){ var x=1/r; return ['SLOWED', grp(x>=100?Math.round(x):Number(x.toFixed(1)))+'×']; }
+  return ['SPED UP', grp(r>=100?Math.round(r):Number(r.toFixed(1)))+'×'];
+}
+
+/* ---------------- type ---------------- */
+function setLS(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function T(txt,x,y,font,col,align,ls,alpha){
+  ctx.save(); ctx.font=font; ctx.fillStyle=col; ctx.textAlign=align||'left';
+  ctx.globalAlpha=alpha===undefined?1:alpha; setLS(ls||0);
+  ctx.fillText(txt,x,y); setLS(0); ctx.restore();
+}
+function fitPx(txt,maxw,basePx,family,ls){
+  var px=basePx;
+  while(px>30){ setLS(ls); ctx.font=px+"px "+family;
+    if(ctx.measureText(txt).width<=maxw) break; px-=4; }
+  setLS(0); return px;
+}
+function headline(txt,y,basePx,alpha,ls){
+  var px=fitPx(txt,960,basePx,"'Bebas Neue', sans-serif",ls);
+  T(txt, CW/2, y, px+"px 'Bebas Neue', sans-serif", CHALK, 'center', ls, alpha);
+}
+function wrap(txt,font,maxw){
+  ctx.save(); ctx.font=font;
+  var words=txt.split(' '), lines=[], cur='';
+  for(var i=0;i<words.length;i++){
+    var test=cur?cur+' '+words[i]:words[i];
+    if(ctx.measureText(test).width>maxw && cur){ lines.push(cur); cur=words[i]; }
+    else cur=test;
+  }
+  if(cur) lines.push(cur);
+  ctx.restore(); return lines;
+}
+
+/* ============================================================
+   SUBJECTS
+   ============================================================ */
+
+/* --- you --- */
+/* right half of the body, neck down and around to the crotch.
+   The notch at the armpit is what makes it read as a person and
+   not a gingerbread man. */
+var HALF=[[0.034,0.868],[0.112,0.844],[0.134,0.790],[0.128,0.640],[0.116,0.512],
+          [0.110,0.448],[0.074,0.444],[0.082,0.512],[0.094,0.640],[0.098,0.742],
+          [0.088,0.768],[0.084,0.700],[0.074,0.560],[0.090,0.482],[0.099,0.430],
+          [0.088,0.230],[0.080,0.042],[0.116,0.016],[0.112,0.000],[0.032,0.003],
+          [0.032,0.230],[0.028,0.418],[0.000,0.380]];
+var BODY=(function(){
+  var a=HALF.slice();
+  for(var i=HALF.length-2;i>=0;i--) a.push([-HALF[i][0], HALF[i][1]]);
+  return a;
+})();
+function drawYou(alpha){
+  var px = HUMAN/cam.wpp;                       // screen height of a person
+  if(px<5 || alpha<=0.01) return;
+  var fx=function(u){ return SX(u*HUMAN); }, fy=function(v){ return SY(RE + v*HUMAN); };
+  var amp = clamp(px*0.0095, 0.7, 13);
+  var pts=[]; for(var i=0;i<BODY.length;i++) pts.push([fx(BODY[i][0]), fy(BODY[i][1])]);
+  var hx=fx(0), hy=fy(0.932), hr=0.079*px;
+  ctx.save(); ctx.globalAlpha=alpha;
+  /* body + head filled slightly under-bright, so the outline still reads */
+  ctx.fillStyle='#ded9c9';
+  polyPath(30, pts, amp, true); ctx.fill();
+  circlePath(31, hx, hy, hr, amp*0.5, 0, 6.2832); ctx.fill();
+  /* chalk tooth — this is what stops it looking like a vector shape */
+  if(px>60){
+    ctx.save();
+    polyPath(30, pts, amp, true); ctx.clip();
+    hatch(32, hx-px*0.2, fy(1.0), px*0.4, px, Math.max(7,px*0.018), PAPER, alpha*0.085, 2.6);
+    ctx.restore();
+  }
+  /* the line that was actually drawn */
+  ctx.globalAlpha=alpha;
+  var lw=clamp(px*0.0075, 1.4, 9);
+  chalkStroke(lw, CHALK, alpha*0.95);  polyPath(33, pts, amp*1.25, true); ctx.stroke();
+  chalkStroke(lw*0.5, CHALK, alpha*0.45); polyPath(34, pts, amp*2.0, true); ctx.stroke();
+  roughCircle(35, hx, hy, hr, lw, CHALK, amp*0.7);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+/* the ground, while the horizon is still almost straight */
+function drawGround(alpha){
+  var yS=SY(RE), wpp=cam.wpp;
+  if(yS<-400 || yS>CH+400) return;
+  ctx.save(); ctx.globalAlpha=alpha;
+  /* the ground itself — everything under the limb is planet, not sky */
+  var horizon=function(i){
+    var f=i/40, x=f*CW, dx=(x-CW/2)*wpp;
+    return [x, yS + (dx*dx/(2*RE))/wpp + J(51,i,2.2)];
+  };
+  ctx.beginPath();
+  for(var i=0;i<=40;i++){ var q=horizon(i); if(i===0) ctx.moveTo(q[0],q[1]); else ctx.lineTo(q[0],q[1]); }
+  ctx.lineTo(CW,CH+40); ctx.lineTo(0,CH+40); ctx.closePath();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle=PAPER; ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle='rgba(242,238,226,0.16)'; ctx.fillRect(0,0,CW,CH);
+  hatch(54, -CH, yS-40, CW+CH, CH+120, Math.max(9, 34/Math.max(1,Math.sqrt(wpp*0.0017))), CHALK, alpha*0.13, 2.2);
+  ctx.restore();
+  /* the line that was drawn */
+  ctx.globalAlpha=alpha;
+  chalkStroke(clamp(4/Math.sqrt(wpp*600),2,7), CHALK, alpha*0.9);
+  ctx.beginPath();
+  for(var j=0;j<=40;j++){ var w=horizon(j); if(j===0) ctx.moveTo(w[0],w[1]); else ctx.lineTo(w[0],w[1]); }
+  ctx.stroke();
+  /* scratch of dirt under the line */
+  ctx.globalAlpha=alpha*0.5;
+  for(var k=0;k<26;k++){
+    var xx=R(52,k)*CW, off=(xx-CW/2)*wpp;
+    var yy=yS + (off*off/(2*RE))/wpp + 6 + R(52,k+60)*34;
+    chalkStroke(1.8,CHALK,alpha*0.45);
+    linePath(53+k*0.11, xx, yy, xx+8+R(52,k+9)*22, yy+R(52,k+3)*7, 1.6); ctx.stroke();
+  }
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function drawEarth(alpha, t){
+  var r = RE/cam.wpp;
+  if(r>2400){ drawGround(alpha); return; }
+  var r2 = Math.max(r, 34);                     // discs enlarged, distances true
+  var cx=SX(0), cy=SY(0);
+  if(cx< -r2-80 || cx>CW+r2+80 || cy<-r2-160 || cy>CH+r2+160) return;
+  var amp = clamp(r2*0.012, 1.2, 9);
+  ctx.save(); ctx.globalAlpha=alpha;
+  /* atmosphere — a scribbled halo */
+  chalkStroke(2.2, TEAL, alpha*0.32);
+  circlePath(60, cx,cy, r2*1.07, amp*1.6, 0, 6.2832); ctx.stroke();
+  /* the body of the thing */
+  ctx.globalAlpha=alpha; ctx.fillStyle=PAPER;
+  circlePath(61, cx,cy,r2, amp, 0, 6.2832); ctx.fill();
+  ctx.fillStyle='rgba(242,238,226,0.16)';
+  circlePath(61, cx,cy,r2, amp, 0, 6.2832); ctx.fill();
+  ctx.save(); circlePath(61,cx,cy,r2,amp,0,6.2832); ctx.clip();
+  /* ocean tooth */
+  hatch(63, cx-r2, cy-r2, r2*2, r2*2, Math.max(5,r2*0.072), CHALK, alpha*0.15, 2.0);
+  if(r2>50){
+    /* three continents, turning slowly */
+    var rot=t*0.28;
+    var LAND=[[0.22,0.0,0.46,0.30],[-0.36,1.1,0.34,0.24],[0.05,2.1,0.30,0.38],
+              [0.48,3.1,0.30,0.20],[-0.18,4.1,0.40,0.28],[0.30,5.2,0.26,0.22]];
+    for(var i=0;i<LAND.length;i++){
+      var lat=LAND[i][0], lon=LAND[i][1]+rot, ww=LAND[i][2], hh=LAND[i][3];
+      var front=Math.cos(lat)*Math.cos(lon); if(front<=0.06) continue;
+      var bx=cx + r2*Math.cos(lat)*Math.sin(lon), by=cy - r2*Math.sin(lat);
+      var sx=r2*ww*Math.abs(Math.cos(lon)), sy=r2*hh;
+      ctx.globalAlpha=alpha*clamp(front*2.6,0,1)*0.98;
+      ctx.fillStyle=CHALK;
+      ctx.beginPath();
+      for(var k=0;k<=24;k++){
+        var a=k/24*6.2832;
+        var rr=1 + Math.sin(a*3+i)*0.20 + Math.sin(a*5+i*2)*0.12 + J(70+i,k,0.10);
+        var x=bx+Math.cos(a)*sx*rr*0.5, y=by+Math.sin(a)*sy*rr*0.5;
+        if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  /* night side — a wash that fades across the terminator */
+  ctx.globalAlpha=alpha;
+  var ng=ctx.createLinearGradient(cx-r2*1.05, cy, cx+r2*1.05, cy);
+  ng.addColorStop(0,'rgba(7,8,12,0)'); ng.addColorStop(0.55,'rgba(7,8,12,0.16)');
+  ng.addColorStop(1,'rgba(7,8,12,0.80)');
+  ctx.fillStyle=ng; ctx.fillRect(cx-r2*1.1, cy-r2*1.1, r2*2.2, r2*2.2);
+  hatch(80, cx+r2*0.40, cy-r2, r2*0.9, r2*2, Math.max(6,r2*0.10), PAPER, alpha*0.26, 1.5);
+  ctx.restore();
+  /* the line that was drawn */
+  ctx.globalAlpha=alpha;
+  roughCircle(62, cx,cy,r2, Math.max(2.2,r2*0.013), CHALK, amp);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function drawMoon(alpha){
+  if(DMOON/cam.wpp < 45) return;                // too close to Earth to mean anything
+  var r=Math.max(RMOON/cam.wpp, 20), cx=SX(0), cy=SY(DMOON);
+  if(cy<-r-60||cy>CH+r+60||alpha<=0.01) return;
+  var amp=clamp(r*0.016,1,6);
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.fillStyle=PAPER;
+  circlePath(90,cx,cy,r,amp,0,6.2832); ctx.fill();
+  ctx.fillStyle='rgba(242,238,226,0.13)';
+  circlePath(90,cx,cy,r,amp,0,6.2832); ctx.fill();
+  ctx.save(); circlePath(90,cx,cy,r,amp,0,6.2832); ctx.clip();
+  hatch(94, cx-r, cy-r, r*2, r*2, Math.max(4,r*0.12), CHALK, alpha*0.12, 1.6);
+  if(r>30){
+    var CR=[[-0.30,-0.22,0.24],[0.26,0.10,0.30],[-0.10,0.40,0.18],[0.34,-0.36,0.15]];
+    for(var i=0;i<CR.length;i++)
+      roughCircle(91+i, cx+CR[i][0]*r, cy+CR[i][1]*r, CR[i][2]*r, 1.6, CHALK, 1.6);
+  }
+  ctx.globalAlpha=alpha*0.55; ctx.fillStyle=PAPER;
+  ctx.beginPath(); ctx.arc(cx+r*1.05, cy+r*0.40, r*1.15, 0, 6.2832); ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha=alpha;
+  roughCircle(96,cx,cy,r,Math.max(2,r*0.022),CHALK,amp);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function drawSun(alpha, t){
+  var r=Math.max(RSUN/cam.wpp, 34), cx=SX(0), cy=SY(DSUN);
+  if(cy<-260||alpha<=0.01) return;
+  ctx.save();
+  var g=ctx.createRadialGradient(cx,cy,r*0.5, cx,cy,r*7);
+  g.addColorStop(0,'rgba(255,185,92,0.40)'); g.addColorStop(0.35,'rgba(255,140,60,0.13)');
+  g.addColorStop(1,'rgba(255,140,60,0)');
+  ctx.globalAlpha=alpha; ctx.globalCompositeOperation='lighter';
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r*7,0,6.2832); ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+  /* hand-scratched rays */
+  for(var i=0;i<24;i++){
+    var a=i/24*6.2832 + Math.sin(t*0.5)*0.05;
+    var L=r*(1.5+R(100,i)*1.5+Math.sin(t*2.2+i)*0.15);
+    chalkStroke(2.4,AMBER,alpha*0.62);
+    linePath(101+i*0.13, cx+Math.cos(a)*r*1.22, cy+Math.sin(a)*r*1.22,
+                         cx+Math.cos(a)*L,      cy+Math.sin(a)*L, 2.4); ctx.stroke();
+  }
+  ctx.globalAlpha=alpha;
+  fillCircle(105,cx,cy,r,AMBER,r*0.04,alpha*0.95);
+  roughCircle(106,cx,cy,r*1.22,2.2,AMBER,r*0.05);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+/* --- the photon --- */
+var trail=[];
+function drawPhoton(t, d, alpha){
+  var x=SX(0), y=SY(RE+d);
+  trail.push([x,y]); if(trail.length>26) trail.shift();
+  ctx.save();
+  /* the road already travelled */
+  var y0=SY(RE);
+  if(y0-y>14){
+    ctx.globalAlpha=alpha*0.30; chalkStroke(2,PINK,alpha*0.30);
+    ctx.setLineDash([9,16]); ctx.beginPath();
+    ctx.moveTo(x+J(120,0,2), Math.min(y0,CH+40)); ctx.lineTo(x+J(120,1,2), y);
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  /* streak */
+  for(var i=1;i<trail.length;i++){
+    var f=i/trail.length;
+    chalkStroke(2+f*9, PINK, alpha*f*0.40);
+    ctx.beginPath(); ctx.moveTo(trail[i-1][0],trail[i-1][1]); ctx.lineTo(trail[i][0],trail[i][1]); ctx.stroke();
+  }
+  /* the spark itself */
+  ctx.globalCompositeOperation='lighter';
+  var g=ctx.createRadialGradient(x,y,0,x,y,90);
+  g.addColorStop(0,'rgba(255,255,255,0.95)'); g.addColorStop(0.16,'rgba(255,64,205,0.80)');
+  g.addColorStop(0.5,'rgba(255,64,205,0.20)'); g.addColorStop(1,'rgba(255,64,205,0)');
+  ctx.globalAlpha=alpha; ctx.fillStyle=g;
+  ctx.beginPath(); ctx.arc(x,y,90,0,6.2832); ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle='#fff'; ctx.globalAlpha=alpha;
+  ctx.beginPath(); ctx.arc(x,y,5.5,0,6.2832); ctx.fill();
+  /* four scratched spokes — it is drawn, not rendered */
+  for(var k=0;k<4;k++){
+    var a=k*1.5708 + t*2.1, L=13+Math.sin(t*9+k)*5;
+    chalkStroke(2,PINK,alpha*0.9);
+    ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*7,y+Math.sin(a)*7);
+    ctx.lineTo(x+Math.cos(a)*(7+L)+J(130,k,2), y+Math.sin(a)*(7+L)+J(130,k+5,2)); ctx.stroke();
+  }
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+/* --- annotations --- */
+function youArePin(alpha){
+  if(alpha<=0.01) return;
+  var x=SX(0), y=SY(RE);
+  if(y<-40||y>CH+40) return;
+  ctx.save(); ctx.globalAlpha=alpha;
+  roughLine(140, x+118, y+150, x+26, y+26, 2.4, TEAL, 3);
+  roughLine(141, x+26, y+26, x+56, y+42, 2.4, TEAL, 2);
+  roughLine(142, x+26, y+26, x+40, y+58, 2.4, TEAL, 2);
+  T('you are here', x+132, y+176, "58px 'Caveat', cursive", TEAL, 'left', 0, alpha);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+function labelBody(txt,wy,alpha,dx){
+  if(alpha<=0.01) return;
+  var x=SX(0)+(dx||0), y=SY(wy);
+  if(y<-30||y>1420) return;                     // the lower third belongs to the type
+  ctx.save(); ctx.globalAlpha=alpha;
+  roughLine(150+(dx||0)*0.01, x+34, y, x+96, y-30, 2, DIM, 2.4);
+  T(txt, x+106, y-24, "46px 'Caveat', cursive", CHALK, 'left', 0, alpha*0.8);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+function scaleBar(alpha){
+  if(alpha<=0.01) return;
+  var target=300*cam.wpp;
+  var e=Math.pow(10,Math.floor(Math.log(target)/Math.LN10));
+  var m=target/e, nice = m>=5?5:(m>=2?2:1);
+  var world=nice*e, px=world/cam.wpp;
+  if(px<40||px>640) return;
+  var x1=CW-70-px, y=172;
+  ctx.save(); ctx.globalAlpha=alpha;
+  roughLine(160,x1,y,CW-70,y,2.4,CHALK,1.8);
+  roughLine(161,x1,y-11,x1,y+11,2.4,CHALK,1.6);
+  roughLine(162,CW-70,y-11,CW-70,y+11,2.4,CHALK,1.6);
+  T(fmtDist(world), CW-70, y-24, "38px 'Caveat', cursive", CHALK, 'right', 0, alpha*0.85);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+/* --- chrome --- */
+function watermark(){ T('@stoopidshow', CW/2, 72, "30px 'Share Tech Mono', monospace", 'rgba(242,238,226,0.40)', 'center', 2); }
+function footer(){
+  T('YOUR LIFE AT LIGHT SPEED', 40, 1876, "24px 'Share Tech Mono', monospace", 'rgba(0,255,198,0.55)', 'left', 1);
+  T('DISCS ENLARGED · DISTANCES TRUE', CW-40, 1876, "24px 'Share Tech Mono', monospace", 'rgba(242,238,226,0.30)', 'right', 1);
+}
+
+function scrim(){
+  var g=ctx.createLinearGradient(0,1330,0,1475);
+  g.addColorStop(0,'rgba(7,8,12,0)'); g.addColorStop(1,'rgba(7,8,12,0.82)');
+  ctx.fillStyle=g; ctx.fillRect(0,1330,CW,145);
+  ctx.fillStyle='rgba(7,8,12,0.82)'; ctx.fillRect(0,1475,CW,CH-1475);
+}
+function hud(t, d, chap){
+  var rows=[
+    ['DISTANCE',   fmtDist(d),          CHALK],
+    ['FLIGHT TIME',fmtTime(d/C_LIGHT),  CHALK]
+  ];
+  var y=1600;
+  if(chap){
+    /* chapter card */
+    var ain=clamp((t-chap.t0)/0.45,0,1), aout=clamp((chap.t1-t)/0.4,0,1);
+    var a=Math.min(smooth(ain),smooth(aout));
+    T(chap.title, 40, 1472, "104px 'Bebas Neue', sans-serif", CHALK, 'left', 10, a);
+    var lines=wrap(chap.sub, "28px 'Share Tech Mono', monospace", 760);
+    for(var i=0;i<Math.min(lines.length,4);i++)
+      T(lines[i], 44, 1516+i*32, "28px 'Share Tech Mono', monospace", 'rgba(242,238,226,0.62)', 'left', 0, a);
+    y=1650;
+  }
+  ctx.save();
+  for(var r=0;r<rows.length;r++){
+    T(rows[r][0], 44, y+r*42, "24px 'Share Tech Mono', monospace", 'rgba(242,238,226,0.34)', 'left', 2);
+    T(rows[r][1], 300, y+r*42, "34px 'Share Tech Mono', monospace", rows[r][2], 'left', 1);
+  }
+  if(chap){
+    var fr=fmtRate(chap.rate), sped = chap.rate>=1;
+    T('TIMELAPSE', 44, y+84, "24px 'Share Tech Mono', monospace", 'rgba(242,238,226,0.34)', 'left', 2);
+    T(fr[0]+' '+fr[1], 300, y+84, "34px 'Share Tech Mono', monospace", sped?PINK:TEAL, 'left', 1);
+  }
+  T('c', 44, y+132, "24px 'Share Tech Mono', monospace", 'rgba(0,255,198,0.55)', 'left', 2);
+  T('299,792,458 m/s', 300, y+132, "34px 'Share Tech Mono', monospace", TEAL, 'left', 1);
+  T('— never once changed', 610, y+132, "28px 'Caveat', cursive", 'rgba(0,255,198,0.55)', 'left', 0);
+  ctx.restore();
+}
+
+function titleCard(t){
+  var a = t<0.35 ? smooth(t/0.35) : smooth(clamp((1.55-t)/0.45,0,1));
+  if(a<=0.01) return;
+  ctx.save(); ctx.globalAlpha=a;
+  headline('YOUR LIFE', 880, 132, a, 14);
+  headline('AT LIGHT SPEED', 1010, 132, a, 14);
+  roughLine(170, 210, 1058, 870, 1058, 5, PINK, 4.5, clamp((t-0.30)/0.7,0,1));
+  T('one photon · one straight line · a camera that keeps backing away',
+    CW/2, 1132, "38px 'Caveat', cursive", 'rgba(242,238,226,0.60)', 'center', 0, a);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function payoff(t){
+  var a=smooth(clamp((t-17.45)/0.7,0,1));
+  if(a<=0.01) return;
+  ctx.save();
+  ctx.globalAlpha=a*0.93; ctx.fillStyle=PAPER; ctx.fillRect(0,660,CW,600);
+  ctx.globalAlpha=a;
+  headline('LIGHT NEVER SLOWED DOWN.', 850, 92, a, 7);
+  headline('SPACE JUST KEPT GOING.',   952, 92, a, 7);
+  roughLine(180, 250, 1000, 830, 1000, 4.5, PINK, 4, clamp((t-17.9)/0.8,0,1));
+  var lines=wrap('The fastest thing there is — and it still spends its whole life in transit. (Same.)',
+                 "36px 'Caveat', cursive", 820);
+  for(var i=0;i<lines.length;i++)
+    T(lines[i], CW/2, 1062+i*46, "36px 'Caveat', cursive", 'rgba(242,238,226,0.72)', 'center', 0, a);
+  T('SIGNAL RECEIVED.', CW/2, 1196, "32px 'Share Tech Mono', monospace", TEAL, 'center', 5, a*smooth(clamp((t-18.5)/0.6,0,1)));
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   FRAME
+   ============================================================ */
+var startT=null, paused=false, pauseAt=0;
+function frame(now){
+  if(startT===null) startT=now;
+  var t = paused ? pauseAt : (now-startT)/1000;
+  if(t>=TOTAL){ startT=now; t=0; trail.length=0; }
+  BOIL = Math.floor(t*10);                       // ten drawings a second
+
+  var d = distAt(t);
+  camAt(t, RE+d);
+  var chap = chapterAt(t);
+  var vh = cam.vh;
+
+  paper();
+  stars(t, vh, smooth(clamp((t-4.2)/1.6,0,1)));
+
+  var earthA = smooth(clamp((t-1.0)/0.6,0,1));
+  var moonA  = smooth(clamp((t-8.9)/0.9,0,1));
+  var sunA   = smooth(clamp((t-12.9)/0.9,0,1));
+  var youA   = smooth(clamp((t-1.05)/0.55,0,1)) * smooth(clamp((5.4-t)/0.8,0,1));
+  var pinA   = smooth(clamp((t-5.0)/0.7,0,1)) * smooth(clamp((10.2-t)/0.9,0,1));
+
+  drawSun(sunA, t);
+  drawMoon(moonA);
+  drawEarth(earthA, t);
+  drawYou(youA);
+  if(t>1.15) drawPhoton(t, d, smooth(clamp((t-1.15)/0.35,0,1)));
+  youArePin(pinA);
+
+  if(moonA>0.2 && vh<2e9)  labelBody('the moon', DMOON, moonA*smooth(clamp((13.4-t)/0.8,0,1)), 0);
+  if(sunA>0.2)             labelBody('the sun',  DSUN,  sunA*0.9*smooth(clamp((17.5-t)/0.5,0,1)), 0);
+  if(earthA>0.2 && vh>1e8) labelBody('earth',    0,     smooth(clamp((t-9.9)/0.8,0,1))*0.9*smooth(clamp((17.5-t)/0.5,0,1)), 0);
+
+  scaleBar(smooth(clamp((t-5.7)/1.0,0,1)) * smooth(clamp((17.3-t)/0.6,0,1)));
+  scrim();
+  watermark(); footer();
+  if(t>1.2) hud(t, d, chap);
+  titleCard(t);
+  payoff(t);
+
+  requestAnimationFrame(frame);
+}
+
+addEventListener('keydown', function(e){
+  if(e.code==='Space'){ e.preventDefault();
+    if(!paused){ paused=true; pauseAt=(performance.now()-startT)/1000; }
+    else { paused=false; startT=performance.now()-pauseAt*1000; } }
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); trail.length=0; paused=false; }
+});
+function boot(){ requestAnimationFrame(frame); }
+if(document.fonts && document.fonts.ready)
+  Promise.race([document.fonts.ready, new Promise(function(r){ setTimeout(r,1500); })]).then(boot);
+else boot();
+</script>
+</body>
+</html>

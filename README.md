@@ -24,6 +24,12 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 | 014 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
 | 015 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
 
+**Wing 05 — SIGNAL: THE MATH** (items 016&ndash;030) is a separate shelf in the vault: self-running loops built on real math and physics, sized 1080&times;1920 and made to be screen-recorded straight into an episode.
+
+| # | Artifact | What it does |
+|---|---|---|
+| 030 | [Your Life at Light Speed](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_signal_lightspeed.html) | One photon leaves your feet and runs to the Sun — you &rarr; Earth &rarr; Moon &rarr; Sun, hand-drawn on chalk, camera backing away the whole time. ~20 sec, loops. The speed never changes; the room does. SPACE pauses, R restarts |
+
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
 ## How this repo works
