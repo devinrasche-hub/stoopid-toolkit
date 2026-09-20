@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!--
+    STOOPID MOTION DIRECTOR — system-chrome sprite.
+    Generic UI primitives for the "cheap system dialog appearing inside reality" register:
+    reality admits it is a system. All strokes are currentColor so a piece sets the palette.
+    Use: <svg><use href="ui-kit.svg#dialog"/></svg>, or inline the symbol you need to keep
+    the artifact self-contained (preferred — artifacts ship as ONE file).
+    NOT brand assets. The STOOPID wordmark and the Eye mark are not here on purpose — see README.md.
+  -->
+  <defs>
+    <symbol id="dialog" viewBox="0 0 200 120">
+      <rect x="1" y="1" width="198" height="118" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="1" y="1" width="198" height="20" fill="currentColor" opacity="0.18"/>
+      <path d="M178 5 L192 17 M192 5 L178 17" stroke="currentColor" stroke-width="2" fill="none"/>
+      <rect x="118" y="88" width="68" height="22" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="14" y="88" width="68" height="22" fill="none" stroke="currentColor" stroke-width="2" opacity="0.45"/>
+    </symbol>
+
+    <symbol id="progress" viewBox="0 0 200 24">
+      <rect x="1" y="1" width="198" height="22" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="5" y="5" width="120" height="14" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="checkbox" viewBox="0 0 32 32">
+      <rect x="1" y="1" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M7 17 L14 24 L26 8" fill="none" stroke="currentColor" stroke-width="3"/>
+    </symbol>
+
+    <symbol id="toggle" viewBox="0 0 64 32">
+      <rect x="1" y="1" width="62" height="30" rx="15" fill="none" stroke="currentColor" stroke-width="2"/>
+      <circle cx="47" cy="16" r="10" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="cursor" viewBox="0 0 24 32">
+      <path d="M2 2 L2 26 L8 20 L12 30 L16 28 L12 19 L20 19 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+    </symbol>
+
+    <symbol id="spinner" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.25"/>
+      <path d="M24 4 A20 20 0 0 1 44 24" fill="none" stroke="currentColor" stroke-width="4"/>
+    </symbol>
+
+    <symbol id="ticket" viewBox="0 0 120 80">
+      <path d="M1 1 H119 V79 H1 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M1 26 H119" stroke="currentColor" stroke-width="2" stroke-dasharray="6 6"/>
+      <text x="60" y="64" font-family="'Share Tech Mono',monospace" font-size="34" text-anchor="middle" fill="currentColor">000</text>
+      <text x="60" y="19" font-family="'Share Tech Mono',monospace" font-size="12" text-anchor="middle" fill="currentColor" opacity="0.7">NOW SERVING</text>
+    </symbol>
+
+    <symbol id="formrow" viewBox="0 0 200 40">
+      <text x="2" y="14" font-family="'Share Tech Mono',monospace" font-size="11" fill="currentColor" opacity="0.7">FIELD</text>
+      <rect x="1" y="18" width="198" height="21" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+
+    <symbol id="stamp-frame" viewBox="0 0 240 90">
+      <rect x="4" y="4" width="232" height="82" fill="none" stroke="currentColor" stroke-width="5"/>
+      <rect x="14" y="14" width="212" height="62" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+
+    <symbol id="doc-label" viewBox="0 0 220 40">
+      <path d="M1 1 H219 V39 H1 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M1 1 H60 V39 H1 Z" fill="currentColor" opacity="0.2"/>
+    </symbol>
+  </defs>
+</svg>

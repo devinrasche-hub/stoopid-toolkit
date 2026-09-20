@@ -8,7 +8,8 @@ the shape of the request; don't read all four.
 - [Example 1 — observation → 8s seamless loop](#example-1--observation--8s-seamless-loop)
 - [Example 2 — concept → 20s explainer](#example-2--concept--20s-explainer)
 - [Example 3 — script beat → video-gen prompt sheet](#example-3--script-beat--video-gen-prompt-sheet)
-- [Example 4 — "what's the visual for this?" → three metaphors](#example-4--whats-the-visual-for-this--three-metaphors)
+- [Example 4 — "what's the visual for this?" → a premise set](#example-4--whats-the-visual-for-this--a-premise-set)
+- [Example 5 — a control string → a dialed piece](#example-5--a-control-string--a-dialed-piece)
 - [Anti-examples](#anti-examples)
 
 ---
@@ -17,12 +18,15 @@ the shape of the request; don't read all four.
 
 **Input:** "Everyone says they're 'almost done' and then works another four hours."
 
-### Intake gate
-1. **One idea:** "almost done" is a permanent state, not a progress report.
-2. **Ordinary world:** a progress bar filling toward the end of its track.
-3. **Changed rule:** the bar fills normally, but the track extends every time it nears the end.
-4. **Flip:** the pull-back — the track is a loop, and it has been going around a circle the whole time.
-5. **Length / aspect / loop:** 8s · 9:16 · seamless (narrative loop, release becomes hook).
+### Internal plan (not shown to the user)
+```
+THESIS:         "almost done" is a permanent state, not a progress report
+VISUAL PREMISE: a progress bar whose track extends every time it nears the end
+FLIP:           pull-back — the track is a circle; it has been going around the whole time
+FINAL IMAGE:    the bar chasing its own tail, still reporting 80%
+```
+**Controls:** `LOOPABLE yes · LENGTH 8s · ASPECT 9:16 · ABSURDITY 3 · SINCERITY 1 · CHAOS 1`
+(LOOP mode, so the aspect defaults vertical.)
 
 ### Shot list
 ```
@@ -70,12 +74,15 @@ canvas trail survives the wrap.
 
 **Input:** "Explain why adding one more lane doesn't fix traffic."
 
-### Intake gate
-1. **One idea:** more capacity attracts more demand until it's congested again.
-2. **Ordinary world:** a road with cars moving at a normal rate.
-3. **Changed rule:** none needed — reality already contains the absurdity. The absurd party is the *intuition*, and the flip reveals that. (Explainers often invert the pattern this way.)
-4. **Flip:** the reversal — the new lane is full, and the queue is longer than before.
-5. **Length / aspect / loop:** 20s · 16:9 (horizontal beats a horizontal subject) · lands, no loop.
+### Internal plan (not shown to the user)
+```
+THESIS:         more capacity attracts more demand until it's congested again
+VISUAL PREMISE: none needed — reality already contains the absurdity. The absurd party is the
+                INTUITION, and the flip exposes it. (Explainers often invert the pattern.)
+FLIP:           reversal — the new lane is full and the on-ramp queue is longer than before
+FINAL IMAGE:    a wider road with a longer line
+```
+**Controls:** `EDUCATION 5 · ABSURDITY 2 · SINCERITY 2 · LENGTH 20s · ASPECT 16:9 · LOOPABLE no`
 
 ### Beat plan (teaching pattern: *break it on purpose*, run honestly)
 | Time | Beat | On screen |
@@ -103,13 +110,16 @@ the honest result and the better-looking one. Hand-animating congestion looks wr
 
 **Input:** a script line — *"I answered one email. The inbox added three."*
 
-### Intake gate
-1. **One idea:** clearing the queue is what refills the queue.
-2. **Ordinary world:** a desk, a paper tray, an ordinary person doing ordinary work.
-3. **Changed rule:** every sheet removed from the tray causes three more to arrive.
-4. **Flip:** the obedience punchline — the delivery system is working perfectly, forever, and the room is now full.
-5. **Length / aspect / loop:** 15s · 9:16 · cut-on-hit loop.
-6. **Build:** generated plates (shots 1–4) + coded overlay (counter, stamp), composited in the edit.
+### Internal plan (not shown to the user)
+```
+THESIS:         clearing the queue is what refills the queue
+VISUAL PREMISE: every sheet removed from the tray causes three more to arrive
+FLIP:           obedience punchline — the delivery system is working perfectly, forever
+FINAL IMAGE:    a room full of paper, still being fed from above
+```
+**Controls:** `LOOPABLE yes (cut-on-hit) · LENGTH 15s · ASPECT 9:16 · ABSURDITY 4 · CHAOS 3 ·
+DEV ON SCREEN no` (so: hands and objects, never a face).
+**Build:** generated plates (shots 1–4) + coded overlay (counter, stamp), composited in the edit.
 
 ```
 STYLE BLOCK (paste verbatim into every prompt):
@@ -161,34 +171,34 @@ the generator: rooms, paper physics, scale. That split is the point.
 
 ---
 
-## Example 4 — "what's the visual for this?" → three metaphors
+## Example 4 — "what's the visual for this?" → a premise set
 
 **Input:** "What's the visual for doing unpaid emotional labor?"
 
 ```
-OPTION A — THE COVER CHARGE
+PREMISE A — THE COVER CHARGE
   WORLD: a turnstile at the entrance to an ordinary room
-  CHANGED RULE: the turnstile only counts people going IN; nobody is ever billed on the way out
+  IMPOSSIBLE RULE: the turnstile only counts people going IN; nobody is ever billed on the way out
   ESCALATION AXIS: count — the counter climbs while the room's single occupant keeps holding the door
   FLIP: cost reveal — cut to the ledger, every line reading 0.00 next to a full tally
   WHY IT'S TRUE: the work is measured and still unpriced
-  COST TO BUILD: low (counter + door + ledger; all code, no assets)
+  COST: low (counter + door + ledger; all code, no assets)
 
-OPTION B — THE SECOND SHIFT
+PREMISE B — THE SECOND SHIFT
   WORLD: a normal workday clock running 9 to 5
-  CHANGED RULE: at 5:00 the hands keep going, but only for one person in the frame
+  IMPOSSIBLE RULE: at 5:00 the hands keep going, but only for one person in the frame
   ESCALATION AXIS: formality — the extra hours acquire timestamps, then forms, then an entire department
   FLIP: the persistence — everyone else's clock has stopped; theirs keeps ticking, and they keep working
   WHY IT'S TRUE: it doesn't end when the paid part ends
-  COST TO BUILD: medium (clock mechanics, multiple figures)
+  COST: medium (clock mechanics, multiple figures)
 
-OPTION C — THE CARRY
+PREMISE C — THE CARRY
   WORLD: someone walking down an ordinary hallway
-  CHANGED RULE: every door they pass adds one box to their arms, and no door ever takes one back
+  IMPOSSIBLE RULE: every door they pass adds one box to their arms, and no door ever takes one back
   ESCALATION AXIS: cost — the walk gets slower, the stack gets taller, the hallway doesn't end
   FLIP: pull-back — the hallway is a loop and the boxes are the walls
   WHY IT'S TRUE: it accumulates invisibly and becomes the structure you live in
-  COST TO BUILD: medium-high (stacking physics, walk cycle)
+  COST: medium-high (stacking physics, walk cycle)
 
 RECOMMEND: A — it's shippable today, the counter carries the escalation without a word of text,
 and the ledger flip is exact, which makes it funnier. C is the better 30-second piece if there's
@@ -196,7 +206,50 @@ time for the stacking physics.
 ```
 
 Note that all three are *the same idea*, staged three ways — not three different ideas. That's
-what a metaphor set is for.
+what a premise set is for. The generator's method lives in `stoopid-dna.md`.
+
+---
+
+## Example 5 — a control string → a dialed piece
+
+**Input:** *"STOOPID animate why we can't remember what we watched after scrolling for an hour.
+Absurdity 4. Education 5. Sincerity 2. 18 seconds."*
+
+### Resolved controls
+`ABSURDITY 4 · EDUCATION 5 · SINCERITY 2 · CHAOS 2 (default) · LOOPABLE no · DEV ON SCREEN no ·
+LENGTH 18s · ASPECT 16:9` — state this line back at handoff so it can be re-dialed.
+
+What the dials actually do to this piece:
+- **ABSURDITY 4** — the impossible rule doesn't stay on one object; the environment reorganizes
+  around it. So: things that have been watched don't just vanish, the *room* starts removing them.
+- **EDUCATION 5** — the concept (encoding fails without attention and consolidation; rapid novelty
+  keeps overwriting the buffer) must survive every joke being cut. So the mechanism is built first:
+  a visible short buffer of fixed size, items entering faster than they can be written to storage.
+- **SINCERITY 2** — deadpan release, no warmth, no lesson stated out loud.
+- **CHAOS 2** — one dominant action at a time even though the frame gets full.
+
+### Internal plan (not shown to the user)
+```
+THESIS:         novelty arrives faster than memory can write, so nothing gets stored
+VISUAL PREMISE: a small shelf with exactly seven slots; new items shove old ones off the end
+                before a tiny worker can finish labeling them
+FLIP:           pull back — the floor behind the shelf is knee-deep in unlabeled items
+FINAL IMAGE:    the worker still reaching for a label, mid-air, as another item lands
+```
+
+### Beat plan (18s, 16:9)
+| Time | Beat | On screen |
+|---|---|---|
+| 0–3s | Hook | One item lands on the shelf. A worker labels it calmly. It slides into storage. The system works. |
+| 3–9s | Escalation | Items arrive faster. The worker gets one label out of three, then one out of ten. Items shove each other off the shelf's end. Red cost bar appears. |
+| 9–14s | Flip | All motion stops except the falling items. Camera pulls back: the floor is buried in unlabeled items, none of which reached storage. Burnt orange, once, on the storage door that never opened. |
+| 14–18s | Release | Push back in. The worker reaches for one more label. An item lands on their hand. Cut. |
+
+### Why this passes EDUCATION 5
+Cut every joke — the worker, the shoving, the burial — and what remains is still a correct model:
+fixed-capacity buffer, arrival rate exceeding write rate, items displaced before transfer. The
+jokes are built around that, not in place of it. The honesty rules apply: the buffer size is
+labelled `SCHEMATIC · NOT TO SCALE`, and no invented statistic appears anywhere.
 
 ---
 
@@ -229,12 +282,41 @@ Nobody says anything. The viewer does the work, which is why they remember it.
 ### The pretty-and-empty trap
 **Wrong:** a beautifully eased particle system in the palette with perfect type and no idea. It
 will get compliments and zero comments.
-**Right:** check the intake gate. If blank 1 or blank 4 is empty, you have a texture, not a piece
-— say so and propose the idea that would make it one.
+**Right:** check the internal plan. If THESIS or FLIP is empty, you have a texture, not a piece —
+say so in a sentence and propose the idea that would make it one.
 
 ---
 
-> **[CREATOR INPUT NEEDED]** — replace or supplement these with real worked examples once Dev
-> has run the skill a few times: a bit that worked, a bit that didn't, and one educational piece,
-> each with its intake gate filled in as he'd actually fill it. Real examples teach the voice;
-> these generic ones only teach the structure.
+---
+
+## Curation log
+
+This is how the skill gets Dev-coded instead of merely competent. It grows by curation, not
+training. After each piece, add one line here, then push the principle into the file that owns it.
+
+```
+### <date> · <piece> · WORKED
+PRINCIPLE: <the one thing that made it land>
+FILED TO: <stoopid-dna.md | motion-grammar.md | story-grammar.md | visual-language.md | ...>
+
+### <date> · <piece> · MISSED
+WHY IT WASN'T STOOPID: <the specific failure, not "it felt off">
+RULE ADDED: <the new forbidden default or lexicon entry that prevents a repeat>
+FILED TO: <file>
+```
+
+Rules for the log:
+- A "worked" entry with no extractable principle is a compliment, not data — dig until there's a rule.
+- A "missed" entry must end in a rule, or the same failure returns next week.
+- When the same principle shows up three times, promote it from this log into SKILL.md.
+- Twenty to thirty curated entries is the threshold where the skill stops being a style guide and
+  starts being a brain.
+
+*(Empty — awaiting the first real runs.)*
+
+---
+
+> **[CREATOR INPUT NEEDED]** — replace or supplement these with real worked examples once Dev has
+> run the skill a few times: a bit that worked, a bit that didn't, and one educational piece, each
+> with its internal plan filled in as he'd actually fill it. Real examples teach the voice; these
+> generic ones only teach the structure.

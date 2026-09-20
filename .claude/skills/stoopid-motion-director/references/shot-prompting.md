@@ -1,8 +1,15 @@
-# External Video-Generation Prompting
+# Shot Prompting — external video generators
 
-For when the deliverable is prompts rather than code — text-to-video / image-to-video tools
-(Sora, Veo, Kling, Runway, Grok Imagine, Luma and the rest). Read this before writing any
-video prompt sheet.
+GENERATION mode: the deliverable is prompts rather than code, for text-to-video / image-to-video
+tools (Grok Imagine, Sora, Veo, Kling, Runway, Luma and the rest). Read this before writing any
+prompt sheet.
+
+**The governing principle, which is Dev's own prompting standard:**
+
+> A scene is constructed from shots. It is not generated as one giant idea.
+
+So the order is always: write the idea → break it into micro-moments → generate each one
+separately → edit them into sequence. Every rule below follows from that.
 
 ## Contents
 - [What these tools are for](#what-these-tools-are-for)
@@ -41,7 +48,7 @@ strongest and cheapest route. Say so when it applies, and specify which layer is
 
 ## One action per clip
 
-**The single most important rule.** One clip = one continuous action, one camera move, one
+**The single most important rule, and the direct consequence of "scenes are built from shots."** One clip = one continuous action, one camera move, one
 subject, no cuts inside it. Prompts that request a sequence ("then it falls, then the crowd
 reacts, then we see the sign") produce mush in every generator family.
 
@@ -95,6 +102,12 @@ Also in the kit:
 - **Environment card** — the location described the same way every time.
 - **Seed / reference discipline** — reuse the same seed and, where the tool supports it, the same reference image across shots. Note in the sheet that consistency comes from the reference, not from the wording.
 - **Time-of-day lock** — state it in every prompt; generators drift toward golden hour.
+
+**Anchor the subject, not just the style.** A recurring subject needs a fixed anchor repeated
+verbatim in every shot: the same noun, the same two or three physical attributes, the same
+clothing, the same reference image or seed. Rotating adjectives ("a man," "a guy in a jacket,"
+"the same man") produce three different people. Write the anchor once at the top of the sheet and
+paste it, unchanged, into each prompt.
 
 Accept the truth: **cross-shot character consistency is unreliable.** Design the piece so it
 doesn't depend on it — favor objects, silhouettes, backs of heads, hands, environments, or a

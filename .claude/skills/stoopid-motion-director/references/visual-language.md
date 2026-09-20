@@ -10,6 +10,7 @@ a piece to another aspect ratio.
 - [Texture and surface](#texture-and-surface)
 - [Composition](#composition)
 - [Aspects — re-block, never crop](#aspects--re-block-never-crop)
+- [The STOOPID symbol lexicon](#the-stoopid-symbol-lexicon)
 - [Safe areas](#safe-areas)
 - [Chrome and watermark](#chrome-and-watermark)
 - [Legibility and accessibility](#legibility-and-accessibility)
@@ -84,6 +85,7 @@ subordinate to the motion.
 ## Aspects — re-block, never crop
 
 An aspect change is a **re-staging**, not a crop. Motion axes and blocking change with the frame.
+**16:9 is the default**; LOOP mode defaults to 9:16, because a seamless social loop exists for the feed.
 
 | | 9:16 (1080×1920) | 16:9 (1920×1080) | 1:1 (1080×1080) |
 |---|---|---|---|
@@ -104,6 +106,41 @@ Practical method for adapting an existing piece:
 Implementation: build the stage at true pixel size with a `STAGE = {w, h}` constant and derive
 every position from `STAGE.w`/`STAGE.h` (or fractions of them). Then an aspect switch is one
 constant plus a re-blocking pass — which is exactly why hard-coded coordinates are banned.
+
+## The STOOPID symbol lexicon
+
+The long game: recurring objects that always mean the same thing, so a viewer who has seen ten
+pieces reads the eleventh faster. A shared vocabulary is what makes a body of work feel like a
+show instead of a playlist.
+
+Each entry needs three things: **what it is**, **what it always means**, and **how it moves**.
+Motion is part of the definition — the same object moving differently is a different symbol.
+
+Candidate vocabulary (raised by Dev; these are staging slots, not show canon):
+
+| Object | Reads as | Motion signature |
+|---|---|---|
+| Notifications | Demand that accumulates | Arrive in threes; gain weight the longer they're ignored |
+| Waiting rooms | A system making you the patient one | Nothing moves but a number; the calm anchor sits still |
+| Orange dots | Something unresolved and yours | Pulse slowly; never leave on their own |
+| Wet carpet | Damage already done, still spreading | Advances a few pixels per beat; never retreats |
+| Loading indicators | Time being taken from you | Fill smoothly, reset unfairly |
+| Corporate forms | Absurdity with paperwork | Stamp, file, total — always precise |
+| Nature-documentary labels | Being observed as a specimen | Type on in mono, hold, fade |
+| Cheap system dialogs | Reality admitting it's a system | Snap in at 90ms, sit where they don't belong |
+| Things becoming literal | A metaphor cashing its check | The change happens *physically*, mid-shot |
+
+Rules for growing the lexicon:
+- **One meaning per object.** A symbol that means two things means nothing.
+- **Define the motion, not just the look.** "Orange dot" is a shape; "orange dot that pulses and
+  won't leave" is a symbol.
+- **Add only what has been used and worked.** The lexicon is a record, not a wish list.
+- Never invent a symbol *as* show canon. Until Dev confirms one, it's a staging device.
+
+> **[CREATOR INPUT NEEDED]** — confirm which of the above are already established in real pieces,
+> what each one means to him, and what's missing (signal loss, reality breaking, home/family, and
+> THE ALGORITHM each want their own motion grammar). Add confirmed entries with the piece they
+> came from. This table is the highest-value thing in the skill to fill in.
 
 ## Safe areas
 

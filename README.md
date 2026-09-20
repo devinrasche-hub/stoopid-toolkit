@@ -33,7 +33,7 @@ opened on this repo, and the folder can be zipped and uploaded as a skill anywhe
 
 | Skill | What it does |
 |---|---|
-| [`stoopid-motion-director`](.claude/skills/stoopid-motion-director/SKILL.md) | The animation department — turns an idea, joke, concept or script beat into a working 5–30s animation: HTML/SVG/CSS/JS artifacts, explainers, visual metaphors, storyboards, micro-shots, seamless loops, 16:9 / 9:16 / 1:1 adaptations, and prompts for external video generators. Starter scaffold at `assets/animation-template.html`; test prompts at `evals/eval-prompts.md`. |
+| [`stoopid-motion-director`](.claude/skills/stoopid-motion-director/SKILL.md) | The animation department — turns an idea, joke, concept or script beat into a working 5–30s animation. Six output modes (ARTIFACT · STORYBOARD · GENERATION · CONCEPT · LOOP · EXPLAINER), a visual premise generator that stages every idea three ways before building, and dials you can set per request: `ABSURDITY 4. EDUCATION 5. SINCERITY 2. 18 seconds.` Working templates in `templates/`; test prompts in `evals/eval-prompts.md`. |
 
 Sections marked **[CREATOR INPUT NEEDED]** are waiting on real examples from Dev — they are
 deliberately blank rather than filled with invented canon.

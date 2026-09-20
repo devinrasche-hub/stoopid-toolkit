@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STOOPID — MOTION TEMPLATE</title>
+<title>STOOPID — ANIMATION TEMPLATE</title>
 <!--
-  STOOPID MOTION DIRECTOR — starter scaffold. Adapt it; never ship it unchanged.
+  STOOPID MOTION DIRECTOR — general animation scaffold (ARTIFACT mode).
+  Adapt it; never ship it unchanged. Siblings: explainer.html, social-loop.html.
   What it gives you:
     · one clock (t seconds) driving every beat            · named beat constants
     · seamless loop by modulo, no accumulated state       · 9:16 / 16:9 / 1:1 re-blocking
@@ -37,10 +38,15 @@
 const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', PURPLE='#8A2BE2',
       RED='#FF2D2D', ORANGE='#CC5500';               // ORANGE = the flip landing, once
 
+/* ---------- CONTROLS — the dials, wired to real parameters ----------
+   Change these first. Each one should visibly change the piece; if a dial does nothing,
+   it isn't wired, and the piece isn't really dialable.                                   */
+const CONTROLS={ ABSURDITY:4, SINCERITY:2, CHAOS:2, EDUCATION:1, LOOPABLE:true, DEV_ON_SCREEN:false };
+
 /* ---------- BEATS (seconds) — retime the piece here and nowhere else ---------- */
-const HOOK=1.4, ESC=4.2, FLIP=2.6, REL=1.8;
-const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;   // 10.0s
-let LOOP=true;
+const HOOK=3.0, ESC=6.0, FLIP=5.0, REL=4.0;                                 // 18s default runtime
+const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;
+let LOOP=CONTROLS.LOOPABLE;
 
 /* ---------- STAGE — every position derives from these, so an aspect switch is one line ---------- */
 // Each aspect carries its OWN blocking. An aspect change is a re-staging, not a crop:
@@ -52,12 +58,12 @@ const ASPECTS={
           counterY:.135, labelY:.168, stampY:.76},
   '16:9':{w:1920,h:1080, slotW:.10, slotH:.42, floor:.80, gx:.40, gy:.48, pull:.40,
           cols:[-1.5,-.5,.5,1.5], rows:[-1,0,1], cy:.57,
-          counterY:.115, labelY:.155, stampY:.95},
+          counterY:.14,  labelY:.185, stampY:.95},
   '1:1' :{w:1080,h:1080, slotW:.17, slotH:.36, floor:.78, gx:.58, gy:.56, pull:.38,
           cols:[-1,0,1], rows:[-1,0,1], cy:.48,
           counterY:.11,  labelY:.155, stampY:.90}
 };
-let ASPECT='9:16', STAGE=ASPECTS[ASPECT];
+let ASPECT='16:9', STAGE=ASPECTS[ASPECT];   // 16:9 is the house default; LOOP pieces start 9:16
 
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 function setAspect(name){
@@ -86,7 +92,9 @@ function fitText(txt,maxW,face,size,track){
 /* ---------- PIECE GEOMETRY (fractions of the stage — never hard-coded pixels) ---------- */
 // DEMO CONTENT — replace all of this. Spine: one slot fills, faster and faster (escalation),
 // then we pull back and every slot in the grid was doing the same thing (flip: pull-back).
-const DROPS=12;
+const DROPS=8+CONTROLS.ABSURDITY*2;            // ABSURDITY: how far the impossible rule propagates
+const OFFSET = CONTROLS.CHAOS>=3 ? 1 : 0;      // CHAOS: do the other cells run out of step, or in lockstep
+const FLIP_HOLD = 0.6+CONTROLS.SINCERITY*0.1;  // SINCERITY: how long the flip is allowed to sit
 function dropTime(i){                                  // escalation = the same event, faster
   const f=i/(DROPS-1);
   return T_HOOK*0.4 + (T_ESC-T_HOOK*0.4) * (1-Math.pow(1-f,1.9));
@@ -150,7 +158,7 @@ function draw(t){
     S.rows.forEach(r=>S.cols.forEach(q=>{
       if(!r && !q) return;                             // the hero column already holds the centre
       ctx.save(); ctx.translate(q*gx, r*gy);
-      drawColumn(t, fp*0.75, (q*0.31+r*0.17));         // same rule, everywhere, slightly offset
+      drawColumn(t, fp*0.75, OFFSET*(q*0.31+r*0.17));  // same rule everywhere; CHAOS decides the stagger
       ctx.restore();
     }));
   }
@@ -170,8 +178,9 @@ function draw(t){
   ctx.restore();
 
   // RELEASE — the stamp: 90ms snap, then stillness
-  if(t>=T_FLIP){
-    const sp=Math.min(1,p(t,T_FLIP,T_FLIP+0.09));
+  const T_STAMP=T_FLIP+FLIP_HOLD;                  // SINCERITY buys the flip a longer silence first
+  if(t>=T_STAMP){
+    const sp=Math.min(1,p(t,T_STAMP,T_STAMP+0.09));
     const stamp='PLACEHOLDER STAMP';
     ctx.save(); ctx.translate(S.w/2,S.h*S.stampY); ctx.rotate(-0.035);
     ctx.scale(overshoot(sp),overshoot(sp));

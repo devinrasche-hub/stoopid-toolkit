@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID — EXPLAINER TEMPLATE</title>
+<!--
+  STOOPID MOTION DIRECTOR — EXPLAINER scaffold (EDUCATION 4–5).
+  The teaching pattern here is SAME START, SAME FINISH: two agents, one differing rule,
+  and the whole lesson is which one arrives first.
+
+  Non-negotiables this file demonstrates:
+    · the mechanism RUNS from its real formula — the outcome is not hand-animated
+    · labels arrive AFTER the motion they name
+    · zero baseline, proportional rates, SCHEMATIC label when the model is simplified
+    · the surprising part gets the longest hold
+    · release is one plain true line on a still frame
+  Swap the two rate functions and the copy; keep the structure.
+  Controls: SPACE replay · ?t=8.5 freeze on a frame
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;width:100vw;height:auto;max-height:100vh;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1920" height="1080"></canvas></div>
+<div id="warm"><span style="font-family:'Bebas Neue'">B</span><span style="font-family:'Share Tech Mono'">M</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', PURPLE='#8A2BE2', RED='#FF2D2D', ORANGE='#CC5500';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const S={w:cv.width,h:cv.height}, U=Math.min(S.w,S.h);
+
+/* ---------- BEATS (seconds) — 20s explainer budget ---------- */
+const SETUP=2.0, QUESTION=2.0, RUN=9.0, RESULT=3.0, LINE=4.0;
+const T_SETUP=SETUP, T_Q=T_SETUP+QUESTION, T_RUN=T_Q+RUN, T_RES=T_RUN+RESULT, TOTAL=T_RES+LINE;
+
+/* ---------- THE MECHANISM — replace these two functions, keep everything else ----------
+   Both are pure f(progress) in 0..1, so the race is reproducible, scrubbable and honest.
+   A: steady rate.  B: doubling rate.  Same start, same clock, same finish line.           */
+const RATE_A = x => 0.72*x;                                  // steady
+const RATE_B = x => (Math.pow(2, 6*x)-1)/(Math.pow(2,6)-1);  // compounding
+const LABEL_A='STEADY', LABEL_B='COMPOUNDING';
+const PLAIN_LINE='SLOW FOR A LONG TIME. THEN NOT.';          // placeholder copy — replace
+
+/* ---------- helpers ---------- */
+const p=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const easeOut=x=>1-Math.pow(1-x,3);
+const lerp=(a,b,x)=>a+(b-a)*x;
+function font(size,face){ ctx.font=size+"px '"+face+"', "+(face==='Bebas Neue'?'Impact, sans-serif':'monospace'); }
+function ls(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+
+/* ---------- LAYOUT — fractions of the stage, never hard pixels ---------- */
+const L={ x0:S.w*0.14, x1:S.w*0.86, yA:S.h*0.40, yB:S.h*0.60, r:U*0.022 };
+
+function track(y,label,show){
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=Math.max(1,U*0.002);
+  ctx.beginPath(); ctx.moveTo(L.x0,y); ctx.lineTo(L.x1,y); ctx.stroke();
+  // zero baseline and finish line, both marked — honesty is part of the design
+  [L.x0,L.x1].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,y-U*0.035); ctx.lineTo(x,y+U*0.035); ctx.stroke(); });
+  if(show>0){                                   // the label arrives AFTER the motion it names
+    ctx.globalAlpha=show; ctx.fillStyle=WHITE; ctx.textAlign='left';
+    font(U*0.028,'Share Tech Mono'); ls(2);
+    ctx.fillText(label, L.x0, y-U*0.055); ls(0);
+  }
+  ctx.restore();
+}
+
+function runner(x,y,color,glow){
+  ctx.save();
+  ctx.fillStyle=color; if(glow){ ctx.shadowColor=color; ctx.shadowBlur=U*0.03; }
+  ctx.beginPath(); ctx.arc(x,y,L.r,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function draw(t){
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,S.w,S.h);
+
+  // the run: one honest progress value shared by both agents
+  const x = easeOut(p(t,T_Q,T_RUN));                 // 0..1 across the RUN beat
+  const a = RATE_A(x), b = RATE_B(x);
+  const ax = lerp(L.x0,L.x1,a), bx = lerp(L.x0,L.x1,b);
+
+  const showLabels = p(t, T_Q+1.2, T_Q+2.0);         // motion first, name second
+  track(L.yA, LABEL_A, showLabels);
+  track(L.yB, LABEL_B, showLabels);
+
+  // the question, posed physically: both start at the same place at the same time
+  if(t<T_Q){
+    ctx.save(); ctx.globalAlpha=1-p(t,T_Q-0.5,T_Q);
+    ctx.strokeStyle=PURPLE; ctx.lineWidth=Math.max(1,U*0.002); ctx.setLineDash([U*0.01,U*0.01]);
+    ctx.beginPath(); ctx.moveTo(L.x0,L.yA-U*0.05); ctx.lineTo(L.x0,L.yB+U*0.05); ctx.stroke();
+    ctx.restore();
+  }
+
+  runner(ax,L.yA,TEAL,false);
+  runner(bx,L.yB, b>a?ORANGE:PURPLE, b>a);           // orange only once B has actually taken the lead
+
+  // the gap, made visible — the thing the viewer is meant to read
+  if(t>T_Q){
+    ctx.save(); ctx.strokeStyle='rgba(255,45,45,0.7)'; ctx.lineWidth=Math.max(1,U*0.003);
+    ctx.beginPath(); ctx.moveTo(ax,L.yA+L.r*1.6); ctx.lineTo(ax,L.yB-L.r*1.6); ctx.stroke();
+    ctx.setLineDash([U*0.008,U*0.008]);
+    ctx.beginPath(); ctx.moveTo(ax,(L.yA+L.yB)/2); ctx.lineTo(bx,(L.yA+L.yB)/2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // the result, held long enough to be undeniable
+  if(t>=T_RUN){
+    const rp=p(t,T_RUN,T_RUN+0.4);
+    ctx.save(); ctx.globalAlpha=rp; ctx.textAlign='center'; ctx.fillStyle=ORANGE;
+    font(U*0.05,'Bebas Neue'); ls(U*0.006);
+    ctx.fillText('SAME START · SAME CLOCK', S.w/2, S.h*0.20); ls(0);
+    ctx.restore();
+  }
+
+  // release: one plain true line, still frame
+  if(t>=T_RES){
+    ctx.save(); ctx.globalAlpha=p(t,T_RES,T_RES+0.3); ctx.textAlign='center'; ctx.fillStyle=WHITE;
+    font(U*0.055,'Bebas Neue'); ls(U*0.008);
+    ctx.fillText(PLAIN_LINE, S.w/2, S.h*0.86); ls(0);
+    ctx.restore();
+  }
+
+  chrome();
+}
+
+function chrome(){
+  const m=U*0.035, len=U*0.05;
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.5; ctx.lineWidth=Math.max(1,U*0.0015);
+  [[m,m,1,1],[S.w-m,m,-1,1],[m,S.h-m,1,-1],[S.w-m,S.h-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*len,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*len); ctx.stroke(); });
+  ctx.globalAlpha=1; ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.40)';
+  font(U*0.026,'Share Tech Mono'); ls(2); ctx.fillText('@stoopidshow', S.w/2, U*0.06); ls(0);
+  // say when the model is simplified — fake-serious AND honest
+  ctx.textAlign='left'; ctx.fillStyle='rgba(0,255,198,0.55)'; font(U*0.022,'Share Tech Mono'); ls(1);
+  ctx.fillText('SCHEMATIC · NOT TO SCALE', U*0.05, S.h-U*0.05); ls(0);
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let y=0;y<S.h;y+=4) ctx.fillRect(0,y,S.w,2);
+  ctx.restore();
+}
+
+/* ---------- CLOCK ---------- */
+const freeze=new URLSearchParams(location.search).get('t');
+let t0=null;
+function frame(now){
+  if(t0===null) t0=now;
+  const t=Math.min((now-t0)/1000, TOTAL);        // explainers land; they don't loop
+  draw(t); requestAnimationFrame(frame);
+}
+if(freeze!==null) document.fonts.ready.then(()=>draw(Math.min(parseFloat(freeze),TOTAL)));
+else requestAnimationFrame(frame);
+addEventListener('keydown',e=>{ if(e.code==='Space'){ t0=null; e.preventDefault(); }});
+addEventListener('click',()=>{ t0=null; });
+</script>
+</body>
+</html>

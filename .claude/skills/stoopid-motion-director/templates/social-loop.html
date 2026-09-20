@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID — SOCIAL LOOP TEMPLATE</title>
+<!--
+  STOOPID MOTION DIRECTOR — LOOP scaffold. 9:16, 8s, seamless: frame(TOTAL) === frame(0).
+
+  The loop contract this file keeps:
+    · every property is f(t) with t %= TOTAL — nothing accumulates, so the cycle closes
+    · no unseeded randomness, no canvas trails surviving the seam, no text left across it
+    · the RELEASE returns to the HOOK, so the seam is the joke (the system starts over)
+  Demo premise (placeholder): a progress bar whose track extends every time it nears the end.
+  Flip = the pull-back: the track was a circle the whole time.
+  VERIFY BY WATCHING THREE CYCLES. A loop is never verified by reasoning about it.
+  Controls: SPACE restart · ?t=5.2 freeze on a frame
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span style="font-family:'Bebas Neue'">B</span><span style="font-family:'Share Tech Mono'">M</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', RED='#FF2D2D', ORANGE='#CC5500';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const S={w:cv.width,h:cv.height}, U=Math.min(S.w,S.h);
+
+/* ---------- BEATS (seconds) ---------- */
+const HOOK=1.0, ESC=3.0, FLIP=2.4, REL=1.6;
+const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;   // 8.0s
+
+/* ---------- helpers ---------- */
+const p=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const easeOut=x=>1-Math.pow(1-x,3);
+const lerp=(a,b,x)=>a+(b-a)*x;
+function font(size,face){ ctx.font=size+"px '"+face+"', "+(face==='Bebas Neue'?'Impact, sans-serif':'monospace'); }
+function ls(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+
+/* ---------- THE PREMISE, entirely as f(t) ----------
+   rungs: the track extends in steps during the escalation — the same rule, bigger value      */
+const RUNGS=3;
+const rung = t => Math.floor(p(t,T_HOOK,T_ESC)*RUNGS);          // 0,1,2,3
+// NOTE the (1-back): the track must RETURN to its frame-0 length, or the seam shows.
+// Anything that grows during the piece has to come home before the cycle closes.
+const trackLen = (t,back) => U*1.05 * (1 + 0.42*rung(t)*(1-back));
+const fill = t => {                                             // the bar's own cycle: 80% → 99%
+  const local = (p(t,0,T_ESC)*(RUNGS+1)) % 1;
+  return lerp(0.80, 0.99, local);
+};
+
+/* curvature morph: a straight track and a closed circle are the same arc at different k.
+   k → 0 is a line; k = 2π/len is a closed loop. The FLIP is this one number moving.          */
+function arcPoint(s, k, len){
+  if(k < 1e-6) return [s - len/2, 0];                           // straight, centred
+  const r = 1/k, a = s*k - Math.PI/2;                           // start at the top of the circle
+  return [r*Math.cos(a), r*Math.sin(a) + r];
+}
+
+function draw(t){
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,S.w,S.h);               // full clear every frame: no trails across the seam
+
+  const fp=easeOut(p(t,T_ESC,T_ESC+1.0));                       // flip: straighten → circle
+  const back=easeOut(p(t,T_FLIP+0.6,TOTAL));                    // release: return to the hook framing
+  const m=fp*(1-back);                                          // ONE morph value, out and back to 0
+  const len=trackLen(t,back);
+  const k=lerp(0, 2*Math.PI/len, m);                            // curvature out and back → seamless
+  const scale=lerp(1, 0.62, m);
+
+  ctx.save();
+  ctx.translate(S.w/2, S.h*0.46); ctx.scale(scale,scale);
+
+  // the track
+  ctx.strokeStyle='rgba(255,255,255,0.20)'; ctx.lineWidth=U*0.055; ctx.lineCap='butt';
+  ctx.beginPath();
+  for(let i=0;i<=160;i++){ const [x,y]=arcPoint(len*i/160,k,len); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+  ctx.stroke();
+
+  // the fill, chasing an end that keeps moving
+  const f=fill(t);
+  ctx.strokeStyle=m>0.5?ORANGE:TEAL; ctx.lineWidth=U*0.055;
+  ctx.beginPath();
+  const n=Math.max(2,Math.round(160*f));
+  for(let i=0;i<=n;i++){ const [x,y]=arcPoint(len*f*i/n,k,len); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+  ctx.stroke();
+
+  // the head — the thing doing the chasing
+  const [hx,hy]=arcPoint(len*f,k,len);
+  ctx.fillStyle=WHITE; ctx.beginPath(); ctx.arc(hx,hy,U*0.035,0,Math.PI*2); ctx.fill();
+
+  // the extension flash: a hit point, 1 rung = 1 hit
+  const since=(p(t,T_HOOK,T_ESC)*RUNGS)%1;
+  if(t>T_HOOK && t<T_ESC && since<0.12){
+    ctx.strokeStyle=RED; ctx.lineWidth=U*0.01; ctx.globalAlpha=1-since/0.12;
+    const [ex,ey]=arcPoint(len,k,len);
+    ctx.beginPath(); ctx.arc(ex,ey,U*0.06,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+
+  // the readout keeps reporting progress, forever — precision as the straight man
+  ctx.save(); ctx.textAlign='center';
+  ctx.fillStyle=m>0.5?ORANGE:TEAL; font(U*0.13,'Bebas Neue'); ls(U*0.01);
+  ctx.fillText(Math.floor(f*100)+'%', S.w/2, S.h*0.20); ls(0);
+  ctx.fillStyle='rgba(255,255,255,0.7)'; font(U*0.032,'Share Tech Mono'); ls(2);
+  ctx.fillText('ALMOST DONE', S.w/2, S.h*0.245); ls(0);        // placeholder copy — replace
+  ctx.restore();
+
+  chrome();
+}
+
+function chrome(){
+  const m=U*0.035, len=U*0.05;
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.5; ctx.lineWidth=Math.max(1,U*0.0015);
+  [[m,m,1,1],[S.w-m,m,-1,1],[m,S.h-m,1,-1],[S.w-m,S.h-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*len,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*len); ctx.stroke(); });
+  ctx.globalAlpha=1; ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.40)';
+  font(U*0.026,'Share Tech Mono'); ls(2); ctx.fillText('@stoopidshow', S.w/2, S.h*0.045); ls(0);
+  ctx.fillStyle='rgba(255,255,255,0.05)';
+  for(let y=0;y<S.h;y+=4) ctx.fillRect(0,y,S.w,2);
+  ctx.restore();
+}
+
+/* ---------- CLOCK — modulo, so the seam is exact ---------- */
+const freeze=new URLSearchParams(location.search).get('t');
+let t0=null;
+function frame(now){
+  if(t0===null) t0=now;
+  draw(((now-t0)/1000) % TOTAL);
+  requestAnimationFrame(frame);
+}
+if(freeze!==null) document.fonts.ready.then(()=>draw(parseFloat(freeze)%TOTAL));
+else requestAnimationFrame(frame);
+addEventListener('keydown',e=>{ if(e.code==='Space'){ t0=null; e.preventDefault(); }});
+addEventListener('click',()=>{ t0=null; });
+</script>
+</body>
+</html>

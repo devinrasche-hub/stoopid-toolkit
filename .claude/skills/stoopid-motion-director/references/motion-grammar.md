@@ -3,6 +3,7 @@
 How STOOPID things move. Read this before writing any animation code.
 
 ## Contents
+- [What motion is allowed to do](#what-motion-is-allowed-to-do)
 - [The clock pattern](#the-clock-pattern)
 - [Timing numbers that read on a phone](#timing-numbers-that-read-on-a-phone)
 - [Easing vocabulary](#easing-vocabulary)
@@ -19,6 +20,25 @@ How STOOPID things move. Read this before writing any animation code.
 - [Physics cheat sheet](#physics-cheat-sheet)
 
 ---
+
+## What motion is allowed to do
+
+Every movement must communicate at least one of these seven:
+
+**attention · cause · consequence · emotion · timing · transformation · joke**
+
+If a movement communicates none of them, delete it. This single rule removes most of what makes
+generic animation look generic — the drifting particles, the breathing cards, the ambient
+parallax, the things that move because CSS permits movement.
+
+Three corollaries:
+
+- **One dominant action at a time.** Secondary motion supports the dominant one; it never competes.
+  Two things demanding the eye at once means neither is read.
+- **Anticipation → action → reaction → hold.** A move without a reaction reads as a slideshow; a
+  move without a hold reads as noise.
+- **Stillness is a choice you make on purpose.** The most expensive frame in the piece is usually
+  the one where nothing moves.
 
 ## The clock pattern
 
@@ -214,7 +234,8 @@ geometry outside the loop.
 
 ## Physics cheat sheet
 
-For a 1080×1920 stage, values that look right on a phone:
+Values that look right for a stage whose short edge is ~1080px (so: 1920×1080 at the default
+16:9, or 1080×1920 vertical). Scale them with the stage's short edge, never with its width.
 
 | Quantity | Value |
 |---|---|

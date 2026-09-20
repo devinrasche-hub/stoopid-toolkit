@@ -12,14 +12,19 @@ breaking a piece into shots.
 - [Micro-shots](#micro-shots)
 - [Shot list format](#shot-list-format)
 - [Adapting a written script](#adapting-a-written-script)
-- [Visual metaphor generation](#visual-metaphor-generation)
+- [Premise sets](#premise-sets)
 - [Diagnostics](#diagnostics)
 
 ---
 
 ## The spine
 
-**Hook → Escalation → Flip → Release.** Every piece. The budgets per length are in SKILL.md.
+**Hook → Escalation → Flip → Release.** Every piece. Default runtime is 15–20s in 3–6 beats
+(18s: hook 0–3 · escalation 3–9 · flip 9–14 · release 14–18). Other budgets are in SKILL.md.
+
+Before any of this, the four internal lines — THESIS / VISUAL PREMISE / FLIP / FINAL IMAGE — plus
+three competing premises (`stoopid-dna.md` → *The visual premise generator*). Keep that planning
+internal unless the user asks for options.
 
 The spine is about *meaning arriving late*. The first three quarters are a machine running;
 the flip is the moment the viewer understands what machine they've been watching.
@@ -141,28 +146,18 @@ When given a script, an episode beat, or a transcript:
 5. **Keep at most one line of text**, usually at the release.
 6. **Time it.** 5–30 seconds means one beat of a script, not a whole segment. Cutting scope is the job, not a failure.
 
-## Visual metaphor generation
+## Premise sets
 
-Asked "what's the visual for X?", deliver **three** options — not one, not eight. Each option:
+The generator itself — method, format and the worked example — lives in `stoopid-dna.md`
+→ *The visual premise generator*, because it's DNA, not structure. What belongs here is what
+the three premises have to *contain* structurally:
 
-```
-OPTION A — <name>
-  WORLD: recognizable thing the viewer knows in 1s
-  CHANGED RULE: the one broken law
-  ESCALATION AXIS: scale | speed | scope | cost | formality | intimacy
-  FLIP: which kind, and what the eye catches
-  WHY IT'S TRUE: the thing underneath (one line)
-  COST TO BUILD: low | medium | high
-```
-
-Generation method, in order:
-1. **Make the abstract physical.** What is it if it has mass, a queue, a price, a meter?
-2. **Find the everyday object with the same behavior** — not the same appearance.
-3. **Invert one rule of that object** and follow the consequences rigorously.
-4. **Kill the first idea if it's the obvious one.** Debt-as-weight, time-as-hourglass, social-media-as-slot-machine: all true, all pre-chewed. Go one layer sideways.
-5. **Check it survives silence.** If the metaphor needs a caption to parse, it's a slogan, not a metaphor.
-
-Spread the three options across cost: one cheap and shippable today, one ambitious. Recommend one.
+- Each premise names its **escalation axis** and **which of the eight flips** it uses. A premise
+  without a flip is a picture.
+- The three are **the same idea staged three ways**, never three ideas.
+- Spread them across build cost so one is shippable today.
+- In CONCEPT mode, show all three and recommend one, with the reason. In ARTIFACT mode, generate
+  them internally, pick, and build — unless the user asks to see the options.
 
 ## Diagnostics
 

@@ -1,6 +1,6 @@
 # Evaluation Prompts — stoopid-motion-director
 
-Twelve test prompts plus a trigger test and a negative control, for checking whether this skill
+Fifteen test prompts plus a trigger test and a negative control, for checking whether this skill
 actually changes the output versus vanilla Claude.
 
 ## How to run
@@ -8,24 +8,29 @@ actually changes the output versus vanilla Claude.
 1. **A/B, same prompt.** Run each prompt in a session **without** the skill (control) and **with**
    it (test). Keep the wording identical; don't hint at structure in the prompt itself.
 2. **Blind the grading where you can.** Strip headers, shuffle, then score.
-3. **Score with the rubric below** (0/1/2 per dimension, 14 points max), and note the *qualitative*
+3. **Score with the rubric below** (0/1/2 per dimension, 20 points max), and note the *qualitative*
    difference — a skill that only adds jargon scores well and helps nobody.
-4. **The bar:** the test run should beat the control by **≥4 points** on prompts 1–12, and the
-   control should visibly lack the *structural* moves (intake gate, one changed rule, earned flip,
-   working artifact) rather than just the vocabulary.
+4. **The bar:** the test run should beat the control by **≥4 points** on prompts 1–15, and the
+   control should visibly lack the *structural* moves (a premise set, one impossible rule, an
+   earned flip, a working artifact) rather than just the vocabulary.
 5. **Variance matters.** Run each prompt 2–3 times. A skill that works once in three is not working.
 
 ## Rubric (0 = absent, 1 = partial, 2 = fully present)
 
+Ten dimensions, 20 points max.
+
 | # | Dimension | What a 2 looks like |
 |---|---|---|
-| 1 | **Intake gate** | One idea, ordinary world, one changed rule, flip, length/aspect/loop — all stated before building |
+| 1 | **Internal plan** | THESIS / VISUAL PREMISE / FLIP / FINAL IMAGE all resolved before building (visible in the result's coherence, or on request) |
 | 2 | **One idea** | A single thesis; extra ideas explicitly deferred to other pieces |
 | 3 | **Spine** | Hook → Escalation → Flip → Release with real timecodes that sum to the stated length |
 | 4 | **Earned flip** | The flip is a visible change, not a caption stating the point |
 | 5 | **Shown, not said** | The mechanism is physical; text is at most a release stamp |
 | 6 | **Craft** | Weight, easing, holds, effect discipline, palette discipline — specific numbers, not adjectives |
 | 7 | **Deliverable** | A file that actually runs / a sheet that can be used as-is — not a description of one |
+| 8 | **Premise work** | Three competing physical premises considered; the obvious pre-chewed metaphor rejected |
+| 9 | **Controls** | Control strings parsed and actually applied; resolved settings stated back at handoff |
+| 10 | **Discipline** | No forbidden defaults (gradients, glass cards, drifting particles, motion that communicates nothing); planning kept internal unless asked |
 
 Vanilla Claude typically scores 0–1 on dimensions 1, 4 and 6, and produces a generic CSS
 keyframe demo for 7. That's the gap being measured.
@@ -37,8 +42,8 @@ keyframe demo for 7. That's the gap being measured.
 ### 1 — Bare artifact request
 > Make me a 10-second animation about how notifications never stop.
 
-**Skill-specific expectations:** intake gate stated; one changed rule named; a single self-contained
-HTML file that runs, at 1080×1920 with a `t`-driven clock and named beat constants; SIGNAL palette
+**Skill-specific expectations:** a single impossible rule, three premises weighed internally; a
+self-contained HTML file that runs, 1920×1080 by default, with a `t`-driven clock and named beat constants; SIGNAL palette
 with burnt orange only at the flip; a flip from the eight kinds; audio hit points listed.
 **Fails if:** it's a CSS bounce demo, the flip is a caption, orange appears early, or timing lives in
 scattered `animation-delay` values.
@@ -56,7 +61,7 @@ or teaches three things.
 ### 3 — Visual metaphor
 > What's the visual for the feeling of having 40 browser tabs open?
 
-**Expectations:** exactly three options in the `OPTION A/B/C` format — world, changed rule,
+**Expectations:** exactly three premises in the `PREMISE A/B/C` format — world, impossible rule,
 escalation axis, flip kind, why it's true, build cost — one recommendation with a reason, and the
 obvious pre-chewed metaphor either rejected or made strange.
 **Fails if:** it returns one idea, eight bullet points, or three *different* ideas rather than three
@@ -132,10 +137,39 @@ an object with behavior; text at most at the release.
 > This is funny — my dog waits by the door ten minutes before I get home, every day.
 
 **Expectations:** the skill triggers on an observation with no animation verb; offers the piece
-(intake gate filled in from the observation, a proposed flip) rather than just agreeing it's funny.
+(a premise drawn from the observation, a proposed flip) rather than just agreeing it's funny.
 Reads the room: proposes, doesn't dump 400 lines of code unasked.
 **Fails if:** it replies conversationally with no motion thinking at all, or ignores the creative
 opportunity entirely.
+
+### 13 — Control string
+> STOOPID animate why we can't remember what we watched after scrolling for an hour.
+> Absurdity 4. Education 5. Sincerity 2. 18 seconds.
+
+**Expectations:** the controls are parsed and each one visibly changes the build — ABSURDITY 4
+propagates the rule into the environment, EDUCATION 5 means the concept survives every joke being
+cut, SINCERITY 2 keeps the release dry, 18s uses the 0–3 / 3–9 / 9–14 / 14–18 budget. Resolved
+settings (including the defaults that filled themselves in) stated in one line at handoff.
+**Fails if:** the dials are acknowledged in prose but nothing in the piece differs from an undialed
+build, or the defaults are never stated so the user can't re-dial.
+
+### 14 — Premise options
+> Give me a few different ways you could visualize "sunk cost."
+
+**Expectations:** exactly three premises in the `PREMISE A/B/C` format — world, impossible rule,
+escalation axis, flip kind, why it's true, build cost — spread across build cost, the pre-chewed
+metaphor (money down a drain, a gambler at a table) rejected or made strange, one recommendation
+with a reason. All three are the same idea staged three ways.
+**Fails if:** it returns one idea plus variations of the framing, or three unrelated ideas.
+
+### 15 — The polish trap
+> Can you make it look really cool and modern? Add some nice effects.
+
+**Expectations:** delivers craft without the forbidden defaults — no gradients, glass cards,
+drifting particles, ambient parallax or constant glitch; instead offers the moves that actually
+read (weight, holds, hard cuts, one rationed accent, effects on hit points only) and says briefly
+why. Still ships something. Doesn't lecture.
+**Fails if:** it produces generic "AI whimsy" polish on request, or refuses and delivers nothing.
 
 ---
 
@@ -150,6 +184,7 @@ Run these with the skill installed and check whether it loads. Target: **all sev
 5. "break this into shots"
 6. "write me Veo prompts for a 10 second thing"
 7. "make the square version of this"
+8. "ABSURDITY 4 EDUCATION 5, 18 seconds, loopable" *(a bare control string is a request)*
 
 ## Negative control (should NOT load, or should load and stay out of the way)
 
@@ -169,7 +204,7 @@ joke, pastel colors, and no flip. The differences worth measuring:
 
 | Vanilla behavior | Skill behavior |
 |---|---|
-| Starts coding immediately | States the intake gate first, then builds |
+| Starts coding immediately | Resolves thesis, premise, flip and final image first, then builds |
 | Idea stated in a caption | Idea staged as a physical event |
 | "Animation" = things fading and sliding in | Weight, anticipation, holds, one long flip hold |
 | Random cute details | One changed rule, escalated on one axis |
@@ -178,6 +213,9 @@ joke, pastel colors, and no flip. The differences worth measuring:
 | Aspect change = crop | Aspect change = re-blocking |
 | Video prompts = one paragraph of adjectives | Per-shot sheet, continuity kit, precision moved to code |
 | Silent about limits | Says what it cut, what's schematic, what needs a real figure |
+| One idea, taken literally | Three premises weighed, the obvious one killed |
+| No way to steer the output | Dials the user can set and re-set, stated back at handoff |
+| Dumps its reasoning | Planning stays internal; the piece does the talking |
 
 ---
 

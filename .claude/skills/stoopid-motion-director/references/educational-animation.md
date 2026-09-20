@@ -19,7 +19,13 @@ a system nobody can see. Read this whenever the piece is meant to teach.
 
 ## The rule
 
-**One concept. Shown, not narrated.** An explainer that needs voiceover to be understood is a
+**One concept. Shown, not narrated.**
+
+**The smuggling test:** remove every joke from the piece. The concept must still be fully intact
+and correct. If cutting the jokes leaves a hole in the explanation, the jokes were doing the
+teaching — rebuild the explanation first, then build the jokes *around* it. This is what
+`EDUCATION 5` means when a user dials it.
+ An explainer that needs voiceover to be understood is a
 script with decoration on it. The test: mute it, hide all text, and ask whether a viewer could
 describe the mechanism afterward. If not, the animation isn't teaching — it's illustrating.
 
@@ -27,6 +33,7 @@ The show's existing math/signal pieces work because they *run the thing* and let
 watch the outcome. That's the standard: **demonstrate, don't depict.**
 
 ## The joke is the door
+
 
 Educational STOOPID is not "comedy to make medicine go down." The structure is the same spine:
 
