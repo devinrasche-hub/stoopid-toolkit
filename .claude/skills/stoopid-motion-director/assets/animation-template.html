@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID — MOTION TEMPLATE</title>
+<!--
+  STOOPID MOTION DIRECTOR — starter scaffold. Adapt it; never ship it unchanged.
+  What it gives you:
+    · one clock (t seconds) driving every beat            · named beat constants
+    · seamless loop by modulo, no accumulated state       · 9:16 / 16:9 / 1:1 re-blocking
+    · SIGNAL palette tokens, burnt orange held for the flip
+    · scanlines, watermark, corner brackets               · replay + frame freeze for scrubbing
+  Controls: SPACE replay · L loop on/off · 1 / 2 / 3 aspect · ?t=3.4 freeze on a frame
+  The demo piece is deliberately generic placeholder content — no show canon.
+
+  [CREATOR INPUT NEEDED] Once Dev confirms the house defaults (type stack for motion work,
+  watermark placement, whether pieces carry an item number / spec strip, recording frame rate),
+  bake them in here so every piece starts correct instead of being corrected.
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #hud{position:fixed;left:10px;bottom:8px;z-index:9;font:10px/1.4 'Share Tech Mono','Courier New',monospace;
+       color:#00FFC6;opacity:.45;letter-spacing:1px;pointer-events:none;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="hud">SPACE replay · L loop · 1/2/3 aspect · ?t= freeze</div>
+<div id="warm"><span style="font-family:'Bebas Neue'">B</span><span style="font-family:'Share Tech Mono'">M</span></div>
+<script>
+/* ---------- PALETTE (SIGNAL — locked, no gradients) ---------- */
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', PURPLE='#8A2BE2',
+      RED='#FF2D2D', ORANGE='#CC5500';               // ORANGE = the flip landing, once
+
+/* ---------- BEATS (seconds) — retime the piece here and nowhere else ---------- */
+const HOOK=1.4, ESC=4.2, FLIP=2.6, REL=1.8;
+const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;   // 10.0s
+let LOOP=true;
+
+/* ---------- STAGE — every position derives from these, so an aspect switch is one line ---------- */
+// Each aspect carries its OWN blocking. An aspect change is a re-staging, not a crop:
+// slot proportions, grid spread, type position and pull-back scale all change with the frame.
+const ASPECTS={
+  // cols/rows: the grid is re-arranged for the frame — tall frames stack, wide frames spread
+  '9:16':{w:1080,h:1920, slotW:.22, slotH:.30, floor:.74, gx:.72, gy:.52, pull:.34,
+          cols:[-1,0,1], rows:[-1,0,1], cy:.46,
+          counterY:.135, labelY:.168, stampY:.76},
+  '16:9':{w:1920,h:1080, slotW:.10, slotH:.42, floor:.80, gx:.40, gy:.48, pull:.40,
+          cols:[-1.5,-.5,.5,1.5], rows:[-1,0,1], cy:.57,
+          counterY:.115, labelY:.155, stampY:.95},
+  '1:1' :{w:1080,h:1080, slotW:.17, slotH:.36, floor:.78, gx:.58, gy:.56, pull:.38,
+          cols:[-1,0,1], rows:[-1,0,1], cy:.48,
+          counterY:.11,  labelY:.155, stampY:.90}
+};
+let ASPECT='9:16', STAGE=ASPECTS[ASPECT];
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+function setAspect(name){
+  ASPECT=name; STAGE=ASPECTS[name];
+  cv.width=STAGE.w; cv.height=STAGE.h;
+  cv.style.height = STAGE.w>STAGE.h ? 'auto' : '100vh';
+  cv.style.width  = STAGE.w>STAGE.h ? '100vw' : 'auto';
+}
+setAspect(ASPECT);
+
+/* ---------- HELPERS ---------- */
+const p=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));          // local beat progress 0..1
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeIn=x=>x*x*x;
+const overshoot=(x,k=1.7)=>1+(k+1)*Math.pow(x-1,3)+k*Math.pow(x-1,2);
+const lerp=(a,b,x)=>a+(b-a)*x;
+const num=n=>Math.floor(n).toLocaleString('en-US');
+function ls(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function font(size,face){ ctx.font=size+"px '"+face+"', "+(face==='Bebas Neue'?'Impact, sans-serif':'monospace'); }
+// fit type to a max width — fallback fonts are wider than the webfont, so never trust a fixed size
+function fitText(txt,maxW,face,size,track){
+  let s=size; for(let i=0;i<24;i++){ font(s,face); ls(track); if(ctx.measureText(txt).width<=maxW) break; s*=0.93; }
+  return s;
+}
+
+/* ---------- PIECE GEOMETRY (fractions of the stage — never hard-coded pixels) ---------- */
+// DEMO CONTENT — replace all of this. Spine: one slot fills, faster and faster (escalation),
+// then we pull back and every slot in the grid was doing the same thing (flip: pull-back).
+const DROPS=12;
+function dropTime(i){                                  // escalation = the same event, faster
+  const f=i/(DROPS-1);
+  return T_HOOK*0.4 + (T_ESC-T_HOOK*0.4) * (1-Math.pow(1-f,1.9));
+}
+function columnLayout(){
+  const S=STAGE, slotW=S.w*S.slotW, slotH=S.h*S.slotH, floor=S.h*S.floor;
+  return { cx:S.w*0.5, floor, slotW, slotH, top:floor-slotH,
+           bw:slotW*0.68, bh:slotH/DROPS };
+}
+const unit=()=>Math.min(STAGE.w,STAGE.h);          // type scales off the SHORT edge, every aspect
+
+/* ---------- DRAW ---------- */
+function drawColumn(t, alpha, tShift){
+  const L=columnLayout(), tt=t+(tShift||0);
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  // the slot — the recognizable ordinary world, obeying its rules
+  ctx.strokeStyle=TEAL; ctx.lineWidth=Math.max(2,unit()*0.003);
+  ctx.strokeRect(L.cx-L.slotW/2, L.top, L.slotW, L.slotH);
+
+  // blocks: position is f(t), so nothing accumulates and the loop closes
+  let landed=0;
+  for(let i=0;i<DROPS;i++){
+    const t0=dropTime(i);
+    if(tt<t0) continue;
+    const restY = L.floor - L.bh*(i+1) - L.bh*0.5;
+    const fall  = Math.min(1, easeIn(p(tt,t0,t0+0.42)));
+    const y     = lerp(-L.bh*2, restY, fall);
+    const squash= fall>=1 ? 1 : 1;
+    const impact= p(tt,t0+0.42,t0+0.58);                 // squash on landing, recovered fast
+    const sy    = fall>=1 ? lerp(0.78,1,easeOut(impact)) : squash;
+    if(fall>=1) landed++;
+    ctx.fillStyle=WHITE;
+    ctx.fillRect(L.cx-L.bw/2*(1/Math.sqrt(sy)), y-L.bh*sy/2, L.bw*(1/Math.sqrt(sy)), L.bh*sy);
+  }
+
+  // the cost, arriving with the escalation
+  if(landed>DROPS*0.6){
+    ctx.fillStyle=RED; ctx.globalAlpha=alpha*0.9;
+    ctx.fillRect(L.cx-L.slotW/2, L.top-unit()*0.012, L.slotW*Math.min(1,(landed/DROPS)), unit()*0.006);
+  }
+  ctx.restore();
+  return landed;
+}
+
+function draw(t){
+  const S=STAGE;
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,S.w,S.h);
+
+  // FLIP = the pull-back. One world transform, applied once.
+  const fp=easeOut(p(t,T_ESC,T_ESC+0.9));
+  const scale=lerp(1,S.pull,fp);
+  let landed=0;
+
+  ctx.save();
+  const cy=lerp(S.h*S.floor-S.h*S.slotH/2, S.h*S.cy, fp);              // lift the world so the stamp keeps its room
+  ctx.translate(S.w/2,cy); ctx.scale(scale,scale); ctx.translate(-S.w/2,-S.h/2);
+  landed=drawColumn(t,1,0);
+  if(fp>0){                                            // the grid was always there
+    const gx=S.w*S.gx, gy=S.h*S.gy;
+    S.rows.forEach(r=>S.cols.forEach(q=>{
+      if(!r && !q) return;                             // the hero column already holds the centre
+      ctx.save(); ctx.translate(q*gx, r*gy);
+      drawColumn(t, fp*0.75, (q*0.31+r*0.17));         // same rule, everywhere, slightly offset
+      ctx.restore();
+    }));
+  }
+  ctx.restore();
+
+  // counter — a number is motion, not text. Precision is the straight man.
+  const per=landed*1450, total=fp>0.5 ? per*9 : per;
+  const U=unit();
+  ctx.save(); ctx.textAlign='center';
+  fitText(num(total), S.w*0.7, 'Bebas Neue', U*0.075, U*0.008);
+  ctx.fillStyle=fp>0.5?ORANGE:TEAL;
+  ctx.fillText(num(total), S.w/2, S.h*S.counterY); ls(0);
+  const label=fp>0.5?'EVERY SLOT · PLACEHOLDER UNIT':'PLACEHOLDER UNIT';
+  fitText(label, S.w*0.7, 'Share Tech Mono', U*0.022, 1);
+  ctx.fillStyle=WHITE; ctx.globalAlpha=.7;
+  ctx.fillText(label, S.w/2, S.h*S.labelY); ls(0);
+  ctx.restore();
+
+  // RELEASE — the stamp: 90ms snap, then stillness
+  if(t>=T_FLIP){
+    const sp=Math.min(1,p(t,T_FLIP,T_FLIP+0.09));
+    const stamp='PLACEHOLDER STAMP';
+    ctx.save(); ctx.translate(S.w/2,S.h*S.stampY); ctx.rotate(-0.035);
+    ctx.scale(overshoot(sp),overshoot(sp));
+    ctx.textAlign='center'; fitText(stamp, S.w*0.82, 'Bebas Neue', unit()*0.085, unit()*0.01);
+    ctx.fillStyle=ORANGE; ctx.fillText(stamp,0,0); ls(0);
+    ctx.restore();
+  }
+
+  chrome();
+}
+
+/* ---------- CHROME: brackets, scanlines, watermark ---------- */
+function chrome(){
+  const S=STAGE, U=unit(), m=U*0.035, L=U*0.05;
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.5; ctx.lineWidth=Math.max(1,U*0.0015);
+  [[m,m,1,1],[S.w-m,m,-1,1],[m,S.h-m,1,-1],[S.w-m,S.h-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*L,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*L); ctx.stroke();
+  });
+  ctx.globalAlpha=1; ctx.fillStyle='rgba(255,255,255,0.40)'; ctx.textAlign='center';
+  font(U*0.026,'Share Tech Mono'); ls(2); ctx.fillText('@stoopidshow', S.w/2, U*0.045); ls(0);
+  ctx.fillStyle='rgba(255,255,255,0.05)';                 // scanlines: texture, not an effect
+  for(let y=0;y<S.h;y+=4) ctx.fillRect(0,y,S.w,2);
+  ctx.restore();
+}
+
+/* ---------- CLOCK ---------- */
+const freeze=new URLSearchParams(location.search).get('t');
+let t0=null;
+function frame(now){
+  if(t0===null) t0=now;
+  let t=(now-t0)/1000;
+  if(LOOP) t%=TOTAL; else t=Math.min(t,TOTAL);
+  draw(t);
+  requestAnimationFrame(frame);
+}
+if(freeze!==null){ document.fonts.ready.then(()=>draw(parseFloat(freeze)%TOTAL)); }
+else requestAnimationFrame(frame);
+
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){ t0=null; e.preventDefault(); }
+  if(e.key==='l'||e.key==='L') LOOP=!LOOP;
+  if(e.key==='1') setAspect('9:16');
+  if(e.key==='2') setAspect('16:9');
+  if(e.key==='3') setAspect('1:1');
+});
+addEventListener('click',()=>{ t0=null; });
+</script>
+</body>
+</html>

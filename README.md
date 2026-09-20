@@ -26,6 +26,18 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 
+## Skills
+
+Claude Skills for the show live in `.claude/skills/`. They load automatically for Claude sessions
+opened on this repo, and the folder can be zipped and uploaded as a skill anywhere else.
+
+| Skill | What it does |
+|---|---|
+| [`stoopid-motion-director`](.claude/skills/stoopid-motion-director/SKILL.md) | The animation department — turns an idea, joke, concept or script beat into a working 5–30s animation: HTML/SVG/CSS/JS artifacts, explainers, visual metaphors, storyboards, micro-shots, seamless loops, 16:9 / 9:16 / 1:1 adaptations, and prompts for external video generators. Starter scaffold at `assets/animation-template.html`; test prompts at `evals/eval-prompts.md`. |
+
+Sections marked **[CREATOR INPUT NEEDED]** are waiting on real examples from Dev — they are
+deliberately blank rather than filled with invented canon.
+
 ## How this repo works
 
 - **Source of truth is the vault** (`C:\STOOPID_VAULT\`). Edit tools there first.
