@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE STOOPID SHOW — The Missing O</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .b{font-family:'Bebas Neue';}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="b">B</span><span class="m">M</span></div>
+<script>
+/* THE MISSING O — 13.9s loop.  Dev sits. The title lands wrong. He looks up. It stays wrong. */
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6',RED='#FF2D2D',ORANGE='#CC5500';
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=1080,H=1920,CX=540;
+
+/* ---- beat sheet (seconds) ---- */
+const T={
+  titleIn:1.80, titleSet:2.45,     // title snaps in, glitches, settles
+  flinch:4.15,                      // he registers it
+  ghost1:4.26,                      // the O that should be there, for a frame
+  lookStart:4.60, lookEnd:7.25,     // the slow look up
+  ghost2:7.55,                      // it flickers once more and dies
+  lineIn:8.90, lineSet:9.70,        // "No. That's right."
+  holdEnd:13.20, fadeEnd:13.90      // the awkward part
+};
+const TOTAL=T.fadeEnd;
+
+let startT=null,paused=false,pauseAt=0;
+function setLS(px){if('letterSpacing' in ctx)ctx.letterSpacing=px+'px';}
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,u)=>a+(b-a)*u;
+const ease=u=>{u=clamp(u,0,1);return u*u*(3-2*u);};
+/* deterministic-ish jitter so the glitch reads the same-ish every loop */
+const rnd=(n)=>Math.sin(n*127.1)*43758.5453%1;
+
+/* ================= TITLE ================= */
+const TITLE='THE STUPID SHOW';
+const TMAX=150, TFIT=1000, TY=430;
+let TSIZE=TMAX, TSPACE=12, layout=null;
+const tfont=()=>TSIZE+"px 'Bebas Neue'";
+function measure(size,space){
+  ctx.font=size+"px 'Bebas Neue'";
+  const cells=[];let total=0;
+  for(const ch of TITLE){const w=ctx.measureText(ch).width;cells.push({ch,w});total+=w;}
+  return {cells,total:total+space*(cells.length-1)};
+}
+function buildLayout(){                     /* fits the frame even if the webfont never shows up */
+  ctx.save();setLS(0);
+  TSIZE=TMAX;TSPACE=12;
+  let m=measure(TSIZE,TSPACE);
+  if(m.total>TFIT){
+    const k=TFIT/m.total;
+    TSIZE=Math.floor(TSIZE*k);TSPACE=Math.max(2,Math.floor(TSPACE*k));
+    m=measure(TSIZE,TSPACE);
+  }
+  let x=CX-m.total/2;
+  for(const c of m.cells){c.x=x;x+=c.w+TSPACE;}
+  ctx.restore();
+  layout=m.cells;
+}
+function drawTitle(t){
+  if(!layout)buildLayout();
+  if(t<T.titleIn)return;
+  const glitching=t<T.titleSet;
+  const g=glitching?(t-T.titleIn)/(T.titleSet-T.titleIn):1;
+  ctx.save();ctx.font=tfont();ctx.textAlign='left';ctx.textBaseline='alphabetic';setLS(0);
+  layout.forEach((c,i)=>{
+    let dx=0,dy=0,a=1;
+    if(glitching){
+      const n=rnd(i*3.7+Math.floor(t*34));
+      dx=n*26*(1-g); dy=rnd(i*8.3+Math.floor(t*29))*10*(1-g);
+      a=g<0.85?(Math.floor(t*30)+i)%5===0?0.15:1:1;
+      /* chromatic ghosts while it resolves */
+      ctx.globalAlpha=0.35*(1-g);
+      ctx.fillStyle=RED;  ctx.fillText(c.ch,c.x+dx-9,TY+dy);
+      ctx.fillStyle=TEAL; ctx.fillText(c.ch,c.x+dx+9,TY+dy);
+    }
+    /* one faint flicker when he finally reads it */
+    if(t>12.55&&t<12.66)a=0.55;
+    ctx.globalAlpha=a; ctx.fillStyle=WHITE;
+    ctx.fillText(c.ch,c.x+dx,TY+dy);
+  });
+  ctx.restore();
+}
+/* the O that is not there */
+function drawGhostO(t){
+  let a=0;
+  if(t>=T.ghost1&&t<T.ghost1+0.62){const u=(t-T.ghost1)/0.62;a=(Math.floor((t-T.ghost1)*9.7)%2?0.18:0.95)*(1-u*0.5);}
+  if(t>=T.ghost2&&t<T.ghost2+1.15){const u=(t-T.ghost2)/1.15;a=(1-u)*0.85*(Math.floor(t*11)%2?1:0.4);}
+  if(a<=0.01)return;
+  if(!layout)buildLayout();
+  const u=layout[6];                       /* the U in ST_PID */
+  ctx.save();ctx.font=tfont();ctx.textAlign='center';setLS(0);
+  ctx.globalAlpha=a;ctx.fillStyle=TEAL;ctx.shadowColor=TEAL;ctx.shadowBlur=26;
+  ctx.fillText('O',u.x+u.w/2,TY);
+  ctx.restore();
+}
+
+/* ================= SET ================= */
+function line(x1,y1,x2,y2,w,col,a){ctx.save();ctx.globalAlpha=a==null?1:a;ctx.strokeStyle=col||WHITE;ctx.lineWidth=w||6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}
+function box(x,y,w,h,lw,col,a){ctx.save();ctx.globalAlpha=a==null?1:a;ctx.fillStyle=BLACK;ctx.fillRect(x,y,w,h);ctx.strokeStyle=col||WHITE;ctx.lineWidth=lw||5;ctx.lineJoin='round';ctx.strokeRect(x,y,w,h);ctx.restore();}
+
+const FLOOR=1620;
+function drawRoom(t){
+  line(60,FLOOR,1020,FLOOR,4,WHITE,0.30);
+  /* chair */
+  line(436,1360,436,1596,6,WHITE,0.85);
+  line(384,1600,492,1600,6,WHITE,0.85);
+  box(384,1348,152,16,5,WHITE,0.9);
+  ctx.save();ctx.globalAlpha=.85;ctx.strokeStyle=WHITE;ctx.lineWidth=6;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(396,1350);ctx.quadraticCurveTo(346,1252,360,1162);ctx.stroke();   // back post
+  ctx.beginPath();ctx.moveTo(352,1168);ctx.lineTo(358,1096);ctx.lineTo(410,1088);ctx.lineTo(406,1160);ctx.stroke();  // backrest
+  ctx.restore();
+  /* desk */
+  box(545,1244,500,18,5,WHITE,1);
+  line(1020,1262,1020,FLOOR,6,WHITE,0.9);
+  line(994,FLOOR,1046,FLOOR,6,WHITE,0.9);
+  /* keyboard */
+  ctx.save();ctx.globalAlpha=.8;ctx.strokeStyle=WHITE;ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(662,1244);ctx.lineTo(676,1228);ctx.lineTo(818,1228);ctx.lineTo(806,1244);ctx.stroke();
+  for(let i=0;i<5;i++){const x=692+i*26;line(x,1240,x+9,1232,3,WHITE,0.5);}
+  ctx.restore();
+  /* monitor */
+  line(902,1244,902,1196,6,WHITE,0.9);
+  line(866,1244,938,1244,6,WHITE,0.9);
+  box(818,1026,172,170,5,WHITE,1);
+  drawScreen(t);
+}
+function screenGlow(t){ /* the only light in the room, and it is not helping */
+  const f=0.55+0.45*Math.sin(t*2.3)+0.12*Math.sin(t*17.7);
+  return clamp(0.30+0.16*f,0,1);
+}
+function drawScreen(t){
+  const a=screenGlow(t);
+  ctx.save();
+  ctx.globalAlpha=a*0.30;ctx.fillStyle=TEAL;ctx.fillRect(821,1029,166,164);
+  ctx.globalAlpha=a*0.85;ctx.fillStyle=TEAL;
+  ctx.fillRect(840,1058,118,5);ctx.fillRect(840,1082,86,5);ctx.fillRect(840,1106,132,5);
+  ctx.globalAlpha=a*0.45;ctx.fillRect(840,1130,54,5);
+  /* the cursor keeps blinking the entire time. that is the joke. */
+  if(Math.floor(t*1.9)%2===0){ctx.globalAlpha=a;ctx.fillStyle=TEAL;ctx.fillRect(840,1150,20,26);}
+  ctx.restore();
+}
+
+/* ================= DEV ================= */
+const HIP={x:470,y:1348};
+function drawDev(t){
+  const u=ease((t-T.lookStart)/(T.lookEnd-T.lookStart));
+  const breathe=Math.sin(t*1.45)*3.2;
+  /* head tilt: +0.55 = chin on chest.  -0.62 = looking straight up at the thing. */
+  let tilt=lerp(0.62,-0.95,u);
+  if(t>=T.flinch&&t<T.flinch+0.22)tilt-=0.11*Math.sin(Math.PI*(t-T.flinch)/0.22);
+  const sh={x:lerp(512,494,u),y:lerp(1130,1094,u)+breathe};
+
+  /* legs, under the desk */
+  const knee={x:664,y:1374};
+  line(HIP.x,HIP.y,knee.x,knee.y,9,WHITE,1);
+  line(knee.x,knee.y,672,FLOOR,9,WHITE,1);
+  line(668,FLOOR,714,FLOOR,9,WHITE,1);
+  line(HIP.x-6,HIP.y+12,640,1392,9,WHITE,0.55);
+  line(640,1392,650,FLOOR,9,WHITE,0.55);
+
+  /* spine — slumped forward, straightens a little on the look up */
+  ctx.save();ctx.strokeStyle=WHITE;ctx.lineWidth=11;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(HIP.x,HIP.y);
+  ctx.quadraticCurveTo(HIP.x+lerp(78,18,u),(HIP.y+sh.y)/2,sh.x,sh.y);
+  ctx.stroke();ctx.restore();
+
+  /* arms — the hands never leave the keyboard */
+  arm(sh,{x:700,y:1226},0.55);
+  arm(sh,{x:754,y:1230},1);
+
+  /* head */
+  const P={x:sh.x+6,y:sh.y-14};
+  const r=54, off=r+20;
+  const hx=P.x+off*Math.sin(tilt), hy=P.y-off*Math.cos(tilt);
+  line(P.x,P.y,hx,hy,11,WHITE,1);
+  ctx.save();ctx.strokeStyle=WHITE;ctx.lineWidth=9;
+  ctx.beginPath();ctx.arc(hx,hy,r,0,Math.PI*2);ctx.fillStyle=BLACK;ctx.fill();ctx.stroke();
+  /* screen light on the side of his face */
+  ctx.globalAlpha=screenGlow(t)*0.75;ctx.strokeStyle=TEAL;ctx.lineWidth=5;
+  ctx.beginPath();ctx.arc(hx,hy,r,-0.95,0.95);ctx.stroke();
+  ctx.restore();
+
+  /* face, in head-local coords, rotated with the tilt */
+  ctx.save();ctx.translate(hx,hy);ctx.rotate(tilt);
+  /* nose */
+  ctx.strokeStyle=WHITE;ctx.lineWidth=7;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(r-4,-4);ctx.lineTo(r+17,8);ctx.stroke();
+  /* eye — open, except for one blink deep in the hold */
+  const blink=(t>11.38&&t<11.52);
+  ctx.fillStyle=WHITE;ctx.strokeStyle=WHITE;
+  if(blink){ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(14,-14);ctx.lineTo(38,-14);ctx.stroke();}
+  else{ctx.beginPath();ctx.arc(26,lerp(-8,-16,u),6.5,0,Math.PI*2);ctx.fill();}
+  /* mouth — a flat line. it stays a flat line. */
+  ctx.lineWidth=5;ctx.globalAlpha=.9;
+  ctx.beginPath();ctx.moveTo(r-16,26);ctx.lineTo(r-1,24);ctx.stroke();
+  ctx.restore();
+}
+function arm(sh,hand,a){
+  const mx=(sh.x+hand.x)/2, my=(sh.y+hand.y)/2;
+  const el={x:mx-26,y:my+56};
+  line(sh.x,sh.y,el.x,el.y,9,WHITE,a);
+  line(el.x,el.y,hand.x,hand.y,9,WHITE,a);
+  ctx.save();ctx.globalAlpha=a;ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(hand.x,hand.y,7,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+
+/* ================= THE LINE ================= */
+function drawLine(t){
+  if(t<T.lineIn)return;
+  const a=ease((t-T.lineIn)/(T.lineSet-T.lineIn));
+  ctx.save();ctx.font="46px 'Share Tech Mono'";ctx.textAlign='center';setLS(5);
+  ctx.globalAlpha=a;ctx.fillStyle=ORANGE;ctx.shadowColor=ORANGE;ctx.shadowBlur=14;
+  ctx.fillText("No. That’s right.",CX+3,792);
+  setLS(0);ctx.restore();
+}
+
+/* ================= FRAME FURNITURE ================= */
+function brackets(){
+  const m=46,L=64;ctx.save();ctx.globalAlpha=.28;ctx.strokeStyle=TEAL;ctx.lineWidth=4;
+  [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]].forEach(([x,y,sx,sy])=>{
+    ctx.beginPath();ctx.moveTo(x+sx*L,y);ctx.lineTo(x,y);ctx.lineTo(x,y+sy*L);ctx.stroke();});
+  ctx.restore();
+}
+function scanlines(){ctx.save();ctx.globalAlpha=.035;ctx.fillStyle=WHITE;for(let y=0;y<H;y+=4)ctx.fillRect(0,y,W,1);ctx.restore();}
+function chrome(){
+  ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);
+  ctx.fillText("@stoopidshow",CX,96);setLS(0);
+  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";setLS(1);
+  ctx.fillText("THE MISSING O",40,1876);
+  ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.30)";
+  ctx.fillText("SPACE PAUSE · R REPLAY",1040,1876);setLS(0);ctx.restore();
+}
+
+/* ================= LOOP ================= */
+function frame(now){
+  if(startT===null)startT=now;
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;}
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,W,H);
+  drawRoom(t);
+  drawDev(t);
+  drawTitle(t);
+  drawGhostO(t);
+  drawLine(t);
+  scanlines();brackets();chrome();
+  if(t>T.holdEnd){ctx.save();ctx.globalAlpha=clamp((t-T.holdEnd)/(T.fadeEnd-T.holdEnd),0,1);ctx.fillStyle=BLACK;ctx.fillRect(0,0,W,H);ctx.restore();}
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;}}
+  if(e.key==='r'||e.key==='R'){startT=performance.now();paused=false;}
+});
+function boot(){
+  layout=null;requestAnimationFrame(frame);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{layout=null;});
+}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>
