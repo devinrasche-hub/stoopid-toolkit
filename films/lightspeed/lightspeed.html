@@ -1,0 +1,294 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Your Life at Light Speed</title>
+<style>
+  body{margin:0;background:#111;color:#ccc;font:13px/1.4 ui-monospace,Menlo,monospace;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+  canvas#c{width:auto;height:min(88vh,900px);background:#000;box-shadow:0 0 0 1px #333}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+  button{background:#222;color:#ddd;border:1px solid #444;padding:4px 10px;cursor:pointer;font:inherit}
+  input[type=range]{width:320px}
+</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="core.js"></script>
+<script>
+'use strict';
+// ============================================================
+// YOUR LIFE AT LIGHT SPEED  —  THE STOOPID SHOW / SIGNAL
+//
+// Subject: one photon leaves a person's feet and runs to the Sun while the
+// camera never stops backing away. Its speed never changes for one frame of
+// the film. The room does.
+//
+// Format: 9:16, short side 1080 logical units, drawn 12 fps, output 24 fps.
+// Length: 19.0 s = 228 drawn frames.
+// Anchor (rule 11): THE PHOTON. One accent dot, in every frame, never leaves.
+// Sign-off (rule 12): signOff('SIGNAL', 'RECEIVED').
+//
+// Deliberate deviation from the checklist: this is a quantitative piece, so
+// the three blueprint interludes carry hand-lettered numbers. The eight drawn
+// scenes stay wordless.
+//
+// t      dur  scene       look        camera     what changes                           kit                          sound
+// 0.00   1.5  title       paper       static     title draws on; the photon is born     handText seedDot construction pluck
+// 1.50   2.5  you         paper       push-in    figure hatched; photon runs feet->head puppet surface speedLines     plucks rise
+// 4.00   0.5  card1       blueprint   -          blot to navy: 1.8 m / 6 ns             blot handText dashedRing      swell
+// 4.50   3.0  earth       ink/night   pull back  ground curves to a globe; photon off   wob surface dashedRing        pulse
+// 7.50   0.5  card2       blueprint   -          iris: 12,742 km / 42 ms                iris handText                 swell
+// 8.00   3.0  moon        ink/night   pull back  Earth shrinks, Moon enters; crawl      dottedArc dashedRing          sparse
+// 11.00  0.5  card3       blueprint   -          flash cut: 384,400 km / 1.3 s          flash handText                swell
+// 11.50  4.0  sun         ink/night   pull back  near-empty frame; Sun as aster         aster dotBurst                drone
+// 15.50  1.5  crossover   blueprint   static     SLOWED struck out -> SPED UP 145x      flash handText wob            hit
+// 17.00  2.0  signoff     paper       static     payoff lines + signOff                 signOff handText              resolve
+// ============================================================
+
+// ===================== PALETTE =====================
+usePalette('paperInk');
+const INK = 'paperInk', BLUE = 'blueprintNight';
+const P_INK = PALETTES.paperInk.accents[0], P_INK2 = PALETTES.paperInk.accents[2];
+
+// ===================== HELPERS =====================
+const upto = (s, p) => s.slice(0, Math.round(s.length * clamp(p, 0, 1)));
+const mir = pts => pts.map(([x, y]) => [-x, y]);
+function bbox(pts) {
+  let a = 1e9, b = 1e9, c2 = -1e9, d = -1e9;
+  for (const [x, y] of pts) { a = Math.min(a, x); b = Math.min(b, y); c2 = Math.max(c2, x); d = Math.max(d, y); }
+  return [a, b, c2 - a, d - b];
+}
+
+// THE ANCHOR. Every scene calls this exactly once. It has to read at 240 px,
+// so it is a dot, a ring of spatter and a burst of rays - no glow, no gradient.
+function photon(c, x, y, i, g) {
+  g = g || 1;
+  const puff = 1 + (pulse(i, 3) ? .15 : 0), R = 17 * g * puff, r = rng(402);
+  c.save(); c.fillStyle = P_INK;
+  for (let k = 0; k < 30; k++) {
+    const a = k / 30 * TAU + r() * .4, d = R * (1.9 + r() * 1.5);
+    c.globalAlpha = .55 - r() * .3;
+    c.beginPath(); c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 1.5 + r() * 2.4, 0, TAU); c.fill();
+  }
+  c.restore();
+  aster(c, x, y, R * .62, 10, P_INK, 401, 1.25, P_INK, '#fff1d6');
+  seedDot(c, x, y, R * .46, P_INK, P_INK2);
+}
+
+// A seeded starfield. Fixed seed => identical between drawn frames of a shot.
+function stars(c, n, seed, al) {
+  if (al <= .01) return;
+  const r = rng(seed); c.save(); c.fillStyle = PAL.chalk;
+  for (let k = 0; k < n; k++) {
+    const x = r() * W, y = r() * H, s = r();
+    c.globalAlpha = al * (.18 + s * .45);
+    c.beginPath(); c.arc(x, y, .8 + s * 1.5, 0, TAU); c.fill();
+  }
+  c.restore();
+}
+
+// A disc drawn the ink way: fill -> surface -> a wobbly outline that does not coincide.
+function disc(c, cx, cy, r, col, seed, o) {
+  o = o || {};
+  const p = circPath(cx, cy, r), box = [cx - r, cy - r, r * 2, r * 2];
+  c.fillStyle = col; c.fill(p);
+  surface(c, p, box, { seed: seed, gap: o.gap ?? 5, len: o.len ?? 12, alpha: o.alpha ?? .36 });
+  c.strokeStyle = PAL.ink; c.lineWidth = o.width ?? 2.6;
+  wob(c, ellPts(cx, cy, r, r, 0, clamp(Math.round(r / 5), 40, 150)), 2.4, seed + 3, true);
+  return p;
+}
+
+// Earth, at any size: land masses and an atmosphere, both scaled off the radius.
+function earth(c, cx, cy, r, seed, air) {
+  disc(c, cx, cy, r, PAL.fills[1], seed, { gap: 5, len: 12, alpha: .34, width: 2.8 });
+  c.save(); c.clip(circPath(cx, cy, r));
+  const land = [[-.40, -.56, .20, .13], [.24, -.42, .16, .10], [-.06, -.18, .22, .14], [.30, .28, .14, .09]];
+  land.forEach(([fx, fy, frx, fry], k) => {
+    const pts = ellPts(cx + fx * r, cy + fy * r, frx * r, fry * r, k * .8, 26)
+      .map(([x, y], j) => { const q = rng(seed + 90 + k * 9 + j)(); return [x + (q - .5) * frx * r * .26, y + (q - .5) * fry * r * .26]; });
+    c.fillStyle = PAL.fills[2]; c.fill(polyPath(pts));
+    c.strokeStyle = PAL.ink; c.lineWidth = Math.max(1, r * .006); wob(c, pts, Math.max(1, r * .006), seed + 95 + k, true);
+  });
+  c.restore();
+  if (air) dashedRing(c, cx, cy, r * 1.05, alpha(PAL.accents[1], .55), seed + 7, [14, 10], Math.max(1.2, r * .004));
+}
+
+// ===================== PUPPET: a person =====================
+// Local coords, origin at the body centre, facing up = -y, 544 units tall,
+// placed at scale 2 so hatch and outline land at their proper screen weights.
+const TORSO = [[-79, -142], [-46, -162], [-24, -172], [-24, -195], [24, -195], [24, -172], [46, -162], [79, -142], [71, -58], [60, 5], [71, 47], [-71, 47], [-60, 5], [-71, -58]];
+const ARM_L = [[-82, -139], [-113, -118], [-124, -16], [-118, 47], [-108, 76], [-79, 76], [-74, 45], [-87, -16], [-76, -84]];
+const LEG_L = [[-68, 37], [-11, 37], [-16, 142], [-21, 231], [-21, 252], [-87, 255], [-84, 234], [-55, 229], [-58, 142]];
+const HEAD = ellPts(0, -250, 56, 62, 0, 36);
+const PARTS = [
+  ['armL', ARM_L, 2], ['armR', mir(ARM_L), 2],
+  ['legL', LEG_L, 2], ['legR', mir(LEG_L), 2],
+  ['torso', TORSO, 1], ['head', HEAD, 0]
+];
+function drawPerson(c, mode, seed) {
+  const ink = mode !== 'blueprint', line = ink ? PAL.ink : PAL.chalk;
+  c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+  for (const [k, pts, fi] of PARTS) {
+    const path = polyPath(pts), box = bbox(pts);
+    if (ink) { c.fillStyle = PAL.fills[fi]; c.fill(path); surface(c, path, box, { seed: seed + k.length * 5, gap: 4.5, len: 10, alpha: .34 }); }
+    c.strokeStyle = line; c.lineWidth = ink ? 1.3 : 1.5;
+    wob(c, pts, 2.2, seed + 40 + k.length, true);
+  }
+  if (ink) scribble(c, polyPath(TORSO), 0, -60, { seed: seed + 70, amp: 1.8, alpha: .22 });
+  c.restore();
+}
+
+// ===================== SCENES =====================
+const L1 = layer(), L2 = layer();
+
+// --- 1. title -------------------------------------------------------------
+function sceneTitle(c, tau, i) {
+  usePalette(INK); paper(c);
+  construction(c, CX, CY - 60, W * .30, 11);
+  handText(c, upto('YOUR LIFE', sm(0, .9, tau, easeOut)), CX, CY - 90, { size: 140, align: 'center', ink: PAL.ink, ink2: PAL.accents[0] });
+  handText(c, upto('AT LIGHT SPEED', sm(.35, 1.25, tau, easeOut)), CX, CY + 40, { size: 100, align: 'center', ink: PAL.ink, ink2: PAL.accents[0] });
+  const r = sm(.7, 1.4, tau, easeOut);
+  dashedRing(c, CX, H * .80, 70 + r * 30, alpha(PAL.ink, .45), 12);
+  photon(c, CX, H * .80, i, .8 + r * .4);
+}
+
+// --- 2. you ---------------------------------------------------------------
+function sceneYou(c, tau, i) {
+  usePalette(INK); paper(c);
+  cam(c, CX, CY + 30, lerp(1.0, 1.10, sm(0, 2.5, tau)));
+  disc(c, CX, 2800, 1300, PAL.fills[0], 21, { gap: 8, len: 20, alpha: .28, width: 3 });
+  construction(c, CX, 950, 470, 25, alpha(PAL.guide, .75));
+  c.save(); c.translate(CX, 990); c.scale(2, 2); drawPerson(c, 'ink', 26); c.restore();
+  const p = sm(.35, 2.2, tau, easeIO), y = lerp(1490, 380, p);
+  if (p > .02 && p < .98) speedLines(c, CX, y + 90, -Math.PI / 2, 44, 5, .4, PAL.accents[0]);
+  photon(c, CX, y, i, 1.15);
+}
+
+// --- 3. card 1 ------------------------------------------------------------
+function cardBase(c, big, small, seed) {
+  night(c);
+  construction(c, CX, CY - 40, W * .28, seed, alpha(PAL.chalk, .4));
+  dashedRing(c, CX, CY - 40, W * .33, alpha(PAL.chalk, .45), seed + 1);
+  handText(c, big, CX, CY - 10, { size: 128, align: 'center', ink: PAL.chalk, ink2: PAL.inks[1] });
+  handText(c, small, CX, CY + 92, { size: 58, align: 'center', ink: alpha(PAL.chalk, .8), ink2: null });
+}
+function sceneCard1(c, tau, i) {
+  usePalette(INK); sceneYou(L1.getContext('2d'), 2.5, i);
+  const b = L2.getContext('2d'); usePalette(BLUE); cardBase(b, '1.8 m', '6 NANOSECONDS', 51); photon(b, CX, CY - 250, i, 1.1);
+  usePalette(INK); blit(c, L1);
+  usePalette(BLUE); blot(c, L2, CX, CY - 40, lerp(0, 1500, sm(0, .42, tau, easeOut)), 52);
+}
+
+// --- 4. earth: the ground curves away into a globe -------------------------
+function sceneEarth(c, tau, i) {
+  usePalette(INK); night(c); stars(c, 140, 61, sm(.1, 1.4, tau));
+  const p = sm(0, 2.1, tau, easeIO), ecy = lerp(2800, 1430, p), er = lerp(1300, 430, p);
+  earth(c, CX, ecy, er, 62, p > .45);
+  const py = lerp(ecy - er - 40, 330, sm(.12, 2.8, tau, easeIO));
+  if (p < .95) speedLines(c, CX, py + 90, -Math.PI / 2, 66, 5, .35, PAL.accents[0]);
+  photon(c, CX, py, i, 1.05);
+}
+
+// --- 5. card 2 ------------------------------------------------------------
+function sceneCard2(c, tau, i) {
+  usePalette(INK); sceneEarth(L1.getContext('2d'), 3.0, i); blit(c, L1);
+  usePalette(BLUE);
+  iris(c, CX, CY - 40, lerp(0, 1250, sm(0, .42, tau, easeOut)),
+    cc => { cardBase(cc, '12,742 km', '42 MILLISECONDS', 81); photon(cc, CX, CY - 250, i, 1.1); });
+}
+
+// --- 6. moon --------------------------------------------------------------
+function sceneMoon(c, tau, i) {
+  usePalette(INK); night(c); stars(c, 160, 91, 1);
+  const p = sm(0, 2.9, tau, easeIO);
+  earth(c, CX, lerp(1430, 1690, p), lerp(430, 150, p), 92, true);
+  const mr = lerp(120, 76, p);
+  disc(c, CX, 390, mr, tint(PAL.fills[3], .42), 94, { gap: 4, len: 9, alpha: .26 });
+  [[-.34, -.26, .24], [.28, .12, .30], [-.10, .40, .17]].forEach(([fx, fy, fr], k) => {
+    c.strokeStyle = alpha(PAL.ink, .65); c.lineWidth = 1.6;
+    wob(c, ellPts(CX + fx * mr, 390 + fy * mr, fr * mr, fr * mr, 0, 20), 1.4, 95 + k, true);
+  });
+  dottedArc(c, CX, 1690, 560, alpha(PAL.chalk, .3), 96, 16, 1.4);
+  const py = lerp(1400, 500, sm(.1, 2.8, tau, easeIO));
+  c.save(); c.setLineDash([10, 16]); c.strokeStyle = alpha(PAL.accents[0], .4); c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(CX, 1400); c.lineTo(CX, py); c.stroke(); c.restore();
+  photon(c, CX, py, i, .95);
+}
+
+// --- 7. card 3 ------------------------------------------------------------
+function sceneCard3(c, tau, i) {
+  usePalette(BLUE);
+  if (tau < 1 / 12) { flash(c, tint(PAL.chalk, .3)); return; }
+  cardBase(c, '384,400 km', '1.3 SECONDS', 101);
+  photon(c, CX, CY - 250, i, 1.1);
+}
+
+// --- 8. sun: the emptiness is the shot ------------------------------------
+function sceneSun(c, tau, i) {
+  usePalette(INK); night(c); stars(c, 180, 111, 1);
+  const p = sm(0, 3.9, tau, easeIO);
+  earth(c, CX, 1760, lerp(150, 64, p), 112, false);
+  const g = 1 + (pulse(i, 4) ? .05 : 0);
+  dotBurst(c, CX, 330, 310, 16, alpha(PAL.accents[2], .5), 113, g);
+  aster(c, CX, 330, 96 * g, 24, PAL.accents[2], 114, 1.15, PAL.accents[2], PAL.light);
+  dashedRing(c, CX, 330, 210, alpha(PAL.accents[2], .3), 115);
+  dottedArc(c, CX, 1760, 800, alpha(PAL.chalk, .24), 116, 18, 1.3);
+  const py = lerp(1630, 470, sm(.08, 3.8, tau, easeIO));
+  c.save(); c.setLineDash([8, 20]); c.strokeStyle = alpha(PAL.accents[0], .34); c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(CX, 1630); c.lineTo(CX, py); c.stroke(); c.restore();
+  photon(c, CX, py, i, .9);
+}
+
+// --- 9. crossover: the number flips sign -----------------------------------
+function sceneCross(c, tau, i) {
+  usePalette(BLUE);
+  if (tau < 1 / 12) { flash(c, tint(PAL.chalk, .35)); return; }
+  night(c);
+  construction(c, CX, CY, W * .30, 121, alpha(PAL.chalk, .35));
+  handText(c, 'SLOWED', CX, CY - 110, { size: 100, align: 'center', ink: alpha(PAL.chalk, .5), ink2: null });
+  const sp = sm(.25, .75, tau, easeOut);
+  if (sp > 0) { c.strokeStyle = PAL.inks[1]; c.lineWidth = 7; selfDraw(c, [[CX - 250, CY - 148], [CX, CY - 130], [CX + 250, CY - 156]], sp, 122, 3.5); }
+  if (tau > .7) handText(c, upto('SPED UP 145×', sm(.7, 1.25, tau, easeOut)), CX, CY + 90, { size: 118, align: 'center', ink: PAL.chalk, ink2: PAL.inks[1] });
+  photon(c, CX, CY + 260, i, 1.25);
+}
+
+// --- 10. sign-off ---------------------------------------------------------
+function sceneSign(c, tau, i) {
+  usePalette(INK); paper(c);
+  handText(c, upto('LIGHT NEVER', sm(0, .45, tau, easeOut)), CX, CY - 260, { size: 96, align: 'center', ink: PAL.ink, ink2: PAL.accents[0] });
+  handText(c, upto('SLOWED DOWN.', sm(.2, .7, tau, easeOut)), CX, CY - 160, { size: 96, align: 'center', ink: PAL.ink, ink2: PAL.accents[0] });
+  handText(c, upto('SPACE JUST KEPT GOING.', sm(.5, 1.1, tau, easeOut)), CX, CY - 30, { size: 68, align: 'center', ink: PAL.ink, ink2: PAL.inks[2] });
+  photon(c, CX, CY + 90, i, 1.0);
+  signOff(c, 'SIGNAL', 'RECEIVED', { x: CX, y: CY + 320, size: 92, progressA: sm(1.0, 1.4, tau), progressB: sm(1.3, 1.7, tau) });
+}
+
+// ===================== SCORE =====================
+function score(ac, t0, dest) {
+  const master = ac.createGain(); master.gain.value = .55; master.connect(dest);
+  const r = rng(7);
+  let acc = 0;
+  for (const s of TIMELINE) {
+    note(ac, master, pentHz(1, 0), t0, acc, .55, 'sine', .22);              // a pluck on every cut
+    acc += s.dur;
+  }
+  // scene motifs, against the same beat sheet
+  for (let t = 1.5; t < 4.0; t += .25) note(ac, master, pentHz(1, (t * 4 | 0) % 5), t0, t, .4, 'triangle', .11);
+  for (let t = 4.5; t < 7.5; t += .5) note(ac, master, pentHz(0, r() * 5 | 0), t0, t, .6, 'triangle', .12);
+  for (let t = 8.0; t < 11.0; t += .75) note(ac, master, pentHz(0, r() * 4 | 0), t0, t, .9, 'sine', .11);
+  for (let t = 11.5; t < 15.5; t += 1.0) note(ac, master, pentHz(-1, 0), t0, t, 1.6, 'sine', .16);   // the drone under the emptiness
+  noiseBurst(ac, master, t0, 15.5, .5, .22, 3);                                                      // the crossover hit
+  note(ac, master, pentHz(1, 2), t0, 15.5, 1.0, 'triangle', .2);
+  for (let k = 0; k < 4; k++) note(ac, master, pentHz(1, k), t0, 17.0 + k * .35, 1.2, 'sine', .15);   // resolve
+}
+
+// ===================== FILM =====================
+const TIMELINE = [
+  { name: 'title',     dur: 1.5, fn: sceneTitle },
+  { name: 'you',       dur: 2.5, fn: sceneYou },
+  { name: 'card1',     dur: 0.5, fn: sceneCard1 },
+  { name: 'earth',     dur: 3.0, fn: sceneEarth },
+  { name: 'card2',     dur: 0.5, fn: sceneCard2 },
+  { name: 'moon',      dur: 3.0, fn: sceneMoon },
+  { name: 'card3',     dur: 0.5, fn: sceneCard3 },
+  { name: 'sun',       dur: 4.0, fn: sceneSun },
+  { name: 'crossover', dur: 1.5, fn: sceneCross },
+  { name: 'signoff',   dur: 2.0, fn: sceneSign },
+];
+defineFilm({ timeline: TIMELINE, score, format: { ar: '9:16' } });
+</script>
