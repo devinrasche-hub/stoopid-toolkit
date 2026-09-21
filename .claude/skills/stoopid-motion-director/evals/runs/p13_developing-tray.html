@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID — THE DEVELOPING TRAY</title>
+<!--
+  EVAL RUN · prompt 13
+  "STOOPID animate why we can't remember what we watched after scrolling for an hour.
+   Absurdity 4. Education 5. Sincerity 2. 18 seconds."
+  RESOLVED: ABSURDITY 4 · EDUCATION 5 · SINCERITY 2 · CHAOS 2 · LOOPABLE no ·
+            DEV ON SCREEN no · LENGTH 18s · ASPECT 16:9
+  Controls: SPACE replay · ?t=11.5 freeze on a frame
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;width:100vw;height:auto;max-height:100vh;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1920" height="1080"></canvas></div>
+<div id="warm"><span style="font-family:'Bebas Neue'">B</span><span style="font-family:'Share Tech Mono'">M</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', RED='#FF2D2D', ORANGE='#CC5500';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const S={w:cv.width,h:cv.height}, U=Math.min(S.w,S.h);
+
+/* ---------- CONTROLS ---------- */
+const CONTROLS={ ABSURDITY:4, SINCERITY:2, CHAOS:2, EDUCATION:5, LOOPABLE:false, DEV_ON_SCREEN:false };
+
+/* ---------- BEATS (seconds) ---------- */
+const HOOK=3.0, ESC=6.0, FLIP=5.0, REL=4.0;
+const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;   // 18.0s
+
+/* ---------- THE MODEL (EDUCATION 5) ----------
+   One honest mechanism, stated as two numbers:
+     TAU  = the dwell an item needs in the tray to come out as a picture (consolidation window)
+     gap  = the interval between arrivals (novelty rate)
+   fidelity = min(dwell, TAU)/TAU. When gap < TAU, fidelity < 1 and keeps falling.
+   Nothing here is hand-animated to a conclusion: the wall is whatever the schedule produces.   */
+const TAU=1.35;
+const SCHED=(()=>{ const a=[]; let t=0.55, gap=1.5;
+  while(t<TOTAL+1){ a.push(t); t+=gap; gap=Math.max(0.13, gap*0.80); } return a; })();
+const dwell = i => (SCHED[i+1]!==undefined ? SCHED[i+1]-SCHED[i] : TAU);
+const fidelity = i => Math.min(1, dwell(i)/TAU);
+const KEEP=0.9;                                        // "kept" = came out as an actual picture
+
+/* ---------- helpers ---------- */
+const p=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeIn=x=>x*x*x;
+const lerp=(a,b,x)=>a+(b-a)*x;
+function font(size,face){ ctx.font=size+"px '"+face+"', "+(face==='Bebas Neue'?'Impact, sans-serif':'monospace'); }
+function ls(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+
+/* ---------- STAGE BLOCKING (fractions only) ---------- */
+const TRAY={ x:S.w*0.20, y:S.h*0.56, w:U*0.30, h:U*0.20 };
+const CARD={ w:U*0.16, h:U*0.115 };
+const WALL={ x:S.w*0.40, y:S.h*0.12, cols:12, cw:U*0.072, ch:U*0.056, gap:U*0.011 };
+function slot(i){ const c=i%WALL.cols, r=Math.floor(i/WALL.cols);
+  return { x:WALL.x + c*(WALL.cw+WALL.gap), y:WALL.y + r*(WALL.ch+WALL.gap) }; }
+
+/* ---------- ELEMENTS ---------- */
+function frame(x,y,w,h,col,alpha,lw){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=col; ctx.lineWidth=lw||Math.max(1,U*0.0028);
+  ctx.strokeRect(x,y,w,h); ctx.restore();
+}
+// a "picture": the more it developed, the more of it is actually there
+function picture(x,y,w,h,f,tint){
+  ctx.save();
+  frame(x,y,w,h,TEAL,0.45);
+  if(f>0.02){
+    ctx.globalAlpha=f; ctx.fillStyle=tint||WHITE;
+    const pad=w*0.10, iw=w-pad*2, ih=h-pad*2;
+    ctx.fillRect(x+pad, y+pad+ih*(1-f), iw, ih*f);       // the image fills in as it develops
+  }
+  ctx.restore();
+}
+
+function draw(t){
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,S.w,S.h);
+
+  /* CAMERA — the flip is a pull-back; ABSURDITY 4 means the room reorganizes around the rule */
+  const fp=easeOut(p(t,T_ESC,T_ESC+1.1));
+  const push=easeOut(p(t,T_FLIP+0.9,TOTAL));            // release: back in on the tray, dry
+  const WALL_CX=WALL.x+(WALL.cols*(WALL.cw+WALL.gap))/2, WALL_CY=WALL.y+S.h*0.30;
+  const zoom=lerp(lerp(1.30,0.66,fp),1.20,push);
+  const fx=lerp(lerp(S.w*0.30,(WALL_CX+TRAY.x)/2,fp),S.w*0.30,push);
+  const fy=lerp(lerp(S.h*0.56,WALL_CY,fp),S.h*0.56,push);
+
+  ctx.save();
+  ctx.translate(S.w/2,S.h/2); ctx.scale(zoom,zoom); ctx.translate(-fx,-fy);
+
+  // ABSURDITY 4 — the room reorganizes around the rule: the wall keeps extending itself,
+  // laying out empty slots faster than anything arrives to fill them.
+  if(t>T_HOOK){
+    const ahead=Math.round(24*p(t,T_HOOK,T_ESC))+8;
+    const from=SCHED.filter(x=>x<=t).length;
+    for(let i=from;i<from+ahead;i++){ const s2=slot(i); frame(s2.x,s2.y,WALL.cw,WALL.ch,TEAL,0.10); }
+  }
+
+  // the wall of everything that came out of the tray
+  let seen=0, kept=0;
+  for(let i=0;i<SCHED.length;i++){
+    const out=SCHED[i+1]!==undefined?SCHED[i+1]:SCHED[i]+TAU;
+    if(t<out) break;
+    seen=i+1; const f=fidelity(i); if(f>=KEEP) kept++;
+    const s=slot(i);
+    const fly=easeOut(p(t,out,out+0.38));               // ejected: arcs from tray to wall
+    const x=lerp(TRAY.x+TRAY.w*0.5-WALL.cw/2, s.x, fly);
+    const y=lerp(TRAY.y+TRAY.h*0.2, s.y, fly) - Math.sin(fly*Math.PI)*U*0.05;
+    const isKept=f>=KEEP;
+    picture(x,y,WALL.cw,WALL.ch,f, isKept&&fp>0.35?ORANGE:WHITE);
+    if(!isKept && fly<0.25){                            // the cost, on the hit, then gone
+      frame(x,y,WALL.cw,WALL.ch,RED,1-fly/0.25,U*0.004);
+    }
+  }
+
+  // the tray: developer fluid, and the item currently in it
+  ctx.save();
+  ctx.fillStyle='rgba(0,255,198,0.10)'; ctx.fillRect(TRAY.x,TRAY.y,TRAY.w,TRAY.h);
+  frame(TRAY.x,TRAY.y,TRAY.w,TRAY.h,TEAL,0.9,U*0.004);
+  ctx.restore();
+
+  let cur=-1;
+  for(let i=0;i<SCHED.length;i++){ if(t>=SCHED[i] && (SCHED[i+1]===undefined || t<SCHED[i+1])) { cur=i; break; } }
+  if(cur>=0){
+    const inTray=Math.min(t-SCHED[cur], TAU);
+    const f=Math.max(0,inTray)/TAU;
+    const cx=TRAY.x+TRAY.w/2-CARD.w/2, cy=TRAY.y+TRAY.h/2-CARD.h/2;
+    picture(cx,cy,CARD.w,CARD.h,Math.min(1,f));
+    // the dwell meter: how much of the required time this one actually got
+    const mw=CARD.w, mx=cx, my=cy+CARD.h+U*0.022;
+    frame(mx,my,mw,U*0.012,TEAL,0.5);
+    ctx.fillStyle=TEAL; ctx.fillRect(mx,my,mw*Math.min(1,f),U*0.012);
+    // the threshold is drawn, so the viewer can see what each item needed and didn't get
+    ctx.fillStyle=WHITE; ctx.fillRect(mx+mw*KEEP-U*0.001, my-U*0.004, U*0.002, U*0.02);
+  }
+  // the next one already falling in — the rule that never lets the current one finish
+  const nx=SCHED.findIndex(s=>s>t);
+  if(nx>=0){
+    const fall=easeIn(p(t,SCHED[nx]-0.34,SCHED[nx]));
+    if(fall>0){
+      const cx=TRAY.x+TRAY.w/2-CARD.w/2;
+      picture(cx, lerp(TRAY.y-U*0.42, TRAY.y+TRAY.h/2-CARD.h/2, fall), CARD.w, CARD.h, 0);
+    }
+  }
+  ctx.restore();
+
+  /* READOUTS — computed from the same schedule, never invented */
+  ctx.save(); ctx.textAlign='left';
+  font(U*0.085,'Bebas Neue'); ls(U*0.006); ctx.fillStyle=WHITE;
+  ctx.fillText(String(seen).padStart(2,'0'), S.w*0.055, S.h*0.20);
+  ctx.fillStyle=(fp>0.35?ORANGE:TEAL);
+  ctx.fillText(String(kept).padStart(2,'0'), S.w*0.055, S.h*0.33); ls(0);
+  font(U*0.024,'Share Tech Mono'); ls(2); ctx.fillStyle='rgba(255,255,255,0.65)';
+  ctx.fillText('WATCHED', S.w*0.055, S.h*0.225);
+  ctx.fillText('KEPT',    S.w*0.055, S.h*0.355); ls(0);
+  ctx.restore();
+
+  chrome(t);
+}
+
+function chrome(t){
+  const m=U*0.035, len=U*0.05;
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.45; ctx.lineWidth=Math.max(1,U*0.0015);
+  [[m,m,1,1],[S.w-m,m,-1,1],[m,S.h-m,1,-1],[S.w-m,S.h-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*len,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*len); ctx.stroke(); });
+  ctx.globalAlpha=1; ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.40)';
+  font(U*0.024,'Share Tech Mono'); ls(2); ctx.fillText('@stoopidshow', S.w/2, U*0.06); ls(0);
+  ctx.textAlign='left'; ctx.fillStyle='rgba(0,255,198,0.5)'; font(U*0.02,'Share Tech Mono'); ls(1);
+  ctx.fillText('DWELL REQUIRED '+TAU.toFixed(2)+'s · SCHEMATIC · NOT TO SCALE', U*0.05, S.h-U*0.045); ls(0);
+  ctx.fillStyle='rgba(255,255,255,0.045)';
+  for(let y=0;y<S.h;y+=4) ctx.fillRect(0,y,S.w,2);
+  ctx.restore();
+}
+
+/* ---------- CLOCK ---------- */
+const freeze=new URLSearchParams(location.search).get('t');
+let t0=null;
+function frameLoop(now){
+  if(t0===null) t0=now;
+  draw(Math.min((now-t0)/1000, TOTAL));                 // it lands; it does not loop
+  requestAnimationFrame(frameLoop);
+}
+if(freeze!==null) document.fonts.ready.then(()=>draw(Math.min(parseFloat(freeze),TOTAL)));
+else requestAnimationFrame(frameLoop);
+addEventListener('keydown',e=>{ if(e.code==='Space'){ t0=null; e.preventDefault(); }});
+addEventListener('click',()=>{ t0=null; });
+</script>
+</body>
+</html>
