@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID — THE DARKROOM</title>
+<!--
+  EVAL RUN · prompt 13, REBUILD FOR LEGIBILITY.
+  The first version was structurally correct and visually unreadable: every object was a
+  wireframe rectangle, so it read as a UI mockup instead of a darkroom. Same mechanism,
+  same 18 seconds, same honest model — but the phone looks like a phone, the tray looks
+  like a tray of fluid, and the photos look like photos with pictures in them.
+  RESOLVED: ABSURDITY 4 · EDUCATION 5 · SINCERITY 2 · CHAOS 2 · LOOPABLE no ·
+            DEV ON SCREEN no · LENGTH 18s · ASPECT 16:9
+  Controls: SPACE replay · ?t=11.5 freeze on a frame
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;width:100vw;height:auto;max-height:100vh;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1920" height="1080"></canvas></div>
+<div id="warm"><span style="font-family:'Bebas Neue'">B</span><span style="font-family:'Share Tech Mono'">M</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', RED='#FF2D2D', ORANGE='#CC5500';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const S={w:cv.width,h:cv.height}, U=Math.min(S.w,S.h);
+
+/* ---------- CONTROLS ---------- */
+const CONTROLS={ ABSURDITY:4, SINCERITY:2, CHAOS:2, EDUCATION:5, LOOPABLE:false, DEV_ON_SCREEN:false };
+
+/* ---------- BEATS ---------- */
+const HOOK=3.0, ESC=6.0, FLIP=5.0, REL=4.0;
+const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;   // 18.0s
+
+/* ---------- THE MODEL (EDUCATION 5) — unchanged from v1, it was never the problem ----------
+   TAU  = seconds a photo must sit in developer to come out as a picture
+   gap  = seconds between arrivals. fidelity = min(gap,TAU)/TAU.
+   The wall is whatever the schedule produces; nothing is drawn to reach a conclusion.        */
+const TAU=1.35, KEEP=0.9;
+const SCHED=(()=>{ const a=[]; let t=0.55, gap=1.5;
+  while(t<TOTAL+1){ a.push(t); t+=gap; gap=Math.max(0.13, gap*0.80); } return a; })();
+const dwell=i=>(SCHED[i+1]!==undefined?SCHED[i+1]-SCHED[i]:TAU);
+const fidelity=i=>Math.min(1,dwell(i)/TAU);
+
+/* ---------- helpers ---------- */
+const p=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeIn=x=>x*x*x;
+const lerp=(a,b,x)=>a+(b-a)*x;
+const hash=i=>{ const x=Math.sin(i*127.1)*43758.5453; return x-Math.floor(x); };
+function font(size,face){ ctx.font=size+"px '"+face+"', "+(face==='Bebas Neue'?'Impact, sans-serif':'monospace'); }
+function ls(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* ---------- BLOCKING ---------- */
+const PHOTO={ w:U*0.10, h:U*0.12 };                      // polaroid: thicker bottom border
+const PHONE={ x:S.w*0.20, y:S.h*0.20, w:U*0.15, h:U*0.25 };
+const TRAY ={ cx:S.w*0.245, cy:S.h*0.63, w:U*0.30, h:U*0.115 };
+const LINE ={ x0:S.w*0.40, x1:S.w*0.985, y0:S.h*0.20, per:9, dy:U*0.17 };
+function hangSpot(i){ const c=i%LINE.per, r=Math.floor(i/LINE.per);
+  const step=(LINE.x1-LINE.x0)/LINE.per;
+  return { x:LINE.x0+step*c+step*0.5, y:LINE.y0+r*LINE.dy, row:r }; }
+
+/* ---------- THE PICTURES — what a feed is actually full of ----------
+   Simple high-contrast silhouettes, so they still read at thumbnail size.                    */
+function scene(kind,x,y,w,h,a){
+  ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=WHITE; ctx.strokeStyle=WHITE;
+  ctx.lineWidth=Math.max(1,w*0.05); ctx.lineCap='round';
+  const cx=x+w/2, cy=y+h/2;
+  if(kind===0){                                            // sunset over a horizon
+    ctx.beginPath(); ctx.arc(cx,cy-h*0.06,w*0.20,0,Math.PI*2); ctx.fill();
+    ctx.fillRect(x,y+h*0.66,w,h*0.06);
+  } else if(kind===1){                                     // a person
+    ctx.beginPath(); ctx.arc(cx,cy-h*0.16,w*0.15,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx-w*0.26,y+h*0.86);
+    ctx.quadraticCurveTo(cx,y+h*0.30,cx+w*0.26,y+h*0.86); ctx.fill();
+  } else if(kind===2){                                     // a cat
+    ctx.beginPath(); ctx.moveTo(cx-w*0.22,cy-h*0.02); ctx.lineTo(cx-w*0.16,cy-h*0.30);
+    ctx.lineTo(cx-w*0.04,cy-h*0.10); ctx.lineTo(cx+w*0.04,cy-h*0.10);
+    ctx.lineTo(cx+w*0.16,cy-h*0.30); ctx.lineTo(cx+w*0.22,cy-h*0.02); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy+h*0.10,w*0.22,0,Math.PI*2); ctx.fill();
+  } else if(kind===3){                                     // a plate of food
+    ctx.beginPath(); ctx.arc(cx,cy,w*0.26,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,w*0.13,0,Math.PI*2); ctx.fill();
+  } else if(kind===4){                                     // a skyline
+    const bw=w*0.13; [0.42,0.62,0.30,0.54,0.38].forEach((hh,i)=>
+      ctx.fillRect(x+w*0.12+i*bw, y+h*0.85-h*hh, bw*0.78, h*hh));
+  } else if(kind===5){                                     // a car
+    ctx.fillRect(x+w*0.14, cy-h*0.02, w*0.72, h*0.16);
+    ctx.beginPath(); ctx.moveTo(x+w*0.26,cy-h*0.02); ctx.lineTo(x+w*0.36,cy-h*0.20);
+    ctx.lineTo(x+w*0.66,cy-h*0.20); ctx.lineTo(x+w*0.74,cy-h*0.02); ctx.fill();
+    [0.30,0.70].forEach(f=>{ ctx.beginPath(); ctx.arc(x+w*f,cy+h*0.16,w*0.08,0,Math.PI*2); ctx.fill(); });
+  } else if(kind===6){                                     // a drink
+    ctx.beginPath(); ctx.moveTo(cx-w*0.16,cy-h*0.20); ctx.lineTo(cx+w*0.16,cy-h*0.20);
+    ctx.lineTo(cx+w*0.09,cy+h*0.24); ctx.lineTo(cx-w*0.09,cy+h*0.24); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx+w*0.06,cy-h*0.20); ctx.lineTo(cx+w*0.20,cy-h*0.34); ctx.stroke();
+  } else {                                                 // a dog
+    ctx.beginPath(); ctx.arc(cx,cy+h*0.06,w*0.20,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx-w*0.24,cy-h*0.04,w*0.07,h*0.12,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+w*0.24,cy-h*0.04,w*0.07,h*0.12,0,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* a polaroid: white paper, thick bottom border, black image area that fills in as it develops */
+function photo(x,y,w,h,f,i,tint){
+  const pad=w*0.075, iw=w-pad*2, ih=h-pad-h*0.22;
+  ctx.save();
+  ctx.fillStyle = tint||'#E8E8E8'; ctx.fillRect(x,y,w,h);          // the paper
+  ctx.fillStyle = BLACK; ctx.fillRect(x+pad,y+pad,iw,ih);          // unexposed image area
+  if(f>0.03){
+    ctx.save(); ctx.beginPath(); ctx.rect(x+pad,y+pad,iw,ih); ctx.clip();
+    const vis=Math.pow(f,2.2);                       // exposure is not linear, and the eye needs the gap
+    ctx.globalAlpha=vis*0.30; ctx.fillStyle='#4A4A4A'; ctx.fillRect(x+pad,y+pad,iw,ih);
+    ctx.restore();
+    scene(i%8, x+pad, y+pad, iw, ih, vis);
+  }
+  ctx.restore();
+}
+
+/* ---------- THE PHONE — the source, and its feed speeds up with the arrival rate ---------- */
+function phone(t){
+  ctx.save();
+  ctx.strokeStyle=WHITE; ctx.globalAlpha=0.85; ctx.lineWidth=Math.max(2,U*0.005);
+  roundRect(PHONE.x,PHONE.y,PHONE.w,PHONE.h,U*0.02); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.fillRect(PHONE.x+PHONE.w*0.36, PHONE.y+U*0.012, PHONE.w*0.28, U*0.006);   // the notch
+  // the feed inside, scrolling — its speed IS the escalation, visible from frame one
+  ctx.save(); ctx.beginPath();
+  roundRect(PHONE.x+U*0.012,PHONE.y+U*0.03,PHONE.w-U*0.024,PHONE.h-U*0.045,U*0.008); ctx.clip();
+  const speed=lerp(U*0.06, U*1.25, easeOut(p(t,T_HOOK,T_ESC)));
+  const ch=U*0.05, span=PHONE.h;
+  const off=(t*speed)%(ch+U*0.012);
+  for(let k=-1;k<span/(ch+U*0.012)+2;k++){
+    const yy=PHONE.y+U*0.03+k*(ch+U*0.012)+off;
+    ctx.fillStyle='rgba(0,255,198,0.30)';
+    ctx.fillRect(PHONE.x+U*0.018, yy, PHONE.w-U*0.036, ch);
+  }
+  ctx.restore(); ctx.restore();
+}
+
+/* ---------- THE TRAY — a shallow basin of developer, seen from an angle ---------- */
+function tray(t){
+  const {cx,cy,w,h}=TRAY, top=cy-h/2;
+  ctx.save();
+  ctx.fillStyle='rgba(0,255,198,0.13)';                            // the fluid
+  ctx.beginPath();
+  ctx.moveTo(cx-w*0.42, top); ctx.lineTo(cx+w*0.42, top);
+  ctx.lineTo(cx+w*0.5, cy+h/2); ctx.lineTo(cx-w*0.5, cy+h/2); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=0.8; ctx.lineWidth=Math.max(2,U*0.004); ctx.stroke();
+  ctx.globalAlpha=0.35;                                            // ripples: it is liquid
+  for(let k=0;k<2;k++){
+    const r=U*0.05+k*U*0.035+Math.sin(t*1.6+k*2.1)*U*0.006;
+    ctx.beginPath(); ctx.ellipse(cx,cy+h*0.05,r,r*0.26,0,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- THE DRYING LINE ---------- */
+function wire(row,alpha,upto){
+  const step=(LINE.x1-LINE.x0)/LINE.per;
+  const end=LINE.x0+step*Math.min(LINE.per,(upto===undefined?LINE.per:upto)+1);
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle='rgba(255,255,255,0.45)';
+  ctx.lineWidth=Math.max(1,U*0.002); ctx.beginPath();
+  ctx.moveTo(LINE.x0-U*0.02, LINE.y0+row*LINE.dy); ctx.lineTo(end, LINE.y0+row*LINE.dy);
+  ctx.stroke(); ctx.restore();
+}
+function clip(x,y,alpha){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=WHITE;
+  ctx.fillRect(x-U*0.008,y-U*0.006,U*0.016,U*0.018); ctx.restore();
+}
+
+function draw(t){
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,S.w,S.h);
+
+  let seen=0, kept=0, maxRow=0;
+  for(let i=0;i<SCHED.length;i++){
+    const out=SCHED[i+1]!==undefined?SCHED[i+1]:SCHED[i]+TAU;
+    if(t<out) break; seen=i+1; maxRow=Math.max(maxRow,hangSpot(i).row);
+  }
+
+  const fp=easeOut(p(t,T_ESC,T_ESC+1.1));                          // the flip: pull back
+  const push=easeOut(p(t,T_FLIP+1.0,TOTAL));                       // the release: back in, dry
+  // the pull-back frames whatever the wall has become — it keeps growing, so the camera
+  // keeps giving ground. That retreat IS the escalation, not a fixed zoom number.
+  const contentH=LINE.y0+maxRow*LINE.dy+PHOTO.h*1.4;
+  const flipZoom=Math.min(1.02,(S.h*0.88)/contentH);
+  const flipCx=(PHONE.x+LINE.x1)/2;
+  const flipCy=LINE.y0+(maxRow*LINE.dy)/2+PHOTO.h*0.4;
+  const zoom=lerp(lerp(1.45,flipZoom,fp),1.30,push);
+  const fx=lerp(lerp(S.w*0.36,flipCx,fp),S.w*0.30,push);
+  const fy=lerp(lerp(S.h*0.50,flipCy,fp),S.h*0.56,push);
+
+  ctx.save();
+  ctx.translate(S.w/2,S.h/2); ctx.scale(zoom,zoom); ctx.translate(-fx,-fy);
+  // ABSURDITY 4 — the room keeps building more line to hang it all on
+  const rowsAhead=(t>T_HOOK?2:0);
+  const lastCol=seen>0?((seen-1)%LINE.per):0;
+  for(let r=0;r<=maxRow+rowsAhead;r++)
+    wire(r, r<=maxRow?0.9:0.3, r<maxRow?LINE.per:(r===maxRow?lastCol:2));
+
+  // everything that came out of the tray, hanging up to dry
+  for(let i=0;i<SCHED.length;i++){
+    const out=SCHED[i+1]!==undefined?SCHED[i+1]:SCHED[i]+TAU;
+    if(t<out) break;
+    const f=fidelity(i), isKept=f>=KEEP; if(isKept) kept++;
+    const s=hangSpot(i);
+    const fly=easeOut(p(t,out+0.03,out+0.42));
+    const x=lerp(TRAY.cx-PHOTO.w/2, s.x-PHOTO.w/2, fly);
+    const y=lerp(TRAY.cy-PHOTO.h*0.35, s.y+U*0.012, fly) - Math.sin(fly*Math.PI)*U*0.06;
+    const sway=Math.sin(t*1.1+i)*0.012*(1-fp*0.6);                 // they are objects, hanging
+    const rot=lerp(0,(hash(i)-0.5)*0.10+sway,fly);
+    ctx.save(); ctx.translate(x+PHOTO.w/2,y+PHOTO.h/2); ctx.rotate(rot);
+    if(isKept && fp>0.3){                                          // the flip finds the one
+      ctx.save(); ctx.strokeStyle=ORANGE; ctx.lineWidth=U*0.006;
+      ctx.strokeRect(-PHOTO.w/2-U*0.008,-PHOTO.h/2-U*0.008,PHOTO.w+U*0.016,PHOTO.h+U*0.016);
+      ctx.restore();
+    }
+    photo(-PHOTO.w/2,-PHOTO.h/2,PHOTO.w,PHOTO.h,f,i, isKept?'#FFFFFF':'#E8E8E8');
+    ctx.restore();
+    if(fly>0.6) clip(x+PHOTO.w/2, s.y, (fly-0.6)/0.4);
+    if(!isKept && fly<0.22){                                       // the cost, on the shove
+      ctx.save(); ctx.globalAlpha=1-fly/0.22; ctx.strokeStyle=RED; ctx.lineWidth=U*0.004;
+      ctx.strokeRect(x,y,PHOTO.w,PHOTO.h); ctx.restore();
+    }
+  }
+
+  phone(t);
+  tray(t);
+
+  // the photo currently in the developer, and the one already falling on top of it
+  let cur=-1;
+  for(let i=0;i<SCHED.length;i++){ if(t>=SCHED[i] && (SCHED[i+1]===undefined||t<SCHED[i+1])){cur=i;break;} }
+  if(cur>=0){
+    const f=Math.min(1,Math.max(0,(t-SCHED[cur]))/TAU);
+    ctx.save(); ctx.translate(TRAY.cx-PHOTO.w*0.30,TRAY.cy); ctx.scale(1,0.82);  // lying in the fluid
+    photo(-PHOTO.w/2,-PHOTO.h/2,PHOTO.w,PHOTO.h,f,cur);
+    ctx.restore();
+    // the dwell meter, with the threshold drawn: what it needed vs what it got
+    const mw=PHOTO.w, mx=TRAY.cx-PHOTO.w*0.30-mw/2, my=TRAY.cy+TRAY.h*0.78;
+    ctx.save(); ctx.strokeStyle='rgba(0,255,198,0.5)'; ctx.lineWidth=Math.max(1,U*0.0015);
+    ctx.strokeRect(mx,my,mw,U*0.011);
+    ctx.fillStyle=TEAL; ctx.fillRect(mx,my,mw*f,U*0.011);
+    ctx.fillStyle=WHITE; ctx.fillRect(mx+mw*KEEP-U*0.001,my-U*0.004,U*0.002,U*0.019);
+    ctx.restore();
+  }
+  const nx=SCHED.findIndex(s=>s>t);
+  if(nx>=0){
+    const fall=easeIn(p(t,SCHED[nx]-0.32,SCHED[nx]));
+    if(fall>0){
+      ctx.save();
+      ctx.translate(TRAY.cx+PHOTO.w*0.42,
+        lerp(PHONE.y+PHONE.h-U*0.02, TRAY.cy-PHOTO.h*0.30, fall));
+      ctx.rotate(lerp(-0.12,0,fall));
+      photo(-PHOTO.w/2,-PHOTO.h/2,PHOTO.w,PHOTO.h,0,nx);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+
+  /* READOUT */
+  ctx.save(); ctx.textAlign='left';
+  font(U*0.07,'Bebas Neue'); ls(U*0.005);
+  ctx.fillStyle=WHITE; ctx.fillText(String(seen).padStart(2,'0'), S.w*0.045, S.h*0.90);
+  ctx.fillStyle=fp>0.3?ORANGE:TEAL; ctx.fillText(String(kept).padStart(2,'0'), S.w*0.13, S.h*0.90); ls(0);
+  font(U*0.021,'Share Tech Mono'); ls(2); ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.fillText('WATCHED', S.w*0.045, S.h*0.925);
+  ctx.fillText('KEPT',    S.w*0.13,  S.h*0.925); ls(0);
+  ctx.restore();
+
+  chrome();
+}
+
+function chrome(){
+  const m=U*0.035, len=U*0.05;
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.45; ctx.lineWidth=Math.max(1,U*0.0015);
+  [[m,m,1,1],[S.w-m,m,-1,1],[m,S.h-m,1,-1],[S.w-m,S.h-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*len,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*len); ctx.stroke(); });
+  // chrome sits ON TOP of a moving frame, so it carries its own backing or it becomes unreadable
+  ctx.globalAlpha=1;
+  function plate(txt,x,y,align,col,size,track){
+    font(size,'Share Tech Mono'); ls(track);
+    const w=ctx.measureText(txt).width, padX=U*0.012, padY=U*0.011;
+    const bx = align==='center' ? x-w/2 : align==='right' ? x-w : x;
+    ctx.fillStyle='rgba(0,0,0,0.78)';
+    ctx.fillRect(bx-padX, y-size*0.85-padY*0.4, w+padX*2, size*1.25+padY*0.6);
+    ctx.textAlign=align; ctx.fillStyle=col; ctx.fillText(txt,x,y); ls(0);
+  }
+  plate('@stoopidshow', S.w/2, U*0.055, 'center', 'rgba(255,255,255,0.45)', U*0.024, 2);
+  plate('DEVELOPER TIME REQUIRED '+TAU.toFixed(2)+'s · SCHEMATIC',
+        S.w-U*0.05, S.h-U*0.04, 'right', 'rgba(0,255,198,0.55)', U*0.019, 1);
+  ctx.fillStyle='rgba(255,255,255,0.04)';
+  for(let y=0;y<S.h;y+=4) ctx.fillRect(0,y,S.w,2);
+  ctx.restore();
+}
+
+const freeze=new URLSearchParams(location.search).get('t');
+let t0=null;
+function loop(now){ if(t0===null)t0=now; draw(Math.min((now-t0)/1000,TOTAL)); requestAnimationFrame(loop); }
+if(freeze!==null) document.fonts.ready.then(()=>draw(Math.min(parseFloat(freeze),TOTAL)));
+else requestAnimationFrame(loop);
+addEventListener('keydown',e=>{ if(e.code==='Space'){ t0=null; e.preventDefault(); }});
+addEventListener('click',()=>{ t0=null; });
+</script>
+</body>
+</html>
