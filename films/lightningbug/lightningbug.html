@@ -1,0 +1,519 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>The Life of a Lightning Bug</title>
+<style>
+  body{margin:0;background:#111;color:#ccc;font:13px/1.4 ui-monospace,Menlo,monospace;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+  canvas#c{width:auto;height:min(88vh,900px);background:#000;box-shadow:0 0 0 1px #333}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+  button{background:#222;color:#ddd;border:1px solid #444;padding:4px 10px;cursor:pointer;font:inherit}
+  input[type=range]{width:320px}
+</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="core.js"></script>
+<script>
+'use strict';
+// ============================================================
+// THE LIFE OF A LIGHTNING BUG — THE STOOPID SHOW / SIGNAL
+//
+// Subject: a firefly spends its whole life sending a signal and waiting for
+// an answer. Then we turn the porch light on.
+//
+// Look: ink on warm paper with hatching along the form, blue construction
+// lines and chalk-on-navy blueprint interludes — the fruit-fly look. Night
+// shots keep the ink finish on PAL.night, which is the same pipeline.
+// Format: 9:16, short side 1080 logical units. Drawn 12 fps, output 24.
+// Length: 24.0 s = 288 drawn frames.
+//
+// Anchor (rule 11): THE LANTERN. The yellow-green glow is in every frame of
+// the film — as the reaction, as the egg, as the larva's tail, as the adult's
+// lamp, and at the end as the one light that is still going.
+// Sign-off (rule 12): signOff('SIGNAL', 'RECEIVED').
+// Text (checklist): none anywhere but the sign-off. The blueprint interludes
+// explain with lines, the way the reference film does.
+//
+// t      dur  scene      look        camera      what changes                            kit                         sound
+// 0.00   1.5  dusk       paper       push-in     bug on a grass blade, lantern idles     surface hatch construction  low pluck
+// 1.50   0.5  blot       -> bluepr.  -           bristly blob wipes to the chalk render  blot                        swell
+// 2.00   1.5  chemistry  blueprint   static      two reagents meet, burst, no heat       aster dashedRing dotBurst   chime
+// 3.50   1.5  eggs       night       static      a clutch self-draws, each one faint     selfDraw aster              sparse
+// 5.00   2.0  glowworm   night       follow      larva crawls a soil line to a snail     speedLines surface          low pulse
+// 7.00   0.5  pupa       flash+bp    -           one white frame, then a chalk spiral    flash dottedArc             hit
+// 7.50   1.5  emerge     night       static      elytra lift, wings unfold, lamp lights  surface aster               rise
+// 9.00   2.5  code       night       static      he flashes, she answers on a delay      dashedRing aster            call+answer
+// 11.50  0.5  codecard   blueprint   -           the rhythm as dashes on a line          iris dashedRing             tick
+// 12.00  2.5  fatale     night       static      a third light answers. It is not her.   aster speedLines            sour hit
+// 14.50  2.5  field      night       pull back   a whole field of them, half in sync     aster dottedArc             swell
+// 17.00  2.5  porch      night       static      a hard rectangle of light floods in     hatch grain                 buzz
+// 19.50  2.0  stubborn   night       push-in     one bug still flashing into the glare   aster dashedRing            lone pluck
+// 21.50  2.5  signoff    paper       static      SIGNAL / RECEIVED                       signOff                     resolve
+// ============================================================
+
+usePalette('paperInk');
+const INK = 'paperInk', BLUE = 'blueprintNight';
+// The lantern's two inks, taken once from the ink palette so the anchor keeps
+// its colour even in the shots where the palette underneath it changes.
+const LAMP = mix(PALETTES.paperInk.accents[2], PALETTES.paperInk.accents[3], .38);
+const LAMP2 = PALETTES.paperInk.accents[2];
+
+// ===================== HELPERS =====================
+const mir = pts => pts.map(([x, y]) => [-x, y]);
+const bb = pts => { let a=1e9,b=1e9,C=-1e9,d=-1e9; for(const[x,y]of pts){a=Math.min(a,x);b=Math.min(b,y);C=Math.max(C,x);d=Math.max(d,y);} return [a,b,C-a,d-b]; };
+
+// THE ANCHOR. Glow without a gradient: concentric rings of seeded dots, then
+// rays, then the lamp itself. g is how lit it is, 0 to 1.
+function lantern(c, x, y, r, seed, g) {
+  g = clamp(g, 0, 1);
+  if (g > .02) {
+    const q = rng(seed); c.save();
+    for (let k = 0; k < 44; k++) {
+      const a = q() * TAU, d = r * (1.4 + q() * 3.4 * g);
+      c.globalAlpha = (.5 - q() * .34) * g;
+      c.fillStyle = q() < .35 ? LAMP2 : LAMP;
+      c.beginPath(); c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, .9 + q() * 2.2, 0, TAU); c.fill();
+    }
+    c.restore();
+    aster(c, x, y, r * .8, 9, LAMP, seed + 1, .6 + g * 1.1, LAMP, LAMP2);
+  }
+  c.fillStyle = g > .15 ? LAMP : mix(LAMP, PAL.ink, .55);
+  c.beginPath(); c.arc(x, y, r * .78, 0, TAU); c.fill();
+  c.strokeStyle = PAL.ink; c.lineWidth = 1.6;
+  wob(c, ellPts(x, y, r * .78, r * .72, 0, 18), 1.2, seed + 2, true);
+}
+
+// Grass, hatched along the blade the way the reference hatches along a form.
+function blades(c, base, n, seed, col) {
+  const q = rng(seed);
+  for (let k = 0; k < n; k++) {
+    const x = q() * W, h = H * (.12 + q() * .26), lean = (q() - .5) * .5;
+    const pts = [[x, base], [x + lean * h * .5, base - h * .55], [x + lean * h, base - h]];
+    c.strokeStyle = col; c.lineWidth = 2 + q() * 3; c.globalAlpha = .55 + q() * .4;
+    wob(c, pts, 2, seed + k * 3);
+  }
+  c.globalAlpha = 1;
+}
+
+// ===================== PUPPET: the lightning bug =====================
+// Local coords, origin at the body centre, heading up = -y, about 200 tall.
+const PRONOT = [[-36, -20], [-33, -36], [-20, -48], [0, -52], [20, -48], [33, -36], [36, -20], [30, -10], [-30, -10]];
+const ELY_L  = [[-3, -16], [-22, -8], [-30, 22], [-26, 62], [-14, 84], [-3, 88]];
+const ABDO   = ellPts(0, 44, 23, 42, 0, 26);
+const HEADP  = ellPts(0, -30, 13, 10, 0, 18);   // under the shield, barely showing
+function elytron(side) {
+  const p = ELY_L.map(([x, y]) => [x * side, y]);
+  return p.concat(p.slice().reverse().map(([x, y]) => [x * .28, y]));
+}
+function drawBug(c, mode, pose, seed) {
+  const ink = mode !== 'blueprint', line = ink ? PAL.ink : PAL.chalk;
+  c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+  // wings, behind everything, only when they are out
+  if (pose.wing > .02) {
+    const gh = pose.flap > 0 ? [-1, 0, 1] : [0];
+    for (const s of [-1, 1]) for (const g of gh) {
+      const a = s * (.5 + pose.wing * .8) + g * .2 * pose.flap;
+      const wx = s * 14 + Math.cos(a) * 46, wy = -6 + Math.sin(Math.abs(a)) * 30;
+      if (ink) { c.fillStyle = `rgba(232,236,255,${.30 / gh.length + .05})`; c.fill(ellPath(wx, wy, 52, 19, a * .7)); }
+      c.strokeStyle = ink ? 'rgba(40,30,60,.5)' : PAL.chalk; c.lineWidth = 1.2;
+      wob(c, ellPts(wx, wy, 52, 19, a * .7, 22), 1.2, seed + 30 + s + g, true);
+    }
+  }
+  // six legs
+  for (let i = 0; i < 3; i++) for (const s of [-1, 1]) {
+    const y0 = -22 + i * 26, ph = Math.sin(pose.walk * TAU + i * 2.1 + s) * 7 * (1 - pose.tuck);
+    const pts = [[s * 20, y0], [s * (40 - pose.tuck * 12), y0 - 10 + ph], [s * (56 - pose.tuck * 24), y0 + 16 + ph]];
+    c.strokeStyle = line; c.lineWidth = ink ? 2 : 1.8; c.globalAlpha = .95;
+    wob(c, pts, 1.5, seed + 11 + i * 3 + s);
+  }
+  c.globalAlpha = 1;
+  // abdomen under the wing cases
+  if (ink) { c.fillStyle = PAL.fills[2]; c.fill(polyPath(ABDO)); surface(c, polyPath(ABDO), bb(ABDO), { seed: seed + 4, gap: 4, len: 9, alpha: .34 }); }
+  c.strokeStyle = line; c.lineWidth = ink ? 1.8 : 1.6; wob(c, ABDO, 1.6, seed + 5, true);
+  // THE LANTERN, the last two segments
+  lantern(c, 0, 78, 19, seed + 6, pose.glow);
+  // elytra, the hard wing cases, on top
+  for (const s of [-1, 1]) {
+    const e = elytron(s);
+    if (ink) { c.fillStyle = PAL.ink; c.fill(polyPath(e)); surface(c, polyPath(e), bb(e), { seed: seed + 7 + s, color: PAL.fills[3], gap: 5, len: 11, alpha: .30 }); }
+    c.strokeStyle = line; c.lineWidth = ink ? 2 : 1.8; wob(c, e, 1.8, seed + 8 + s, true);
+  }
+  // the head sits under the shield; only a little of it shows
+  if (ink) { c.fillStyle = PAL.ink; c.fill(polyPath(HEADP)); }
+  c.strokeStyle = line; c.lineWidth = ink ? 1.6 : 1.4; wob(c, HEADP, 1.2, seed + 12, true);
+  // pronotum: a broad flat shield, pale at the margin with one dark centre spot
+  if (ink) {
+    c.fillStyle = PAL.fills[0]; c.fill(polyPath(PRONOT));
+    surface(c, polyPath(PRONOT), bb(PRONOT), { seed: seed + 9, gap: 4, len: 7, alpha: .30 });
+    c.save(); c.clip(polyPath(PRONOT));
+    c.fillStyle = PAL.blush; c.globalAlpha = .85; c.fill(ellPath(0, -31, 11, 9));
+    c.globalAlpha = 1; c.fillStyle = PAL.ink; c.fill(ellPath(0, -31, 5.5, 5));
+    c.restore();
+  }
+  c.strokeStyle = line; c.lineWidth = ink ? 2.2 : 2; wob(c, PRONOT, 1.8, seed + 10, true);
+  // antennae, out from under the front edge
+  for (const s of [-1, 1]) {
+    c.strokeStyle = line; c.lineWidth = 1.6;
+    wob(c, [[s * 9, -46], [s * 20, -66], [s * 34, -76]], 1.3, seed + 14 + s);
+  }
+  if (ink) scribble(c, polyPath(ABDO), 0, 44, { seed: seed + 16, amp: 2.6, alpha: .3 });
+  c.restore();
+}
+
+// ===================== SCENES =====================
+const L1 = layer(), L2 = layer();
+
+// --- 1. dusk --------------------------------------------------------------
+function sceneDusk(c, tau, i, mode) {
+  const ink = mode !== 'blueprint';
+  if (ink) { usePalette(INK); paper(c); } else { usePalette(BLUE); night(c); }
+  cam(c, CX, CY + 60, lerp(1.06, 1.20, sm(0, 1.5, tau)));
+  const base = H * .86;
+  if (ink) {
+    // the ground, hatched in two passes the way the reference builds a form
+    const g = circPath(CX, base + 900, 1000), gbox = [CX - 1000, base - 120, 2000, 2000];
+    c.fillStyle = PAL.fills[1]; c.fill(g);
+    hatch(c, g, gbox, { angle: .8, gap: 6, len: 18, jitter: 6, color: PAL.light, alpha: .5, width: 1.3, seed: 2 });
+    hatch(c, g, gbox, { angle: -.6, gap: 7, len: 16, jitter: 5, color: PAL.blush, alpha: .3, width: 1.1, seed: 3 });
+    grain(c, g, gbox, 5200, PAL.shade, .32, 4, 1.8);
+    c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, ellPts(CX, base + 900, 1000, 1000, 0, 120), 2.5, 5, true);
+  }
+  blades(c, base + 10, 26, 6, ink ? PAL.shade : alpha(PAL.chalk, .6));
+  // the blade he is sitting on
+  const bx = CX - 40, bt = base - H * .30;
+  c.strokeStyle = ink ? PAL.shade : PAL.chalk; c.lineWidth = 7;
+  wob(c, [[bx, base + 10], [bx - 26, base - H * .16], [bx + 10, bt]], 2.4, 7);
+  const f = Math.floor(tau * FPS_DRAW), twitch = (f % 9 === 0) ? .16 : 0;
+  c.save(); c.translate(bx + 14, bt - 34); c.rotate(-.16 + twitch * .1); c.scale(1.45, 1.45);
+  if (ink) construction(c, 0, 10, 132, 9, alpha(PAL.guide, .5));
+  drawBug(c, mode, { wing: 0, flap: 0, tuck: .2, walk: 0, glow: .35 + (pulse(i, 6) ? .5 : 0) }, 20);
+  c.restore();
+  if (ink) { c.strokeStyle = alpha(PAL.guide, .5); c.lineWidth = .9; cross(c, W * .22, H * .28, 9); cross(c, W * .78, H * .46, 9); }
+}
+function sceneDuskInk(c, tau, i) { sceneDusk(c, tau, i, 'ink'); }
+
+// --- 2. ink blot to the chalk render --------------------------------------
+function sceneBlot(c, tau, i) {
+  sceneDusk(L1.getContext('2d'), 1.5, i, 'ink');
+  sceneDusk(L2.getContext('2d'), 1.5, i, 'blueprint');
+  usePalette(INK); blit(c, L1);
+  usePalette(BLUE);
+  blot(c, L2, CX - 30, CY + 120, lerp(0, 1600, sm(0, .45, tau, easeOut)), 31);
+}
+
+// --- 3. the chemistry, explained in lines ---------------------------------
+function sceneChem(c, tau, i) {
+  usePalette(BLUE); night(c);
+  const cx = CX, cy = CY - 40;
+  construction(c, cx, cy, 300, 41, alpha(PAL.chalk, .4));
+  dashedRing(c, cx, cy, 330, alpha(PAL.chalk, .4), 42);
+  // two reagents drift in and meet
+  const u = sm(.1, .85, tau, easeIO);
+  const ax = lerp(cx - 330, cx - 34, u), bx = lerp(cx + 330, cx + 34, u);
+  const cl = (x, y, n, s) => { const q = rng(s); for (let k = 0; k < n; k++) { const a = q() * TAU, d = q() * 34; c.fillStyle = PAL.chalk; c.globalAlpha = .55 + q() * .4; c.beginPath(); c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 3 + q() * 4, 0, TAU); c.fill(); } c.globalAlpha = 1; };
+  cl(ax, cy, 9, 43); cl(bx, cy, 5, 44);
+  c.strokeStyle = alpha(PAL.chalk, .55); c.lineWidth = 1.6;
+  wob(c, [[ax, cy], [cx, cy]], 1.4, 45); wob(c, [[bx, cy], [cx, cy]], 1.4, 46);
+  // they meet: a burst, and rings going out. No heat squiggles — that is the point.
+  if (tau > .85) {
+    const v = sm(.85, 1.45, tau, easeOut);
+    dotBurst(c, cx, cy, 380 * v, 18, alpha(LAMP, .75), 47, 1);
+    for (let k = 0; k < 3; k++) {
+      const rr = 60 + v * (150 + k * 130);
+      if (rr < 460) dashedRing(c, cx, cy, rr, alpha(LAMP, .6 - k * .15), 48 + k, [12, 14], 2.4);
+    }
+  }
+  lantern(c, cx, cy, 34, 49, tau > .85 ? 1 : .22);
+}
+
+// --- 4. the eggs ----------------------------------------------------------
+function sceneEggs(c, tau, i) {
+  usePalette(INK); night(c);
+  const soil = H * .20;
+  c.strokeStyle = alpha(PAL.chalk, .5); c.lineWidth = 2.4;
+  wob(c, [[0, soil], [W * .3, soil + 14], [W * .7, soil - 10], [W, soil + 6]], 3, 51);
+  grain(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], 5200, PAL.chalk, .18, 52, 1.8);
+  // grit in the soil, so the shot is not an empty field
+  const q = rng(55);
+  for (let k = 0; k < 220; k++) {
+    const x = q() * W, y = soil + 16 + q() * (H - soil - 30);
+    c.fillStyle = alpha(PAL.chalk, .08 + q() * .17);
+    c.beginPath(); c.arc(x, y, 1.5 + q() * 5, 0, TAU); c.fill();
+  }
+  // a few roots coming down through the shot
+  for (let k = 0; k < 5; k++) {
+    const x = q() * W;
+    c.strokeStyle = alpha(PAL.chalk, .16); c.lineWidth = 3 + q() * 4;
+    wob(c, [[x, soil], [x + (q() - .5) * 180, soil + H * .3], [x + (q() - .5) * 300, H]], 4, 300 + k);
+  }
+  const eggs = [[-.30, .10], [-.04, .17], [.28, .12], [-.18, .30], [.12, .32], [.34, .38],
+                [-.32, .48], [-.02, .52], [.24, .60], [-.20, .68], [.10, .76], [.32, .82]];
+  eggs.forEach(([fx, fy], k) => {
+    const x = CX + fx * W * .80, y = soil + 90 + fy * (H - soil - 160);
+    const p = clamp((tau - .10 - k * .07) / .40, 0, 1);
+    if (p <= 0) return;
+    c.strokeStyle = alpha(PAL.chalk, .85); c.lineWidth = 3.2;
+    selfDraw(c, ellPts(x, y, 62, 50, k * .4, 26), p, 53 + k, 1.8, true);
+    if (p > .9) lantern(c, x, y, 23, 60 + k, .28 + (pulse(i, 5 + (k % 5)) ? .5 : 0));
+  });
+  construction(c, CX, soil + (H - soil) * .48, W * .42, 54, alpha(PAL.guide, .28));
+}
+
+// --- 5. the glowworm ------------------------------------------------------
+function sceneWorm(c, tau, i) {
+  usePalette(INK); night(c);
+  const u = sm(0, 1.9, tau, easeIO), soil = H * .58;
+  cam(c, lerp(W * .30, W * .66, u), soil + 40, 1.12);
+  c.strokeStyle = alpha(PAL.chalk, .5); c.lineWidth = 3.2;
+  wob(c, [[-400, soil], [W * .5, soil + 18], [W + 400, soil - 8]], 3.2, 61);
+  grain(c, rectPath(-400, soil, W + 800, 700), [-400, soil, W + 800, 700], 4200, PAL.chalk, .17, 62, 1.8);
+  // stones and stems along the ground so the pan has something to pass
+  const qq = rng(66);
+  for (let k = 0; k < 26; k++) {
+    const x = -300 + qq() * (W + 600), y = soil + 16 + qq() * 150, rr = 5 + qq() * 16;
+    c.strokeStyle = alpha(PAL.chalk, .3 + qq() * .3); c.lineWidth = 2;
+    wob(c, ellPts(x, y, rr, rr * .7, qq(), 12), 1.4, 67 + k, true);
+  }
+  blades(c, soil + 6, 12, 68, alpha(PAL.chalk, .28));
+  // the snail he is walking toward: a spiral shell
+  const sx = W * .95, sy = soil - 78;
+  c.strokeStyle = PAL.chalk; c.lineWidth = 3.4;
+  const sp = []; for (let k = 0; k <= 80; k++) { const a = k / 80 * TAU * 2.8, rr = 10 + k * 1.9; sp.push([sx + Math.cos(a) * rr, sy + Math.sin(a) * rr * .84]); }
+  wob(c, sp, 1.8, 63);
+  c.lineWidth = 2.6; wob(c, [[sx - 150, soil + 4], [sx - 70, soil - 14], [sx - 20, sy + 60]], 2, 69);
+  // the larva: flat segments, tapering, the tail lit
+  const lx = lerp(W * .06, W * .72, u), ly = soil - 26;
+  c.save(); c.translate(lx, ly); c.scale(1.7, 1.7);
+  const segs = 8;
+  for (let k = segs - 1; k >= 0; k--) {
+    const x = -k * 30, w = 34 - k * 1.8, h = 19 - k * .7;
+    const wob2 = Math.sin(u * 9 + k * .7) * 5;
+    const p = ellPts(x, wob2, w, h, 0, 18);
+    c.fillStyle = PAL.fills[2]; c.fill(polyPath(p));
+    surface(c, polyPath(p), bb(p), { seed: 64 + k, gap: 4, len: 8, alpha: .3 });
+    c.strokeStyle = PAL.ink; c.lineWidth = 1.8; wob(c, p, 1.4, 70 + k, true);
+  }
+  lantern(c, -segs * 30 + 8, Math.sin(u * 9 + segs * .7) * 5, 15, 79, .5 + (pulse(i, 5) ? .35 : 0));
+  c.restore();
+  speedLines(c, lx - 130, ly, Math.PI, 80 + (i % 3), 4, .3, alpha(PAL.chalk, .5));
+}
+
+// --- 6. flash, then the pupa in chalk -------------------------------------
+function scenePupa(c, tau, i) {
+  usePalette(BLUE);
+  if (tau < 1 / 12) { flash(c, tint(PAL.chalk, .35)); return; }
+  night(c);
+  const cx = CX, cy = CY;
+  construction(c, cx, cy, 280, 81, alpha(PAL.chalk, .4));
+  const p = sm(.1, .45, tau, easeOut);
+  c.strokeStyle = PAL.chalk; c.lineWidth = 2.6;
+  const sp = []; for (let k = 0; k <= 80; k++) { const a = k / 80 * TAU * 2.2, rr = 20 + k * 3.1; sp.push([cx + Math.cos(a) * rr * .8, cy + Math.sin(a) * rr]); }
+  selfDraw(c, sp, p, 82, 1.8);
+  dottedArc(c, cx, cy, 300, alpha(PAL.chalk, .45), 83, 14, 1.6);
+  lantern(c, cx, cy, 20, 84, .3);
+}
+
+// --- 7. the adult emerges -------------------------------------------------
+function sceneEmerge(c, tau, i) {
+  usePalette(INK); night(c);
+  const u = sm(.1, 1.2, tau, easeIO);
+  cam(c, CX, CY, lerp(1.35, 1.05, sm(0, 1.5, tau)));
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 2200, PAL.chalk, .13, 91, 1.6);
+  dashedRing(c, CX, CY + 40, 300 + u * 90, alpha(PAL.chalk, .28), 92);
+  c.save(); c.translate(CX, CY + 40); c.scale(1.7, 1.7);
+  drawBug(c, 'ink', { wing: u, flap: 0, tuck: .5 - u * .3, walk: 0, glow: u * (.5 + (pulse(i, 5) ? .5 : 0)) }, 93);
+  c.restore();
+}
+
+// --- 8. the code: he calls, she answers -----------------------------------
+// A firefly's flash is a species code and the answer comes after a set delay.
+function flashCycle(tau, period, at, width) { const p = (tau % period); return clamp(1 - Math.abs(p - at) / width, 0, 1); }
+function sceneCode(c, tau, i) {
+  usePalette(INK); night(c);
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 2400, PAL.chalk, .12, 101, 1.6);
+  blades(c, H * .96, 14, 102, alpha(PAL.chalk, .34));
+  const he = flashCycle(tau, 1.25, .18, .16), she = flashCycle(tau, 1.25, .72, .16);
+  // him, in the air
+  const hx = CX - 190 + Math.sin(tau * 2.1) * 40, hy = CY - 240 + Math.cos(tau * 1.7) * 60;
+  c.save(); c.translate(hx, hy); c.rotate(.1); c.scale(1.25, 1.25);
+  drawBug(c, 'ink', { wing: 1, flap: 1, tuck: .8, walk: tau, glow: he }, 103);
+  c.restore();
+  // her, on a blade
+  const sx = CX + 210, sy = CY + 330;
+  c.save(); c.translate(sx, sy); c.rotate(-.12); c.scale(1.35, 1.35);
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .25, walk: 0, glow: she }, 104);
+  c.restore();
+  // the signal going out, and the answer coming back
+  if (he > .05) for (let k = 0; k < 3; k++) { const rr = (1 - he) * (120 + k * 110) + 40; dashedRing(c, hx, hy + 60, rr, alpha(LAMP, he * (.5 - k * .13)), 105 + k, [12, 16], 2.2); }
+  if (she > .05) for (let k = 0; k < 3; k++) { const rr = (1 - she) * (120 + k * 110) + 40; dashedRing(c, sx, sy + 60, rr, alpha(LAMP, she * (.5 - k * .13)), 108 + k, [12, 16], 2.2); }
+}
+
+// --- 9. the rhythm, as a diagram ------------------------------------------
+function sceneCodeCard(c, tau, i) {
+  usePalette(INK); sceneCode(L1.getContext('2d'), 2.5, i); blit(c, L1);
+  usePalette(BLUE);
+  iris(c, CX, CY, lerp(0, 1300, sm(0, .42, tau, easeOut)), cc => {
+    night(cc);
+    const y1 = CY - 130, y2 = CY + 150, x0 = W * .13, x1 = W * .87;
+    cc.strokeStyle = alpha(PAL.chalk, .6); cc.lineWidth = 2;
+    wob(cc, [[x0, y1], [x1, y1]], 1.4, 111); wob(cc, [[x0, y2], [x1, y2]], 1.4, 112);
+    // his marks, then hers, offset by the answer delay
+    const his = [.06, .30, .54, .78], hers = his.map(v => v + .13);
+    cc.lineWidth = 12; cc.lineCap = 'round';
+    his.forEach((v, k) => { cc.strokeStyle = LAMP; wob(cc, [[x0 + v * (x1 - x0), y1 - 28], [x0 + v * (x1 - x0), y1 + 28]], 1.6, 113 + k); });
+    hers.forEach((v, k) => { cc.strokeStyle = LAMP2; wob(cc, [[x0 + v * (x1 - x0), y2 - 28], [x0 + v * (x1 - x0), y2 + 28]], 1.6, 117 + k); });
+    // the delay, bracketed
+    const a = x0 + his[1] * (x1 - x0), b = x0 + hers[1] * (x1 - x0);
+    cc.strokeStyle = alpha(PAL.chalk, .7); cc.lineWidth = 2.2;
+    wob(cc, [[a, CY + 10], [b, CY + 10]], 1.2, 121);
+    wob(cc, [[a, CY - 6], [a, CY + 26]], 1.2, 122); wob(cc, [[b, CY - 6], [b, CY + 26]], 1.2, 123);
+    lantern(cc, CX, CY - 300, 22, 124, .8);
+  });
+}
+
+// --- 10. the one that answers wrong ---------------------------------------
+// Photuris females copy another species' answer code and eat whoever comes.
+function sceneFatale(c, tau, i) {
+  usePalette(INK); night(c);
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 2400, PAL.chalk, .12, 131, 1.6);
+  blades(c, H * .97, 12, 132, alpha(PAL.chalk, .3));
+  const u = sm(.35, 1.9, tau, easeIO);
+  const gone = tau > 2.05;                      // the snap
+  const lx = CX + 150, ly = H * .80;
+  // her answer, from the grass
+  const ans = flashCycle(tau, 1.1, .62, .18);
+  c.save(); c.translate(lx, ly); c.rotate(-.1); c.scale(1.25, 1.25);
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .2, walk: 0, glow: gone ? .95 : ans }, 133);
+  c.restore();
+  if (!gone && ans > .05) for (let k = 0; k < 3; k++) dashedRing(c, lx, ly + 70, (1 - ans) * (130 + k * 120) + 40, alpha(LAMP, ans * (.5 - k * .14)), 134 + k, [12, 16], 2.2);
+  // him, coming down to it
+  if (!gone) {
+    const hx = lerp(CX - 300, lx - 30, u), hy = lerp(H * .22, ly - 120, u);
+    const dir = Math.atan2(ly - 120 - H * .22, lx - 30 - (CX - 300));
+    speedLines(c, hx, hy, dir, 137 + (i % 3), 6, .4, alpha(LAMP, .5));
+    c.save(); c.translate(hx, hy); c.rotate(dir - Math.PI / 2); c.scale(.8, .8);
+    drawBug(c, 'ink', { wing: 1, flap: 1, tuck: .85, walk: tau, glow: flashCycle(tau, 1.1, .14, .16) }, 138);
+    c.restore();
+  } else {
+    // one spark where he was, going out
+    const v = clamp((tau - 2.05) / .3, 0, 1);
+    dotBurst(c, lx - 30, ly - 110, 150 * v, 10, alpha(LAMP, .6 * (1 - v)), 139, 1);
+  }
+}
+
+// --- 11. a field of them --------------------------------------------------
+function sceneField(c, tau, i) {
+  usePalette(INK); night(c);
+  const u = sm(0, 2.4, tau, easeIO);
+  cam(c, CX, CY, lerp(1.22, .92, u));
+  grain(c, rectPath(-300, -300, W + 600, H + 600), [-300, -300, W + 600, H + 600], 3400, PAL.chalk, .12, 141, 1.6);
+  blades(c, H * .99, 20, 142, alpha(PAL.chalk, .3));
+  dottedArc(c, CX, H * 1.35, W * .78, alpha(PAL.chalk, .22), 143, 20, 1.4);
+  const q = rng(144);
+  for (let k = 0; k < 34; k++) {
+    const x = q() * W, y = H * (.12 + q() * .74), ph = q();
+    // half of them fall into step as the shot runs
+    const sync = lerp(ph, .25, u * .7);
+    const g = flashCycle(tau + sync * 1.3, 1.3, .3, .2);
+    if (g > .04) lantern(c, x, y, 8 + q() * 6, 145 + k, g * .9);
+  }
+  lantern(c, CX - 60, CY + 60, 22, 190, flashCycle(tau, 1.3, .3, .22));
+}
+
+// --- 12. the porch light --------------------------------------------------
+function scenePorch(c, tau, i) {
+  usePalette(INK); night(c);
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 2600, PAL.chalk, .12, 151, 1.6);
+  blades(c, H * .99, 18, 152, alpha(PAL.chalk, .28));
+  const q = rng(153);
+  const u = sm(.25, 1.7, tau, easeIO);
+  // the bugs. The ones the light reaches wash out; the ones in the surviving
+  // strip of night keep flashing, which is the whole point of the shot.
+  for (let k = 0; k < 26; k++) {
+    const x = q() * W, y = H * (.16 + q() * .70), ph = q();
+    const lit = clamp((x - W * .10) / (W * .30), 0, 1);      // how much the flood reaches them
+    const g = flashCycle(tau + ph * 1.3, 1.3, .3, .2) * (1 - u * .95 * lit);
+    if (g > .04) lantern(c, x, y, 8 + q() * 5, 154 + k, g);
+  }
+  // a hard-edged wedge of light from off frame, hatched, not blurred
+  if (u > .01) {
+    const w = W * .92 * u, pts = [[W * .62, -40], [W * .62 + w * .5, -40], [W * .40 + w, H + 40], [W * .28, H + 40]];
+    const path = polyPath(pts), box = bb(pts);
+    c.save(); c.globalAlpha = Math.min(1, .55 + .45 * u);
+    c.fillStyle = PAL.light; c.fill(path);
+    hatch(c, path, box, { angle: 1.25, gap: 6, len: 30, jitter: 4, color: '#ffffff', alpha: .55, width: 2.2, seed: 156 });
+    hatch(c, path, box, { angle: -.9, gap: 11, len: 22, jitter: 5, color: PAL.blush, alpha: .16, width: 1.2, seed: 158 });
+    c.restore();
+    c.strokeStyle = alpha(PAL.light, .8); c.lineWidth = 2.4; wob(c, pts, 3, 157, true);
+  }
+}
+
+// --- 13. still flashing ---------------------------------------------------
+function sceneStubborn(c, tau, i) {
+  usePalette(INK); night(c);
+  cam(c, CX, CY, lerp(.95, 1.22, sm(0, 2.0, tau)));
+  // the glare, flat and unhelpful, still there
+  c.save(); c.globalAlpha = .95; c.fillStyle = PAL.light;
+  const pts = [[W * .40, -40], [W * 1.25, -40], [W * 1.10, H + 40], [W * .26, H + 40]];
+  c.fill(polyPath(pts));
+  hatch(c, polyPath(pts), bb(pts), { angle: 1.25, gap: 6, len: 30, jitter: 4, color: '#ffffff', alpha: .5, width: 2.2, seed: 161 });
+  hatch(c, polyPath(pts), bb(pts), { angle: -.9, gap: 11, len: 22, jitter: 5, color: PAL.blush, alpha: .15, width: 1.2, seed: 165 });
+  c.restore();
+  blades(c, H * .99, 10, 162, alpha(PAL.shade, .5));
+  const g = flashCycle(tau, 1.15, .28, .17);
+  const bx = W * .30, by = CY + 60;
+  c.save(); c.translate(bx, by); c.rotate(.08); c.scale(1.05, 1.05);
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .25, walk: 0, glow: g }, 163);
+  c.restore();
+  if (g > .05) for (let k = 0; k < 3; k++) dashedRing(c, bx, by + 70, (1 - g) * (130 + k * 120) + 40, alpha(LAMP, g * (.55 - k * .15)), 164 + k, [12, 16], 2.4);
+}
+
+// --- 14. sign-off ---------------------------------------------------------
+function sceneSign(c, tau, i) {
+  usePalette(INK); paper(c);
+  construction(c, CX, CY - 40, W * .26, 171, alpha(PAL.guide, .35));
+  lantern(c, CX, CY - 150, 30, 172, .5 + (pulse(i, 6) ? .45 : 0));
+  signOff(c, 'SIGNAL', 'RECEIVED', { x: CX, y: CY + 190, size: 104, progressA: sm(.3, .8, tau), progressB: sm(.7, 1.2, tau) });
+}
+
+// ===================== SCORE =====================
+function score(ac, t0, dest) {
+  const master = ac.createGain(); master.gain.value = .55; master.connect(dest);
+  const r = rng(9);
+  let acc = 0;
+  for (const s of TIMELINE) { note(ac, master, pentHz(0, 0), t0, acc, .6, 'sine', .18); acc += s.dur; }
+  // a low bed for the night shots
+  for (let t = 3.5; t < 21.5; t += 1.5) note(ac, master, pentHz(-1, 0), t0, t, 2.0, 'sine', .10);
+  // the call-and-answer: a note on his flash, a fifth back on hers
+  for (let t = 9.0; t < 11.5; t += 1.25) {
+    note(ac, master, pentHz(1, 2), t0, t + .18, .5, 'triangle', .19);
+    note(ac, master, pentHz(1, 4), t0, t + .72, .5, 'triangle', .15);
+  }
+  for (let t = 12.0; t < 14.5; t += 1.1) {
+    note(ac, master, pentHz(1, 2), t0, t + .14, .5, 'triangle', .17);
+    note(ac, master, pentHz(0, 1), t0, t + .62, .6, 'sawtooth', .13);   // her answer is wrong
+  }
+  noiseBurst(ac, master, t0, 14.05, .45, .26, 4);                        // the snap
+  for (let t = 14.5; t < 17.0; t += .42) note(ac, master, pentHz(1, r() * 5 | 0), t0, t, .7, 'sine', .11);
+  for (let t = 17.0; t < 19.5; t += .25) note(ac, master, pentHz(-1, 1), t0, t, .5, 'sawtooth', .12);  // the buzz
+  noiseBurst(ac, master, t0, 17.1, 1.8, .16, 5);
+  for (let t = 19.5; t < 21.5; t += 1.15) note(ac, master, pentHz(1, 2), t0, t + .28, .8, 'triangle', .2);
+  for (let k = 0; k < 4; k++) note(ac, master, pentHz(1, k), t0, 21.5 + k * .34, 1.3, 'sine', .16);
+}
+
+// ===================== FILM =====================
+const TIMELINE = [
+  { name: 'dusk',      dur: 1.5, fn: sceneDuskInk },
+  { name: 'blot',      dur: 0.5, fn: sceneBlot },
+  { name: 'chemistry', dur: 1.5, fn: sceneChem },
+  { name: 'eggs',      dur: 1.5, fn: sceneEggs },
+  { name: 'glowworm',  dur: 2.0, fn: sceneWorm },
+  { name: 'pupa',      dur: 0.5, fn: scenePupa },
+  { name: 'emerge',    dur: 1.5, fn: sceneEmerge },
+  { name: 'code',      dur: 2.5, fn: sceneCode },
+  { name: 'codecard',  dur: 0.5, fn: sceneCodeCard },
+  { name: 'fatale',    dur: 2.5, fn: sceneFatale },
+  { name: 'field',     dur: 2.5, fn: sceneField },
+  { name: 'porch',     dur: 2.5, fn: scenePorch },
+  { name: 'stubborn',  dur: 2.0, fn: sceneStubborn },
+  { name: 'signoff',   dur: 2.5, fn: sceneSign },
+];
+defineFilm({ timeline: TIMELINE, score, format: { ar: '9:16' } });
+</script>
