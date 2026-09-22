@@ -1,0 +1,807 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>The Life of a Lightning Bug</title>
+<style>
+  body{margin:0;background:#111;color:#ccc;font:13px/1.4 ui-monospace,Menlo,monospace;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+  canvas#c{width:min(92vw,760px);height:auto;background:#000;box-shadow:0 0 0 1px #333}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+  button{background:#222;color:#ddd;border:1px solid #444;padding:4px 10px;cursor:pointer;font:inherit}
+  input[type=range]{width:320px}
+</style>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script src="core.js"></script>
+<script>
+'use strict';
+// ============================================================
+// THE LIFE OF A LIGHTNING BUG — a 27 s loop
+//
+// A diagram that learned how to feel. Two languages cut hard against each
+// other: cream paper plates in brown ink that doubles and misses register,
+// and near-black indigo plates in thin lavender linework. One hot chartreuse
+// is reserved for light. Nothing else is ever that colour.
+//
+// Container: 1080x1080, 27.0 s, drawn 12 fps on twos, out at 24. 324 drawn
+// frames. One canvas, no images, no sprites. Score synthesized in code
+// against this same cut list.
+//
+// Grain reseeds every drawn frame on paper plates; navy plates hold still.
+// Hatch, never shade. Construction geometry always visible. Hard cuts only.
+//
+// Anchor: THE LANTERN. It takes the role the compound eye and the flight arcs
+// play in the reference — it gets the macro mosaic, the system diagram and
+// the annotation language, and it is in every frame of the film.
+//
+// The loop: the last plate is the egg blueprint the film opened its interior
+// on, two nuclei lit, so 27.0 snaps back onto 0.0.
+//
+// t      dur   mode        directs
+// 0.00   1.25  paper       cold open. The adult, huge, on one blade of timothy
+// 1.25   0.75  navy        smash cut. A photon is born
+// 2.00   4.00  navy        the egg: lattice sphere, two nuclei, soil ticks
+// 6.00   1.00  navy        push in, lattice to stipple, chartreuse split: hatch
+// 7.00   2.00  paper       the glowworm takes a snail
+// 9.00   1.00  navy        pupa: a soil chamber rewriting itself
+// 10.00  2.00  paper       teneral adult beside the split skin, one weak pulse
+// 12.00  1.00  paper       macro: the lantern as a floor of photocyte tiles
+// 13.00  1.00  navy        cross-section: four wells feeding one chamber
+// 14.00  2.00  paper       first flight over the meadow plate
+// 16.00  2.00  paper       pull back. The meadow is a bowl of other lights
+// 18.00  1.00  paper       a wrong answer. Too soon, too bright
+// 19.00  2.00  paper       courtship: his J, her single delayed blink
+// 21.00  2.00  paper       she lays. Each egg takes the glow on the way out
+// 23.00  1.50  paper       night count: tallies cut into a fence post
+// 24.50  1.50  paper       false dawn. A dew bead holds an inherited glow
+// 26.00  1.00  navy        back to the egg. Two nuclei lit. Cut to frame 0
+// ============================================================
+
+// ===================== PALETTE =====================
+// Dusk paper: wet-soil umber, leaf sage, cream, dusty rose twilight.
+const DUSK = makePalette({
+  paper: '#e9dfc8', paperBand: 'rgba(176,160,190,.15)', ink: '#4a3019', night: '#0d1024',
+  chalk: '#d8dcf5', chalkDim: '#8a90bd', guide: 'rgba(150,132,196,.55)',
+  fills: ['#7a5333', '#8fa07a', '#e8ddc4', '#c2909b'],
+  shade: '#3f2a17', light: '#f7f0de', blush: '#c2909b',
+  accents: ['#c8ff2e', '#e8ff5a', '#c2909b', '#8fa07a'],
+  inks: ['#54381f', '#c2909b', '#8fa07a'], finish: 'ink',
+}, 'paperInk');
+// Navy plate: near-black indigo, thin lavender linework, one hot accent.
+const NAVY = makePalette({
+  paper: '#0d1024', paperBand: null, ink: '#d8dcf5', night: '#0d1024',
+  chalk: '#d8dcf5', chalkDim: '#7b83b5', guide: 'rgba(150,132,196,.42)',
+  fills: ['#1a1f3d', '#232a52', '#141834', '#2b2f5e'],
+  shade: '#0d1024', light: '#eef1ff', blush: '#8a90bd',
+  accents: ['#c8ff2e', '#e8ff5a', '#ff5a5a', '#8fa07a'],
+  inks: ['#d8dcf5', '#c8ff2e', '#ff5a5a'], finish: 'ink',
+}, 'blueprintNight');
+usePalette(DUSK);
+const GLOW = '#c8ff2e', GLOW2 = '#e8ff5a', WRONG = '#ff5a5a';   // hot = light only
+
+// ===================== PLATE =====================
+// Paper plates reseed their grain every drawn frame; navy plates hold still.
+function paperPlate(c, i) {
+  usePalette(DUSK); resetT(c);
+  c.fillStyle = PAL.paper; c.fillRect(0, 0, W, H);
+  c.save(); c.translate(CX, CY); c.rotate(-Math.PI / 4);
+  c.fillStyle = PAL.paperBand;
+  for (let k = -8; k <= 8; k++) c.fillRect(-1400, k * 232 - 64, 2800, 118);
+  c.restore();
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 1700, PAL.shade, .07, 900 + i, 1.7);
+}
+function navyPlate(c) {
+  usePalette(NAVY); resetT(c);
+  c.fillStyle = PAL.night; c.fillRect(0, 0, W, H);
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 420, '#ffffff', .40, 31, 1.5);
+}
+
+// ===================== HELPERS =====================
+const bb = pts => { let a=1e9,b=1e9,C=-1e9,d=-1e9; for(const[x,y]of pts){a=Math.min(a,x);b=Math.min(b,y);C=Math.max(C,x);d=Math.max(d,y);} return [a,b,C-a,d-b]; };
+// A light pop is a discrete event: three drawn frames, never a fade.
+const pop = (i, period, phase) => (((i + (phase|0)) % period) + period) % period < 3;
+
+// The overlay language: thin chartreuse rings, arcs and guide lines laid on
+// top of the illustration. They mark photons, codes and yield.
+function ring(c, x, y, r, col, seed, w) {
+  dashedRing(c, x, y, r, col, seed, [13, 15], w || 2);
+}
+function annotArc(c, x, y, r, a0, a1, col, seed, w) {
+  const n = Math.max(8, Math.round((a1 - a0) * r / 14)), pts = [];
+  for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r]); }
+  c.strokeStyle = col; c.lineWidth = w || 1.8; wob(c, pts, 1.5, seed);
+}
+function ticks(c, x0, y, x1, n, col, seed, len) {
+  c.strokeStyle = col; c.lineWidth = 1.6;
+  for (let k = 0; k <= n; k++) { const x = lerp(x0, x1, k / n), L = (k % 5 === 0) ? (len || 18) : (len || 18) * .5;
+    wob(c, [[x, y - L], [x, y + L]], 1, seed + k); }
+}
+function bracket(c, x0, x1, y, col, seed) {
+  c.strokeStyle = col; c.lineWidth = 2;
+  wob(c, [[x0, y], [x1, y]], 1.2, seed);
+  wob(c, [[x0, y - 14], [x0, y + 14]], 1, seed + 1);
+  wob(c, [[x1, y - 14], [x1, y + 14]], 1, seed + 2);
+}
+
+// THE LANTERN. Hatched lemon patch plus a spatter of light. No bloom.
+function lantern(c, x, y, r, seed, g) {
+  g = clamp(g, 0, 1);
+  if (g > .02) {
+    const q = rng(seed); c.save();
+    for (let k = 0; k < 40; k++) {
+      const a = q() * TAU, d = r * (1.3 + q() * 3.2 * g);
+      c.globalAlpha = (.55 - q() * .35) * g;
+      c.fillStyle = q() < .4 ? GLOW2 : GLOW;
+      c.beginPath(); c.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, .9 + q() * 2.1, 0, TAU); c.fill();
+    }
+    c.restore();
+    aster(c, x, y, r * .74, 9, GLOW, seed + 1, .5 + g * 1.2, GLOW, GLOW2);
+  }
+  // the organ itself: a hatched patch, lit or not
+  const p = ellPath(x, y, r * .82, r * .72), box = [x - r, y - r, r * 2, r * 2];
+  c.fillStyle = g > .12 ? GLOW : mix(GLOW, PAL.ink, .62); c.fill(p);
+  hatch(c, p, box, { angle: .5, gap: 4, len: 9, jitter: 2, color: g > .12 ? mix(GLOW, PAL.ink, .5) : PAL.ink, alpha: .45, width: 1, seed: seed + 2 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 1.7;
+  wob(c, ellPts(x, y, r * .82, r * .72, 0, 18), 1.2, seed + 3, true);
+}
+
+// A flash is a ring that expands and dies. Never a streak.
+function flashRings(c, x, y, age, seed) {
+  if (age < 0 || age > 1) return;
+  for (let k = 0; k < 3; k++) {
+    const u = age - k * .16; if (u <= 0) continue;
+    const r = 40 + u * 300, a = (1 - u) * (.6 - k * .15);
+    if (a > .02) ring(c, x, y, r, alpha(GLOW, a), seed + k, 2.4);
+  }
+}
+
+// Grass, hatched along the blade.
+function blades(c, base, n, seed, col, hmax) {
+  const q = rng(seed);
+  for (let k = 0; k < n; k++) {
+    const x = q() * W, h = H * (.10 + q() * (hmax || .30)), lean = (q() - .5) * .55;
+    c.strokeStyle = col; c.lineWidth = 2 + q() * 3.4; c.globalAlpha = .5 + q() * .45;
+    wob(c, [[x, base], [x + lean * h * .5, base - h * .55], [x + lean * h, base - h]], 2.2, seed + k * 3);
+  }
+  c.globalAlpha = 1;
+}
+
+// ===================== PUPPET: the lightning bug =====================
+const PRONOT = [[-36, -20], [-33, -36], [-20, -48], [0, -52], [20, -48], [33, -36], [36, -20], [30, -10], [-30, -10]];
+const ELY_L  = [[-3, -16], [-22, -8], [-30, 22], [-26, 62], [-14, 84], [-3, 88]];
+const ABDO   = ellPts(0, 44, 23, 42, 0, 26);
+const HEADP  = ellPts(0, -30, 13, 10, 0, 18);
+function elytron(side) {
+  const p = ELY_L.map(([x, y]) => [x * side, y]);
+  return p.concat(p.slice().reverse().map(([x, y]) => [x * .28, y]));
+}
+function drawBug(c, mode, pose, seed) {
+  const ink = mode !== 'blueprint', line = ink ? PAL.ink : PAL.chalk;
+  c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+  if (pose.wing > .02) {
+    const gh = pose.flap > 0 ? [-1, 0, 1] : [0];
+    for (const s of [-1, 1]) for (const g of gh) {
+      const a = s * (.5 + pose.wing * .8) + g * .2 * pose.flap;
+      const wx = s * 14 + Math.cos(a) * 46, wy = -6 + Math.sin(Math.abs(a)) * 30;
+      if (ink) { c.fillStyle = alpha(PAL.light, .34 / gh.length + .05); c.fill(ellPath(wx, wy, 52, 19, a * .7)); }
+      c.strokeStyle = ink ? alpha(PAL.ink, .55) : PAL.chalk; c.lineWidth = 1.2;
+      wob(c, ellPts(wx, wy, 52, 19, a * .7, 22), 1.2, seed + 30 + s + g, true);
+    }
+  }
+  for (let k = 0; k < 3; k++) for (const s of [-1, 1]) {
+    const y0 = -22 + k * 26, ph = Math.sin(pose.walk * TAU + k * 2.1 + s) * 7 * (1 - pose.tuck);
+    c.strokeStyle = line; c.lineWidth = ink ? 2 : 1.8;
+    wob(c, [[s * 20, y0], [s * (40 - pose.tuck * 12), y0 - 10 + ph], [s * (56 - pose.tuck * 24), y0 + 16 + ph]], 1.5, seed + 11 + k * 3 + s);
+  }
+  if (ink) { c.fillStyle = PAL.fills[0]; c.fill(polyPath(ABDO)); surface(c, polyPath(ABDO), bb(ABDO), { seed: seed + 4, gap: 4, len: 9, alpha: .36 }); }
+  c.strokeStyle = line; c.lineWidth = ink ? 1.8 : 1.6; wob(c, ABDO, 1.6, seed + 5, true);
+  lantern(c, 0, 78, 19, seed + 6, pose.glow);
+  for (const s of [-1, 1]) {
+    const e = elytron(s);
+    if (ink) { c.fillStyle = PAL.shade; c.fill(polyPath(e)); surface(c, polyPath(e), bb(e), { seed: seed + 7 + s, color: PAL.fills[0], gap: 5, len: 11, alpha: .32 }); }
+    c.strokeStyle = line; c.lineWidth = ink ? 2 : 1.8; wob(c, e, 1.8, seed + 8 + s, true);
+  }
+  if (ink) { c.fillStyle = PAL.shade; c.fill(polyPath(HEADP)); }
+  c.strokeStyle = line; c.lineWidth = ink ? 1.6 : 1.4; wob(c, HEADP, 1.2, seed + 12, true);
+  if (ink) {
+    c.fillStyle = PAL.fills[2]; c.fill(polyPath(PRONOT));
+    surface(c, polyPath(PRONOT), bb(PRONOT), { seed: seed + 9, gap: 4, len: 7, alpha: .28 });
+    c.save(); c.clip(polyPath(PRONOT));
+    c.fillStyle = PAL.blush; c.globalAlpha = .55; c.fill(ellPath(0, -46, 30, 12));
+    c.globalAlpha = .95; c.fillStyle = PAL.shade; c.fill(ellPath(0, -30, 11, 9)); c.restore();
+  }
+  c.strokeStyle = line; c.lineWidth = ink ? 2.2 : 2; wob(c, PRONOT, 1.8, seed + 10, true);
+  for (const s of [-1, 1]) { c.strokeStyle = line; c.lineWidth = 1.6; wob(c, [[s * 9, -46], [s * 20, -66], [s * 34, -76]], 1.3, seed + 14 + s); }
+  if (ink) scribble(c, polyPath(ABDO), 0, 44, { colors: [PAL.inks[1], PAL.inks[2]], seed: seed + 16, amp: 3.2, alpha: .38, width: 1.2 });
+  c.restore();
+}
+
+// ===================== THE EGG PLATE (opens the interior, closes the loop) ===
+// Drawn once, called at 2.0 and again at 26.0 so the cut matches.
+function eggPlate(c, tau, i, o) {
+  o = o || {};
+  navyPlate(c);
+  if (o.zoom) cam(c, CX, CY - 14, o.zoom);
+  const cx = CX, cy = CY - 14, R = 250;
+  construction(c, cx, cy, 392, 41, alpha(PAL.chalk, .34));
+  ring(c, cx, cy, 430, alpha(PAL.chalk, .26), 42, 1.6);
+  ticks(c, W * .10, H * .845, W * .90, 20, alpha(PAL.chalk, .34), 43, 14);   // soil horizon
+  bracket(c, W * .62, W * .90, H * .14, alpha(PAL.chalk, .42), 44);          // the lab-plate bracket
+  // the sphere: double pale outline, packed with a hex lattice
+  const dp = clamp(o.draw === undefined ? 1 : o.draw, 0, 1);
+  c.save(); c.clip(circPath(cx, cy, R));
+  hexLattice(c, [cx - R, cy - R, R * 2, R * 2], 21, alpha(PAL.chalk, .42), .8, .9);
+  if (o.stipple) {
+    const q = rng(45);
+    for (let k = 0; k < 1500 * o.stipple; k++) { const a = q() * TAU, d = Math.sqrt(q()) * R;
+      c.fillStyle = alpha(PAL.chalk, .10 + q() * .35); c.beginPath(); c.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, .8 + q() * 1.6, 0, TAU); c.fill(); }
+  }
+  c.restore();
+  c.strokeStyle = PAL.chalk; c.lineWidth = 2.6; selfDraw(c, ellPts(cx, cy, R, R, 0, 96), dp, 46, 1.8, true);
+  c.strokeStyle = alpha(PAL.chalk, .55); c.lineWidth = 1.5; selfDraw(c, ellPts(cx, cy, R * .93, R * .93, 0, 90), dp, 47, 2.2, true);
+  // the sphere glows dimly on its own — firefly eggs do
+  const base = .16 + (pop(i, 18, 0) ? .12 : 0);
+  const q2 = rng(48); c.save();
+  for (let k = 0; k < 34; k++) { const a = q2() * TAU, d = R * (.2 + q2() * .95);
+    c.globalAlpha = base * (.5 + q2() * .5); c.fillStyle = GLOW;
+    c.beginPath(); c.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 1 + q2() * 2.4, 0, TAU); c.fill(); }
+  c.restore();
+  // two nuclei
+  const sp = o.split || 0;
+  const n1 = [cx - 74 - sp * 46, cy + 22 + sp * 30], n2 = [cx + 66 + sp * 40, cy - 36 - sp * 34];
+  const pairs = sp > .05 ? [n1, n2, [cx - 74 + sp * 52, cy + 22 - sp * 26], [cx + 66 - sp * 44, cy - 36 + sp * 40]] : [n1, n2];
+  pairs.forEach((p, k) => {
+    const g = o.nuclei === undefined ? (.55 + (pop(i, 14, k * 7) ? .45 : 0)) : o.nuclei;
+    lantern(c, p[0], p[1], k < 2 ? 26 : 20, 50 + k, g);
+    annotArc(c, p[0], p[1], 52, -.6 + k * 2, .9 + k * 2, alpha(GLOW, .45), 52 + k, 1.6);
+  });
+  c.strokeStyle = alpha(PAL.chalk, .4); c.lineWidth = 1.4; wob(c, [n1, n2], 1.4, 54);
+  if (sp > .05) { c.strokeStyle = alpha(GLOW, .45); c.lineWidth = 1.6;
+    wob(c, [n1, pairs[2]], 1.2, 55); wob(c, [n2, pairs[3]], 1.2, 56); }
+}
+
+// ===================== SCENES =====================
+const L1 = layer();
+
+// --- 0.00 cold open: the adult, huge, on one blade ------------------------
+function sHero(c, tau, i) {
+  paperPlate(c, i);
+  cam(c, CX, CY + 40, lerp(1.04, 1.12, sm(0, 1.25, tau)));
+  blades(c, H * 1.02, 9, 61, alpha(PAL.shade, .45), .30);
+  // the blade of timothy he is on
+  const bx = CX - 70;
+  c.strokeStyle = PAL.fills[1]; c.lineWidth = 13;
+  wob(c, [[bx - 40, H * 1.04], [bx - 8, H * .70], [bx + 26, H * .40]], 2.6, 62);
+  c.strokeStyle = PAL.shade; c.lineWidth = 2;
+  wob(c, [[bx - 40, H * 1.04], [bx - 8, H * .70], [bx + 26, H * .40]], 2.2, 63);
+  // one dew bead on the grass
+  const dp = circPath(bx + 92, H * .60, 17);
+  c.fillStyle = alpha(PAL.light, .7); c.fill(dp);
+  c.strokeStyle = PAL.ink; c.lineWidth = 2; c.stroke(dp);
+  c.fillStyle = PAL.light; c.fill(ellPath(bx + 87, H * .585, 6, 4));
+  const tw = (Math.floor(tau * FPS_DRAW) % 9 === 0) ? .12 : 0;
+  c.save(); c.translate(bx + 40, H * .40); c.rotate(-.22 + tw * .1); c.scale(2.35, 2.35);
+  construction(c, 0, 10, 118, 64, alpha(PAL.guide, .45));
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .18, walk: 0, glow: pop(i, 16, 0) ? .95 : .22 }, 65);
+  c.restore();
+  c.strokeStyle = alpha(PAL.guide, .45); c.lineWidth = .9; cross(c, W * .18, H * .22, 9); cross(c, W * .84, H * .34, 9);
+}
+
+// --- 1.25 a photon is born ------------------------------------------------
+function sSpark(c, tau, i) {
+  navyPlate(c);
+  construction(c, CX, CY, 320, 71, alpha(PAL.chalk, .3));
+  const u = sm(0, .45, tau, easeOut);
+  dotBurst(c, CX, CY, 330 * u, 20, alpha(GLOW, .8 * (1 - u * .4)), 72, 1);
+  for (let k = 0; k < 3; k++) { const r = 60 + u * (140 + k * 120); if (r < 470) ring(c, CX, CY, r, alpha(GLOW, .62 - k * .16), 73 + k, 2.4); }
+  lantern(c, CX, CY, 40, 76, 1);
+}
+
+// --- 2.00 the egg ---------------------------------------------------------
+function sEgg(c, tau, i) {
+  eggPlate(c, tau, i, { draw: sm(0, 1.1, tau, easeOut), zoom: lerp(1.0, 1.14, sm(.4, 4.0, tau)),
+                        split: sm(1.9, 2.9, tau, easeIO), stipple: sm(3.0, 4.0, tau) * .5 });
+}
+
+// --- 6.00 hatch -----------------------------------------------------------
+function sHatch(c, tau, i) {
+  const u = sm(0, .9, tau, easeIO);
+  eggPlate(c, tau, i, { draw: 1, stipple: u, nuclei: .9 });
+  // the shell splits and the hot colour comes out
+  if (tau > .30) {
+    const v = sm(.30, 1.0, tau, easeOut);
+    c.strokeStyle = GLOW; c.lineWidth = 5;
+    wob(c, [[CX - 10, CY - 250], [CX + 26, CY - 60], [CX - 6, CY + 130], [CX + 30, CY + 248]], 3, 81);
+    dotBurst(c, CX, CY, 420 * v, 22, alpha(GLOW, .8), 82, 1);
+    for (let k = 0; k < 3; k++) { const r = 80 + v * (180 + k * 150); if (r < 560) ring(c, CX, CY, r, alpha(GLOW, .6 - k * .16), 83 + k, 2.6); }
+  }
+}
+
+// --- 7.00 the glowworm takes a snail --------------------------------------
+function sWorm(c, tau, i) {
+  paperPlate(c, i);
+  const u = sm(0, 1.9, tau, easeIO), soil = H * .70;
+  cam(c, lerp(W * .50, W * .64, u), CY + 70, 1.02);
+  // leaf litter, hatched
+  const lit = circPath(CX, soil + 1180, 1320), lbox = [CX - 1320, soil - 160, 2640, 2640];
+  c.fillStyle = PAL.shade; c.fill(lit);
+  hatch(c, lit, lbox, { angle: .75, gap: 6, len: 18, jitter: 6, color: PAL.fills[0], alpha: .55, width: 1.4, seed: 91 });
+  hatch(c, lit, lbox, { angle: -.55, gap: 8, len: 15, jitter: 5, color: PAL.shade, alpha: .32, width: 1.1, seed: 92 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, ellPts(CX, soil + 1180, 1320, 1320, 0, 150), 2.8, 93, true);
+  const q = rng(94);
+  for (let k = 0; k < 9; k++) { const x = q() * W, y = soil + 20 + q() * 200;
+    c.strokeStyle = alpha(PAL.shade, .5); c.lineWidth = 2; wob(c, ellPts(x, y, 20 + q() * 30, 9 + q() * 12, q() * 3, 14), 1.6, 95 + k, true); }
+  // the snail: spiral shell, and a body that collapses into a wet hatched mass
+  const sx = W * .74, sy = soil - 40;
+  const hit = clamp((tau - .75) / .9, 0, 1);
+  const shell = []; for (let k = 0; k <= 84; k++) { const a = k / 84 * TAU * 2.7, r = 12 + k * 1.5; shell.push([sx + Math.cos(a) * r, sy + Math.sin(a) * r * .86]); }
+  const shp = polyPath(shell.slice(34));
+  c.fillStyle = PAL.fills[2]; c.fill(shp);
+  hatch(c, shp, bb(shell.slice(34)), { angle: .9, gap: 5, len: 12, jitter: 3, color: PAL.shade, alpha: .38, width: 1.1, seed: 961 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3.2; wob(c, shell, 1.8, 96);
+  // the body, deflating
+  const bw = lerp(120, 46, hit), bh = lerp(44, 20, hit);
+  const body = ellPts(sx - 108, sy + 74, bw, bh, .12, 22);
+  c.fillStyle = mix(PAL.fills[2], PAL.blush, .35); c.fill(polyPath(body));
+  // eye stalks, retracting as it collapses
+  for (const sgn of [-1, 1]) { c.strokeStyle = PAL.ink; c.lineWidth = 2.2;
+    const L = (1 - hit) * 34;
+    wob(c, [[sx - 108 - bw * .82, sy + 74 + sgn * 6], [sx - 118 - bw * .82 - L, sy + 66 + sgn * 12 - L * .5]], 1.2, 971 + sgn);
+    if (L > 6) { c.fillStyle = PAL.ink; c.beginPath(); c.arc(sx - 118 - bw * .82 - L, sy + 66 + sgn * 12 - L * .5, 3.4, 0, TAU); c.fill(); } }
+  hatch(c, polyPath(body), bb(body), { angle: 1.1, gap: 4, len: 10, jitter: 3, color: PAL.shade, alpha: .45 + hit * .3, width: 1.2, seed: 97 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 2.4; wob(c, body, 1.6, 98, true);
+  // crumbs of mucus
+  if (hit > .1) { const m = rng(99); for (let k = 0; k < 16; k++) { const a = m() * TAU, d = m() * 70 * hit;
+    c.fillStyle = alpha(PAL.blush, .5); c.beginPath(); c.arc(sx - 108 + Math.cos(a) * d, sy + 74 + Math.sin(a) * d, 1.5 + m() * 3.5, 0, TAU); c.fill(); } }
+  // the larva: overlapping armoured plates, pale belly, a lantern spot already on
+  const lx = lerp(W * .48, sx - 250, u), ly = soil - 30;
+  c.save(); c.translate(lx, ly); c.scale(2.05, 2.05);
+  // legs first, under the plates
+  for (let k = 0; k < 3; k++) for (const sgn of [-1, 1]) {
+    const x = -k * 22 - 4, sw = Math.sin(u * 9 + k * 1.3 + (sgn > 0 ? 0 : 1.7)) * 7;
+    c.strokeStyle = PAL.ink; c.lineWidth = 2.2;
+    wob(c, [[x, sgn * 8], [x - 8, sgn * 20 + sw], [x - 16, sgn * 30 + sw]], 1.3, 120 + k * 2 + sgn);
+  }
+  // nine overlapping dorsal plates, back to front so the armour reads
+  for (let k = 8; k >= 0; k--) {
+    const x = -k * 22, w = 30 - k * 1.5, h = 22 - k * 1.1, wv = Math.sin(u * 8 + k * .55) * 4;
+    const p = ellPts(x, wv, w, h, 0, 20);
+    c.fillStyle = mix(PAL.fills[2], PAL.fills[0], .18 + (k % 2) * .18); c.fill(polyPath(p));
+    hatch(c, polyPath(p), bb(p), { angle: .55, gap: 4, len: 9, jitter: 2, color: PAL.shade, alpha: .40, width: 1, seed: 100 + k });
+    c.strokeStyle = PAL.ink; c.lineWidth = 2.2; wob(c, p, 1.3, 110 + k, true);
+  }
+  // the head end, dark, at the front
+  const hv = Math.sin(u * 8) * 4;
+  c.fillStyle = PAL.shade; c.fill(ellPath(22, hv, 16, 13));
+  c.strokeStyle = PAL.ink; c.lineWidth = 2; wob(c, ellPts(22, hv, 16, 13, 0, 16), 1.2, 129, true);
+  for (const sgn of [-1, 1]) { c.strokeStyle = PAL.ink; c.lineWidth = 2;
+    wob(c, [[34, hv + sgn * 5], [48, hv + sgn * 13]], 1.1, 130 + sgn); }
+  // the tail lantern, already burning
+  lantern(c, -8 * 22 - 6, Math.sin(u * 8 + 4.4) * 4, 13, 128, pop(i, 15, 3) ? .9 : .3);
+  c.restore();
+  annotArc(c, sx - 150, sy + 40, 120, 2.6, 4.2, alpha(GLOW, .5), 129, 2);
+}
+
+// --- 9.00 the pupa --------------------------------------------------------
+function sPupa(c, tau, i) {
+  navyPlate(c);
+  construction(c, CX, CY, 330, 131, alpha(PAL.chalk, .32));
+  // the soil chamber
+  const ch = ellPts(CX, CY, 262, 322, 0, 60);
+  c.strokeStyle = PAL.chalk; c.lineWidth = 3; wob(c, ch, 2.2, 132, true);
+  c.strokeStyle = alpha(PAL.chalk, .5); c.lineWidth = 1.4; wob(c, ellPts(CX, CY, 238, 296, 0, 56), 2.4, 133, true);
+  // inside: a network rewriting itself, reseeded on a slow beat
+  c.save(); c.clip(polyPath(ch));
+  const gen = Math.floor(tau * 4), q = rng(140 + gen);
+  const nodes = []; for (let k = 0; k < 22; k++) nodes.push([CX + (q() - .5) * 430, CY + (q() - .5) * 540]);
+  c.strokeStyle = alpha(PAL.chalk, .55); c.lineWidth = 1.3;
+  for (let k = 0; k < nodes.length; k++) { const a = nodes[k], b = nodes[(k * 7 + 3) % nodes.length]; wob(c, [a, b], 2, 150 + k); }
+  c.fillStyle = alpha(PAL.chalk, .7);
+  nodes.forEach(n => { c.beginPath(); c.arc(n[0], n[1], 2.6, 0, TAU); c.fill(); });
+  c.restore();
+  // the future lantern: two stacked nodes lighting in sequence
+  const a1 = tau > .35, a2 = tau > .62;
+  lantern(c, CX, CY + 118, 24, 160, a1 ? (pop(i, 10, 0) ? 1 : .5) : .1);
+  lantern(c, CX, CY + 182, 24, 161, a2 ? (pop(i, 10, 5) ? 1 : .5) : .1);
+  c.strokeStyle = alpha(GLOW, a2 ? .6 : .25); c.lineWidth = 2.4;
+  wob(c, [[CX, CY + 142], [CX, CY + 158]], 1, 162);
+  bracket(c, CX + 60, CX + 186, CY + 150, alpha(PAL.chalk, .4), 163);
+}
+
+// --- 10.00 the teneral adult ----------------------------------------------
+function sEmerge(c, tau, i) {
+  paperPlate(c, i);
+  const u = sm(.1, 1.5, tau, easeIO);
+  cam(c, CX, CY + 30, lerp(1.22, 1.04, sm(0, 2, tau)));
+  blades(c, H * 1.02, 8, 171, alpha(PAL.shade, .4), .26);
+  c.strokeStyle = PAL.fills[1]; c.lineWidth = 12;
+  wob(c, [[CX - 210, H * 1.04], [CX - 150, H * .66], [CX - 120, H * .36]], 2.4, 172);
+  // the split pupal skin, left behind
+  const skin = ellPts(CX + 172, H * .70, 62, 104, .2, 26);
+  c.fillStyle = alpha(PAL.fills[2], .85); c.fill(polyPath(skin));
+  hatch(c, polyPath(skin), bb(skin), { angle: 1.2, gap: 6, len: 12, jitter: 3, color: PAL.shade, alpha: .3, width: 1, seed: 173 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 2.2; wob(c, skin, 2.4, 174, true);
+  c.strokeStyle = PAL.ink; c.lineWidth = 2.6; wob(c, [[CX + 150, H * .62], [CX + 186, H * .70], [CX + 158, H * .78]], 2.6, 175);
+  c.save(); c.translate(CX - 60, CY + 30); c.rotate(-.1); c.scale(1.85, 1.85);
+  construction(c, 0, 10, 116, 176, alpha(PAL.guide, .4));
+  drawBug(c, 'ink', { wing: u * .9, flap: 0, tuck: .45 - u * .25, walk: 0, glow: (tau > 1.15 && pop(i, 9, 0)) ? .8 : .12 }, 177);
+  c.restore();
+  if (tau > 1.15) flashRings(c, CX - 60, CY + 174, (tau - 1.15) / .85, 178);
+}
+
+// --- 12.00 macro: the lantern as a floor of photocyte tiles ----------------
+// This is the shot the compound eye gets in the reference.
+function sMacro(c, tau, i) {
+  paperPlate(c, i);
+  const R = 452;
+  construction(c, CX, CY, R + 92, 181, alpha(PAL.guide, .4));
+  ring(c, CX, CY, R + 44, alpha(PAL.ink, .35), 182, 2);
+  c.save(); c.clip(circPath(CX, CY, R));
+  const q = rng(183), wave = tau * 2.2;
+  hexCells([CX - R, CY - R, R * 2, R * 2], 34, (x, y) => {
+    const d = Math.hypot(x - CX, y - CY) / R;
+    const on = Math.sin(wave - d * 5 + q() * .6) > -.35;
+    const hp = hexPath(x, y, 34);
+    c.fillStyle = on ? GLOW : mix(PAL.fills[0], PAL.shade, .45); c.fill(hp);
+    hatch(c, hp, [x - 34, y - 34, 68, 68], { angle: .5, gap: 5, len: 11, jitter: 2, color: on ? mix(GLOW, PAL.ink, .45) : PAL.shade, alpha: .4, width: 1, seed: 184 + (x | 0) % 17 });
+    c.strokeStyle = PAL.ink; c.lineWidth = 1.6; c.stroke(hp);
+  });
+  c.restore();
+  c.strokeStyle = PAL.ink; c.lineWidth = 3.4; wob(c, ellPts(CX, CY, R, R, 0, 110), 2.6, 185, true);
+  annotArc(c, CX, CY, R + 70, -2.5, -.9, alpha(GLOW, .6), 186, 2.2);
+  ticks(c, CX - 150, CY + R + 76, CX + 150, 10, alpha(PAL.ink, .4), 187, 12);
+}
+
+// --- 13.00 cross-section: four wells feeding one chamber ------------------
+function sOrgan(c, tau, i) {
+  navyPlate(c);
+  construction(c, CX, CY - 30, 372, 191, alpha(PAL.chalk, .32));
+  const wells = [[-250, -180], [250, -180], [-250, 20], [250, 20]];
+  const ch = [CX, CY + 176];
+  wells.forEach(([dx, dy], k) => {
+    const x = CX + dx, y = CY + dy, on = tau > .18 + k * .13;
+    c.strokeStyle = PAL.chalk; c.lineWidth = 2.4; wob(c, ellPts(x, y, 66, 46, 0, 22), 1.8, 192 + k, true);
+    c.strokeStyle = alpha(PAL.chalk, .45); c.lineWidth = 1.3; wob(c, ellPts(x, y, 52, 34, 0, 20), 2, 196 + k, true);
+    // each well has its own mark, so four wells read as four different things
+    c.strokeStyle = on ? GLOW : alpha(PAL.chalk, .5); c.lineWidth = 2.2;
+    if (k === 0) wob(c, [[x - 20, y], [x + 20, y]], 1, 200);
+    if (k === 1) { wob(c, [[x - 18, y - 14], [x + 18, y + 14]], 1, 201); wob(c, [[x - 18, y + 14], [x + 18, y - 14]], 1, 202); }
+    if (k === 2) wob(c, ellPts(x, y, 15, 15, 0, 14), 1.2, 203, true);
+    if (k === 3) { wob(c, [[x - 18, y + 10], [x, y - 12], [x + 18, y + 10]], 1.2, 204); }
+    // feed line down to the chamber
+    const mid = [lerp(x, ch[0], .55) + (k % 2 ? 40 : -40), lerp(y, ch[1], .6)];
+    c.strokeStyle = on ? alpha(GLOW, .7) : alpha(PAL.chalk, .35); c.lineWidth = on ? 2.6 : 1.6;
+    wob(c, [[x, y + 46], mid, [ch[0] + (k % 2 ? 26 : -26), ch[1] - 54]], 2, 210 + k);
+  });
+  const full = tau > .72;
+  lantern(c, ch[0], ch[1], 58, 215, full ? (pop(i, 8, 0) ? 1 : .6) : .18);
+  ring(c, ch[0], ch[1], 116, alpha(GLOW, full ? .55 : .2), 216, 2.2);
+  // fibre bundles running up the abdomen
+  for (let k = -2; k <= 2; k++) {
+    c.strokeStyle = alpha(PAL.chalk, .45); c.lineWidth = 1.4;
+    wob(c, [[ch[0] + k * 26, ch[1] + 66], [ch[0] + k * 34, H - 20]], 2, 220 + k);
+  }
+  bracket(c, CX - 300, CX - 150, H * .12, alpha(PAL.chalk, .4), 225);
+}
+
+// --- 14.00 first flight over the meadow plate -----------------------------
+const FLIGHT = [[W * .06, H * .74], [W * .30, H * .30], [W * .66, H * .78], [W * .96, H * .26]];
+function meadow(c, i) {
+  const soil = H * .80;
+  const g = circPath(CX, soil + 1240, 1420), gb = [CX - 1420, soil - 180, 2840, 2840];
+  c.fillStyle = PAL.fills[0]; c.fill(g);
+  hatch(c, g, gb, { angle: .8, gap: 6, len: 20, jitter: 6, color: PAL.fills[1], alpha: .45, width: 1.4, seed: 231 });
+  hatch(c, g, gb, { angle: -.5, gap: 9, len: 16, jitter: 5, color: PAL.shade, alpha: .3, width: 1.1, seed: 232 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, ellPts(CX, soil + 1240, 1420, 1420, 0, 160), 2.8, 233, true);
+  // moss, a snail shell, clover, a fallen petal
+  const q = rng(234);
+  for (let k = 0; k < 14; k++) { const x = q() * W, y = soil + 16 + q() * 160;
+    c.strokeStyle = alpha(PAL.fills[1], .8); c.lineWidth = 2.4; wob(c, ellPts(x, y, 16 + q() * 20, 7 + q() * 9, q() * 3, 12), 1.6, 235 + k, true); }
+  const sx = W * .18, sy = soil + 40, sh = [];
+  for (let k = 0; k <= 60; k++) { const a = k / 60 * TAU * 2.4, r = 7 + k * .9; sh.push([sx + Math.cos(a) * r, sy + Math.sin(a) * r * .85]); }
+  c.strokeStyle = PAL.ink; c.lineWidth = 2.4; wob(c, sh, 1.5, 250);
+  for (const [cx2, cy2] of [[W * .52, soil + 74], [W * .80, soil + 36]])
+    for (let k = 0; k < 3; k++) { const a = -1.6 + k * 2.1;
+      c.fillStyle = alpha(PAL.fills[1], .85); c.fill(ellPath(cx2 + Math.cos(a) * 22, cy2 + Math.sin(a) * 22, 18, 14, a));
+      c.strokeStyle = PAL.ink; c.lineWidth = 1.8; wob(c, ellPts(cx2 + Math.cos(a) * 22, cy2 + Math.sin(a) * 22, 18, 14, a, 14), 1.3, 252 + k, true); }
+  const pet = ellPts(W * .66, soil + 120, 40, 17, -.5, 18);
+  c.fillStyle = PAL.blush; c.fill(polyPath(pet));
+  c.strokeStyle = PAL.ink; c.lineWidth = 2; wob(c, pet, 1.5, 256, true);
+  blades(c, soil + 10, 12, 257, alpha(PAL.shade, .45), .16);
+}
+function sFlight(c, tau, i) {
+  paperPlate(c, i);
+  const u = sm(0, 1.9, tau, easeIO);
+  const p = bez(...FLIGHT, u), p2 = bez(...FLIGHT, Math.min(1, u + .012));
+  const dir = Math.atan2(p2[1] - p[1], p2[0] - p[0]);
+  cam(c, lerp(CX, p[0] * .5 + CX * .5, .6), CY, 1.02);
+  meadow(c, i);
+  // the climb, annotated
+  const tr = []; for (let k = 0; k <= 34; k++) tr.push(bez(...FLIGHT, u * k / 34));
+  c.strokeStyle = alpha(GLOW, .45); c.lineWidth = 2; wob(c, tr, 2, 260);
+  annotArc(c, p[0], p[1], 92, dir - 1.4, dir + 1.0, alpha(GLOW, .55), 261, 2);
+  const lit = pop(i, 14, 0);
+  if (lit) flashRings(c, p[0], p[1] + 30, .12, 262);
+  flashRings(c, p[0], p[1] + 30, ((i % 14) / 14), 263);
+  c.save(); c.translate(p[0], p[1]); c.rotate(dir + Math.PI / 2); c.scale(.95, .95);
+  drawBug(c, 'ink', { wing: 1, flap: 1, tuck: .85, walk: tau * 2, glow: lit ? 1 : .12 }, 265);
+  c.restore();
+}
+
+// --- 16.00 pull back: the meadow is a bowl --------------------------------
+function sBowl(c, tau, i) {
+  paperPlate(c, i);
+  const u = sm(0, 1.9, tau, easeIO);
+  cam(c, CX, CY + u * 80, lerp(1.0, .58, u));
+  meadow(c, i);
+  construction(c, CX, CY + 220, 620, 271, alpha(PAL.guide, .34));
+  ring(c, CX, CY + 220, 760, alpha(PAL.ink, .22), 272, 1.8);
+  annotArc(c, CX, CY + 220, 900, -2.7, -.5, alpha(GLOW, .35), 273, 2);
+  const q = rng(274);
+  for (let k = 0; k < 64; k++) {
+    const x = (q() - .5) * W * 2.6 + CX, y = CY - 420 + q() * 900, ph = (q() * 16) | 0;
+    if (pop(i, 10, ph)) { lantern(c, x, y, 12 + q() * 9, 280 + k, .95); flashRings(c, x, y, .12, 900 + k); }
+  }
+  // the hero, small now
+  const hx = CX - 130, hy = CY - 60;
+  const lit = pop(i, 16, 0);
+  c.save(); c.translate(hx, hy); c.rotate(.12); c.scale(.52, .52);
+  drawBug(c, 'ink', { wing: 1, flap: 1, tuck: .85, walk: tau * 2, glow: lit ? 1 : .12 }, 275);
+  c.restore();
+  if (lit) flashRings(c, hx, hy + 20, .14, 276);
+}
+
+// --- 18.00 a wrong answer -------------------------------------------------
+function sWrong(c, tau, i) {
+  paperPlate(c, i);
+  cam(c, CX, CY, .82);
+  meadow(c, i);
+  const hx = CX - 210, hy = CY - 130, wx = CX + 250, wy = CY - 40;
+  const lit = pop(i, 16, 0);
+  c.save(); c.translate(hx, hy); c.rotate(.1); c.scale(.72, .72);
+  drawBug(c, 'ink', { wing: 1, flap: 1, tuck: .85, walk: tau * 2, glow: lit ? 1 : .12 }, 291);
+  c.restore();
+  if (lit) flashRings(c, hx, hy + 24, .14, 292);
+  // the wrong answer: too soon, too bright. Red, and only here.
+  const early = tau > .22;
+  if (early) {
+    const v = clamp((tau - .22) / .5, 0, 1);
+    lantern(c, wx, wy, 34, 293, 1);
+    for (let k = 0; k < 4; k++) { const r = 50 + v * (150 + k * 130); if (r < 560) ring(c, wx, wy, r, alpha(WRONG, .7 - k * .15), 294 + k, 3); }
+    annotArc(c, wx, wy, 150, 2.0, 4.3, alpha(WRONG, .8), 298, 3);
+    // the red arrow, pointing at the misfire
+    const ax = wx - 210, ay = wy - 170;
+    c.strokeStyle = WRONG; c.lineWidth = 4;
+    wob(c, [[ax, ay], [wx - 62, wy - 52]], 2, 299);
+    wob(c, [[wx - 62, wy - 52], [wx - 104, wy - 52]], 1.6, 300);
+    wob(c, [[wx - 62, wy - 52], [wx - 66, wy - 96]], 1.6, 301);
+  }
+}
+
+// --- 19.00 courtship ------------------------------------------------------
+// He draws a J of light. She answers with one delayed blink.
+const J_PATH = [[-10, -170], [-6, -20], [-34, 66], [-104, 60]];
+function sCourt(c, tau, i) {
+  paperPlate(c, i);
+  // a field edge with the sun already gone: a pink-to-indigo band, hatched
+  c.save(); resetT(c);
+  const bandH = H * .56, bp = rectPath(0, 0, W, bandH);
+  c.fillStyle = PAL.blush; c.globalAlpha = .6; c.fill(bp); c.globalAlpha = 1;
+  hatch(c, bp, [0, 0, W, bandH], { angle: 0, gap: 7, len: 30, jitter: 3, color: NAVY.night, alpha: .34, width: 1.6, seed: 321 });
+  hatch(c, bp, [0, 0, W, bandH], { angle: 0, gap: 13, len: 26, jitter: 4, color: PAL.light, alpha: .22, width: 1.2, seed: 322 });
+  c.fillStyle = PAL.fills[0]; c.fillRect(0, bandH, W, H - bandH);
+  hatch(c, rectPath(0, bandH, W, H - bandH), [0, bandH, W, H - bandH], { angle: .7, gap: 6, len: 18, jitter: 6, color: PAL.shade, alpha: .34, width: 1.3, seed: 326 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 2.6; wob(c, [[0, bandH], [W, bandH]], 2.6, 323);
+  c.restore();
+  cam(c, CX, CY + 20, .98);
+  blades(c, H * 1.03, 8, 324, alpha(PAL.shade, .45), .22);
+  // facing blades
+  const mx = CX - 250, fx = CX + 250, by = H * .96;
+  for (const [x, lean] of [[mx, .12], [fx, -.12]]) {
+    c.strokeStyle = PAL.fills[1]; c.lineWidth = 12;
+    wob(c, [[x, by], [x + lean * 200, H * .70], [x + lean * 320, H * .50]], 2.4, 325 + x);
+  }
+  // him: the J draws on, then fires
+  const u = clamp(tau / 1.05, 0, 1);
+  c.save(); c.translate(mx + 40, H * .50);
+  const jp = []; for (let k = 0; k <= 30; k++) jp.push(bez(...J_PATH, k / 30));
+  c.strokeStyle = alpha(GLOW, .85); c.lineWidth = 5;
+  selfDraw(c, jp, u, 330, 2.2);
+  c.restore();
+  const heLit = tau < 1.05 ? pop(i, 6, 0) : false;
+  c.save(); c.translate(mx + 40, H * .50); c.rotate(-.12); c.scale(1.05, 1.05);
+  drawBug(c, 'ink', { wing: .8, flap: 1, tuck: .8, walk: tau * 2, glow: heLit ? 1 : .18 }, 331);
+  c.restore();
+  if (tau < 1.1) flashRings(c, mx + 40, H * .50 + 60, (tau % .5) / .5, 332);
+  // her: one single delayed blink, after his J finishes
+  const ans = tau > 1.42 && tau < 1.72;
+  c.save(); c.translate(fx - 30, H * .52); c.rotate(.12); c.scale(1.05, 1.05);
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .2, walk: 0, glow: ans ? 1 : .12 }, 333);
+  c.restore();
+  if (tau > 1.42) flashRings(c, fx - 30, H * .52 + 60, (tau - 1.42) / .58, 334);
+  annotArc(c, CX, H * .52, 300, -2.6, -.6, alpha(GLOW, .4), 335, 2);
+}
+
+// --- 21.00 she lays -------------------------------------------------------
+function sLay(c, tau, i) {
+  paperPlate(c, i);
+  cam(c, CX, CY + 60, 1.0);
+  // sky goes purple: the band drops and deepens
+  const bp = rectPath(0, 0, W, H * .565);
+  c.fillStyle = mix(PAL.blush, NAVY.night, .52); c.globalAlpha = .82; c.fill(bp); c.globalAlpha = 1;
+  hatch(c, bp, [0, 0, W, H * .565], { angle: 0, gap: 8, len: 28, jitter: 3, color: NAVY.night, alpha: .38, width: 1.6, seed: 341 });
+  const soil = H * .56;
+  c.fillStyle = PAL.fills[0]; c.fillRect(0, soil, W, H - soil);
+  hatch(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], { angle: .7, gap: 6, len: 18, jitter: 6, color: PAL.shade, alpha: .38, width: 1.3, seed: 342 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, [[0, soil], [W * .5, soil + 12], [W, soil - 6]], 3, 343);
+  grain(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], 2600, PAL.shade, .22, 900 + i, 1.8);
+  // her, above the row
+  c.save(); c.translate(CX + 210, soil - 54); c.rotate(.16); c.scale(1.0, 1.0);
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .3, walk: 0, glow: pop(i, 14, 0) ? .8 : .2 }, 344);
+  c.restore();
+  // the row of pale spheres. Each one takes the glow as it leaves her.
+  const n = 7;
+  for (let k = 0; k < n; k++) {
+    const laid = clamp((tau - .25 - k * .22) / .30, 0, 1);
+    if (laid <= 0) continue;
+    const x = CX + 150 - k * 88, y = soil + 66;
+    const p = ellPts(x, y, 34, 30, 0, 20);
+    c.fillStyle = alpha(PAL.fills[2], .95); c.fill(polyPath(p));
+    hatch(c, polyPath(p), bb(p), { angle: .6, gap: 4, len: 8, jitter: 2, color: PAL.shade, alpha: .28, width: 1, seed: 350 + k });
+    c.strokeStyle = PAL.ink; c.lineWidth = 2.2; wob(c, p, 1.4, 360 + k, true);
+    lantern(c, x, y, 13, 370 + k, laid * (.35 + (pop(i, 16, k * 3) ? .5 : 0)));
+    if (laid < 1) flashRings(c, x, y, laid, 380 + k);
+  }
+  ticks(c, W * .08, H * .97, W * .92, 14, alpha(PAL.ink, .3), 390, 10);
+}
+
+// --- 23.00 night count ----------------------------------------------------
+function sNight(c, tau, i) {
+  paperPlate(c, i);
+  // the sky, deep now
+  c.fillStyle = mix(NAVY.night, PAL.blush, .18); c.globalAlpha = .88; c.fillRect(0, 0, W, H * .72); c.globalAlpha = 1;
+  const q = rng(401);
+  for (let k = 0; k < 90; k++) { const x = q() * W, y = q() * H * .68;
+    c.fillStyle = alpha(PAL.light, .3 + q() * .5); c.beginPath(); c.arc(x, y, .9 + q() * 1.7, 0, TAU); c.fill(); }
+  // a crescent with drawn rays
+  const mx = W * .74, my = H * .20, mr = 74;
+  c.fillStyle = PAL.light; c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fill();
+  c.globalCompositeOperation = 'destination-out';
+  c.beginPath(); c.arc(mx + 34, my - 16, mr * .92, 0, TAU); c.fill();
+  c.globalCompositeOperation = 'source-over';
+  c.strokeStyle = PAL.ink; c.lineWidth = 2.2; wob(c, ellPts(mx, my, mr, mr, 0, 40), 1.8, 402, true);
+  for (let k = 0; k < 14; k++) { const a = k / 14 * TAU;
+    c.strokeStyle = alpha(PAL.light, .55); c.lineWidth = 1.8;
+    wob(c, [[mx + Math.cos(a) * (mr + 16), my + Math.sin(a) * (mr + 16)], [mx + Math.cos(a) * (mr + 40 + (k % 3) * 14), my + Math.sin(a) * (mr + 40 + (k % 3) * 14)]], 1.2, 403 + k); }
+  // the fence post, with nights cut into it
+  const px = W * .22, ptop = H * .30, pw = 72;
+  const post = [[px - pw, H], [px - pw + 6, ptop], [px + pw - 8, ptop - 14], [px + pw, H]];
+  c.fillStyle = PAL.fills[0]; c.fill(polyPath(post));
+  hatch(c, polyPath(post), bb(post), { angle: 1.5, gap: 5, len: 22, jitter: 4, color: PAL.shade, alpha: .42, width: 1.2, seed: 420 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, post, 2.4, 421, true);
+  const marks = 4 + Math.floor(sm(0, 1.4, tau) * 5);
+  for (let k = 0; k < marks; k++) {
+    const gy = ptop + 70 + Math.floor(k / 5) * 96, gx = px - 44 + (k % 5) * 20;
+    c.strokeStyle = PAL.shade; c.lineWidth = 4;
+    if (k % 5 === 4) wob(c, [[gx - 84, gy + 46], [gx + 8, gy - 22]], 2, 430 + k);
+    else wob(c, [[gx, gy - 24], [gx + 4, gy + 44]], 2, 430 + k);
+  }
+  // the ground, her, the clutch, and a sparse score of other lanterns
+  const soil = H * .72;
+  c.fillStyle = PAL.fills[0]; c.fillRect(0, soil, W, H - soil);
+  hatch(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], { angle: .7, gap: 7, len: 18, jitter: 6, color: PAL.shade, alpha: .35, width: 1.3, seed: 440 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, [[0, soil], [W, soil + 8]], 3, 441);
+  c.save(); c.translate(CX + 120, soil - 40); c.rotate(.1); c.scale(.8, .8);
+  drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .3, walk: 0, glow: pop(i, 20, 0) ? .6 : .14 }, 442);
+  c.restore();
+  for (let k = 0; k < 5; k++) lantern(c, CX + 60 - k * 62, soil + 40, 12, 450 + k, .28);
+  for (let k = 0; k < 6; k++) { const x = q() * W, y = H * .38 + q() * H * .26;
+    if (pop(i, 22, (q() * 20) | 0)) lantern(c, x, y, 8, 460 + k, .8); }
+}
+
+// --- 24.50 false dawn -----------------------------------------------------
+function sDawn(c, tau, i) {
+  paperPlate(c, i);
+  cam(c, CX, CY, lerp(1.0, 1.10, sm(0, 1.5, tau)));
+  // a leaf with hatched veins
+  const leaf = [];
+  for (let k = 0; k <= 40; k++) { const u = k / 40, a = Math.PI * u;
+    leaf.push([CX - 420 + u * 840, CY + 120 - Math.sin(a) * 300]); }
+  for (let k = 40; k >= 0; k--) { const u = k / 40, a = Math.PI * u;
+    leaf.push([CX - 420 + u * 840, CY + 120 + Math.sin(a) * 210]); }
+  c.fillStyle = PAL.fills[1]; c.fill(polyPath(leaf));
+  hatch(c, polyPath(leaf), bb(leaf), { angle: .35, gap: 6, len: 20, jitter: 5, color: PAL.light, alpha: .34, width: 1.3, seed: 471 });
+  hatch(c, polyPath(leaf), bb(leaf), { angle: -.45, gap: 10, len: 16, jitter: 4, color: PAL.shade, alpha: .28, width: 1.1, seed: 472 });
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, leaf, 2.4, 473, true);
+  c.strokeStyle = PAL.shade; c.lineWidth = 3.4; wob(c, [[CX - 420, CY + 120], [CX + 420, CY + 120]], 2.4, 474);
+  for (let k = 1; k < 9; k++) { const x = CX - 420 + k * 93;
+    c.strokeStyle = alpha(PAL.shade, .7); c.lineWidth = 2;
+    wob(c, [[x, CY + 120], [x + 44, CY + 120 - 150]], 2, 475 + k);
+    wob(c, [[x, CY + 120], [x + 40, CY + 120 + 110]], 2, 485 + k); }
+  // the dew bead: a fisheye holding an inherited glow
+  const dx = CX + 120, dy = CY + 34, dr = 108;
+  const dp2 = circPath(dx, dy, dr);
+  c.fillStyle = alpha(PAL.light, .72); c.fill(dp2);
+  c.save(); c.clip(dp2);
+  // the world bent inside it
+  for (let k = -3; k <= 3; k++) { c.strokeStyle = alpha(PAL.shade, .30); c.lineWidth = 2;
+    annotArc(c, dx, dy + k * 34, dr * 1.5, .6, 2.6, alpha(PAL.shade, .26), 492 + k, 2); }
+  lantern(c, dx + 6, dy + 10, 26, 495, .45 + (pop(i, 16, 0) ? .45 : 0));
+  c.restore();
+  c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, ellPts(dx, dy, dr, dr, 0, 60), 2, 496, true);
+  c.fillStyle = alpha(PAL.light, .95); c.fill(ellPath(dx - 40, dy - 44, 22, 14, -.5));
+  construction(c, CX, CY, 520, 497, alpha(PAL.guide, .38));
+  annotArc(c, CX, CY, 470, -2.8, -.4, alpha(GLOW, .38), 498, 2);
+}
+
+// --- 26.00 back to the egg. The cut matches frame 0. ----------------------
+function sLoop(c, tau, i) {
+  eggPlate(c, tau, i, { draw: 1, nuclei: .55 + (pop(i, 14, 0) ? .45 : 0) });
+  // the wordmark, thin lowercase, bottom right
+  handText(c, 'stoopid', W - 52, H - 52, { size: 46, align: 'right', ink: PAL.chalk, ink2: GLOW, offset: 2 });
+  // the opening photon re-fires on the last beat so the cut lands hot
+  if (tau > .74) {
+    const v = (tau - .74) / .26;
+    dotBurst(c, CX, CY - 14, 300 * v, 18, alpha(GLOW, .7 * (1 - v * .3)), 501, 1);
+    for (let k = 0; k < 2; k++) { const r = 70 + v * (170 + k * 140); ring(c, CX, CY - 14, r, alpha(GLOW, .5 - k * .18), 502 + k, 2.4); }
+  }
+}
+
+// ===================== SCORE =====================
+// Written against the same cut list. Low soil drone under navy plates, a dry
+// plucked figure on paper plates, every lantern pulse a sine that blooms and
+// dies under 200 ms, courtship as call and answer, and the opening photon
+// tone again on the last beat so the ear accepts the loop.
+const PHOTON_HZ = pentHz(2, 3);
+function score(ac, t0, dest) {
+  const master = ac.createGain(); master.gain.value = .58; master.connect(dest);
+  const blip = (t, hz, g) => note(ac, master, hz || PHOTON_HZ, t0, t, .18, 'sine', g || .22);
+  const r = rng(11);
+  // a tick on every cut
+  let acc = 0;
+  for (const s of TIMELINE) { note(ac, master, pentHz(0, 0), t0, acc, .5, 'triangle', .13); acc += s.dur; }
+  // navy plates: a low soil drone
+  for (const [a, b] of [[1.25, 7.0], [9.0, 10.0], [13.0, 14.0], [26.0, 27.0]])
+    for (let t = a; t < b; t += 1.5) note(ac, master, pentHz(-2, 0), t0, t, 1.9, 'sine', .13);
+  // paper plates: a dry plucked figure
+  for (const [a, b] of [[0, 1.25], [7.0, 9.0], [10.0, 13.0], [14.0, 19.0], [21.0, 26.0]])
+    for (let t = a; t < b; t += .5) note(ac, master, pentHz(0, r() * 5 | 0), t0, t, .34, 'triangle', .10);
+  blip(1.25, PHOTON_HZ, .3);                               // a photon is born
+  for (let t = 2.0; t < 6.0; t += .75) blip(t, pentHz(1, 2), .12);
+  blip(6.4, pentHz(2, 4), .28); noiseBurst(ac, master, t0, 6.4, .3, .18, 3);   // hatch
+  noiseBurst(ac, master, t0, 7.9, .35, .2, 6);                                 // the snail
+  for (let t = 9.2; t < 10.0; t += .34) blip(t, pentHz(1, 1), .16);            // the pupa wiring
+  blip(11.2, PHOTON_HZ, .26);                                                  // the first weak pulse
+  for (let t = 12.0; t < 13.0; t += .25) blip(t, pentHz(2, (t * 4 | 0) % 5), .14);
+  for (let k = 0; k < 4; k++) blip(13.2 + k * .14, pentHz(1, k), .17);          // four wells
+  blip(13.8, pentHz(2, 2), .3);
+  for (let t = 14.0; t < 18.0; t += 14 / 12 / 1) blip(t, PHOTON_HZ, .2);        // flashes on the pop grid
+  blip(18.3, pentHz(-1, 3), .3); note(ac, master, pentHz(-1, 1), t0, 18.3, .7, 'sawtooth', .17);  // the wrong answer
+  // courtship: a falling phrase, a pause, one answering tick
+  [0, .18, .36, .54].forEach((d, k) => note(ac, master, pentHz(1, 4 - k), t0, 19.1 + d, .4, 'triangle', .2));
+  blip(20.45, pentHz(2, 2), .3);
+  for (let k = 0; k < 7; k++) blip(21.3 + k * .22, pentHz(1, 2), .16);          // the row of eggs
+  for (let t = 23.0; t < 24.5; t += .5) note(ac, master, pentHz(-1, 0), t0, t, .9, 'sine', .12);
+  blip(24.9, pentHz(1, 3), .2); blip(25.6, pentHz(2, 0), .24);
+  blip(26.74, PHOTON_HZ, .32);                              // the loop tone, same as 1.25
+}
+
+// ===================== FILM =====================
+const TIMELINE = [
+  { name: 'hero',    dur: 1.25, fn: sHero },
+  { name: 'spark',   dur: 0.75, fn: sSpark },
+  { name: 'egg',     dur: 4.00, fn: sEgg },
+  { name: 'hatch',   dur: 1.00, fn: sHatch },
+  { name: 'worm',    dur: 2.00, fn: sWorm },
+  { name: 'pupa',    dur: 1.00, fn: sPupa },
+  { name: 'emerge',  dur: 2.00, fn: sEmerge },
+  { name: 'macro',   dur: 1.00, fn: sMacro },
+  { name: 'organ',   dur: 1.00, fn: sOrgan },
+  { name: 'flight',  dur: 2.00, fn: sFlight },
+  { name: 'bowl',    dur: 2.00, fn: sBowl },
+  { name: 'wrong',   dur: 1.00, fn: sWrong },
+  { name: 'court',   dur: 2.00, fn: sCourt },
+  { name: 'lay',     dur: 2.00, fn: sLay },
+  { name: 'night',   dur: 1.50, fn: sNight },
+  { name: 'dawn',    dur: 1.50, fn: sDawn },
+  { name: 'loop',    dur: 1.00, fn: sLoop },
+];
+defineFilm({ timeline: TIMELINE, score, format: { ar: '1:1' } });
+</script>
