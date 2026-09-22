@@ -23,6 +23,7 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 | 013 | [The Credits Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_credits_roll.html) | Roll your own fake-serious end credits — paste names, SPACE, record the clip |
 | 014 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
 | 015 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
+| 030 | [Scroll Amnesia](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_scroll_amnesia.html) | An 18-second bit on why you can't name one video from the last hour — record the .webm, lay the VO on top |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 

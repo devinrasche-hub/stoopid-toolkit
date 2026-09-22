@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="29">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="30">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">29 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">30 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -359,6 +359,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>EMPRESS HEAVY</h3>
       <p>ASCII launch pad. Countdown, liftoff, fireworks &mdash; GOOD LUCK EMPRESS HEAVY &mdash; zoom into the black and vanish like a star.</p></div>
       <div class="foot"><span class="st">STATUS: <em>GO FOR LAUNCH</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_scroll_amnesia.html" style="--ac:var(--orange)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 030</span><span class="cls">18-SECOND BIT</span></div>
+      <canvas class="viz" data-viz="amnesia"></canvas>
+      <div class="body"><h3>SCROLL AMNESIA</h3>
+      <p>Eighteen seconds on why you can&rsquo;t name one video from the last hour. Record the .webm, lay the voiceover on top. You didn&rsquo;t forget them &mdash; they never saved.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>0 FILES WRITTEN</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -988,6 +997,39 @@ VIZ.flip = function(x,w,h,t){
   if(idx>=flipIdx){
     x.fillStyle='#CC5500'; x.textAlign='right';
     x.fillText('FLIP FOUND ▸ BLOCK 17', w-20, 12);
+  }
+};
+
+/* 030 — scroll amnesia */
+VIZ.amnesia = function(x,w,h,t){
+  var cyc=5200, p=(t%cyc)/cyc, cw=Math.min(w-46,170), cx=w/2;
+  if(p<0.60){
+    var e=Math.pow(p/0.60,2.3), gap=30, n=20, dist=e*n*gap;
+    var smear=Math.min(1,e*2.8);
+    for(var i=0;i<n;i++){
+      var y=h+i*gap-dist;
+      if(y<-gap||y>h) continue;
+      if(smear>.1){
+        var sl=gap*1.7*smear;
+        var g=x.createLinearGradient(0,y,0,y+sl);
+        g.addColorStop(0,'rgba(0,255,198,'+(0.30*smear)+')');
+        g.addColorStop(1,'rgba(0,255,198,0)');
+        x.fillStyle=g; x.fillRect(cx-cw/2,y,cw,sl);
+      }
+      x.fillStyle='rgba(255,255,255,.06)'; x.fillRect(cx-cw/2,y,cw,gap-9);
+      x.strokeStyle=(i%4===0)?'#00FFC6':'#3a3a3a'; x.lineWidth=1;
+      x.strokeRect(cx-cw/2,y,cw,gap-9);
+    }
+    x.fillStyle='#000'; x.fillRect(0,0,w,20);
+    x.font=F(8); x.textAlign='left'; x.fillStyle='#555'; x.fillText('VIDEOS WATCHED',12,13);
+    x.textAlign='right'; x.fillStyle='#00FFC6'; x.font=F(10,true);
+    x.fillText(String(1+Math.floor(399*e)), w-12, 13);
+  } else {
+    var q=(p-0.60)/0.40;
+    x.textAlign='center';
+    x.fillStyle='#CC5500'; x.font=F(15,true); x.fillText('0 SAVED', cx, h/2+2);
+    x.fillStyle='#555'; x.font=F(8); x.fillText('THEY NEVER FINISHED WRITING', cx, h/2+18);
+    if(q<.06){ x.fillStyle='rgba(255,255,255,'+(.4*(1-q/.06))+')'; x.fillRect(0,0,w,h); }
   }
 };
 

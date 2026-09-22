@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCROLL AMNESIA — STOOPID</title>
+<style>
+  :root{
+    --black:#000; --white:#fff; --teal:#00FFC6; --purple:#8A2BE2;
+    --red:#FF2D2D; --orange:#CC5500;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace;
+       padding:28px 22px 60px; min-height:100vh;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0; z-index:99;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);}
+
+  h1{font-size:26px; letter-spacing:4px;}
+  h1 span{color:var(--orange);}
+  .sub{color:#666; font-size:12px; letter-spacing:2px; margin:6px 0 26px;}
+
+  .wrap{display:flex; flex-wrap:wrap; gap:26px; align-items:flex-start; max-width:1320px;}
+
+  .panel{width:360px; border:1px solid #333; padding:18px 16px; position:relative;}
+  .corner{position:absolute; width:12px; height:12px; border:2px solid var(--orange);}
+  .tl{top:-2px;left:-2px;border-right:none;border-bottom:none;}
+  .tr{top:-2px;right:-2px;border-left:none;border-bottom:none;}
+  .bl{bottom:-2px;left:-2px;border-right:none;border-top:none;}
+  .br{bottom:-2px;right:-2px;border-left:none;border-top:none;}
+  .panel h2{font-size:14px; letter-spacing:2px; color:var(--orange); margin-bottom:6px;}
+  .panel h2.t{color:var(--teal); margin-top:24px;}
+
+  label{display:block; font-size:11px; letter-spacing:1px; color:#888; margin:14px 0 6px;}
+  select{width:100%; background:#0a0a0a; border:1px solid #333; color:#fff;
+    font-family:'Courier New',monospace; font-size:13px; padding:9px 10px; letter-spacing:1px;}
+  select:focus{outline:none; border-color:var(--orange);}
+
+  .btns{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+  button{flex:1; min-width:96px; background:#000; color:#fff; border:1px solid var(--orange);
+    font-family:'Courier New',monospace; font-size:13px; letter-spacing:2px; padding:11px 8px;
+    cursor:pointer; text-transform:uppercase;}
+  button:hover:not(:disabled){background:var(--orange); color:#000;}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+  button.rec{border-color:var(--teal);}
+  button.rec:hover:not(:disabled){background:var(--teal); color:#000;}
+  .status{margin-top:14px; font-size:11px; letter-spacing:1px; color:#777; min-height:16px;}
+  .status b{color:var(--orange);}
+  .hint{margin-top:14px; font-size:10px; line-height:1.6; color:#555; letter-spacing:.5px;}
+  .hint b{color:#777;}
+
+  .script{margin-top:10px; border:1px solid #222; background:#050505; padding:12px 12px;
+    font-size:12px; line-height:1.75; color:#bbb; letter-spacing:.5px; white-space:pre-wrap;}
+  .script .tc{color:var(--teal);}
+  .script .fl{color:var(--orange);}
+  .copy{margin-top:10px;}
+
+  .stagewrap{flex:1; min-width:300px;}
+  canvas{display:block; margin:0 auto; background:#000; border:1px solid #222;
+    max-height:76vh; max-width:100%; width:auto; height:auto;}
+  .stagefoot{font-size:11px; color:#555; letter-spacing:2px; margin-top:10px; text-align:center;}
+  .stagefoot b{color:#777;}
+
+  .footer{margin-top:40px; font-size:11px; color:#555; letter-spacing:2px;}
+  @media(max-width:820px){ .panel{width:100%;} canvas{max-height:60vh;} }
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+
+<h1>SCROLL <span>[ AMNESIA ]</span></h1>
+<div class="sub">18 SECONDS &middot; WHY YOU CAN&rsquo;T NAME ONE VIDEO FROM THE LAST HOUR &middot; @stoopidshow</div>
+
+<div class="wrap">
+  <div class="panel">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <h2>// THE BIT</h2>
+    <div class="hint" style="margin-top:8px">One idea: <b>you didn&rsquo;t forget them &mdash; they never saved.</b>
+      Runs exactly 18.000s, frame-timed. Record it, drop the .webm in CapCut, lay the VO on top.</div>
+
+    <label>ASPECT</label>
+    <select id="aspect">
+      <option value="9:16" selected>9:16 &mdash; 1080&times;1920 (vertical / X, Reels)</option>
+      <option value="1:1">1:1 &mdash; 1080&times;1080 (square)</option>
+      <option value="16:9">16:9 &mdash; 1920&times;1080 (wide)</option>
+    </select>
+
+    <div class="btns">
+      <button id="play">&#9654; Play</button>
+      <button id="rec" class="rec">&#9210; Record</button>
+      <button id="stop" disabled>&#9632; Stop</button>
+    </div>
+    <div class="status" id="status">Ready. 18.000s on the clock.</div>
+    <div class="hint">RECORD plays it once in real time and downloads a <b>.webm</b>. No audio &mdash;
+      the voiceover goes on in the edit. SPACE plays, R records.</div>
+
+    <h2 class="t">// VOICEOVER &mdash; 45 WORDS, DEADPAN</h2>
+    <div class="script" id="vo"><span class="tc">00.0</span>  You just watched four hundred videos.
+      Name one.
+<span class="tc">03.0</span>  You can&rsquo;t. That&rsquo;s not a you problem.
+<span class="tc">05.5</span>  Your brain saves in the gaps.
+      Every swipe slams a door.
+<span class="tc">09.5</span>  Four hundred doors. Zero gaps.
+<span class="fl">13.2</span>  <span class="fl">So you didn&rsquo;t forget them.</span>
+      <span class="fl">They never saved.</span>
+<span class="tc">16.3</span>  This was video four hundred and one.</div>
+    <button class="copy" id="copyvo">&#9112; Copy VO script</button>
+
+    <div class="hint" style="margin-top:18px">
+      <b>THE SCIENCE ON SCREEN (both real):</b><br>
+      01 &mdash; EVENT BOUNDARY. The brain files experience in chunks and closes the chunk at
+      every scene cut. A swipe is a cut. 400 swipes, 400 slammed doors.<br>
+      02 &mdash; CONSOLIDATION. A memory gets written during the idle gap after the thing,
+      not during the thing. The feed&rsquo;s whole job is deleting the gap.
+    </div>
+  </div>
+
+  <div class="stagewrap">
+    <canvas id="stage" width="1080" height="1920"></canvas>
+    <div class="stagefoot"><b id="dims">1080&times;1920</b> &middot; 18.000s &middot; REALITY IS USER GENERATED</div>
+  </div>
+</div>
+
+<div class="footer">SIGNAL RECEIVED.</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const cv = $("#stage"), ctx = cv.getContext("2d");
+
+const TEAL="#00FFC6", ORANGE="#CC5500", RED="#FF2D2D", WHITE="#fff", PURPLE="#8A2BE2";
+const DUR = 18.0;
+
+/* ---------- beat map ---------- */
+const B = {
+  storm:[0.00, 2.60],   // 400 videos, one hour, gone
+  name :[2.60, 5.40],   // NAME ONE.
+  door :[5.40, 9.40],   // mechanism 01 — event boundary
+  save :[9.40,13.10],   // mechanism 02 — consolidation
+  flip :[13.10,16.20],  // they never saved
+  end  :[16.20,18.00]   // video 401
+};
+
+const FEED = [
+ "CAT ON A ROOMBA","GUY YELLING IN A CAR","RECIPE YOU WON'T MAKE","AD FOR A MATTRESS",
+ "SOMEONE ELSE'S DIVORCE","4 SECONDS OF A WAR","A PIMPLE, EXTRACTED","ABS",
+ "DANCE (ALREADY OVER)","BABY GOAT, SCREAMING","CONSPIRACY, 40 SECONDS","LIFE HACK. FAKE.",
+ "MAN EATS 30 EGGS","GRASS (UNTOUCHED)","POV: YOU ARE TIRED","A GUY EXPLAINING YOU",
+ "SOUP, ASMR","SOMEONE CRYING, LIT WELL","TRUCK FALLS OVER","THE SAME SONG AGAIN"
+];
+
+/* ---------- helpers ---------- */
+let W=0,H=0,K=1,CX=0;
+function resizeVars(){ W=cv.width; H=cv.height; K=Math.min(W,H*0.62)/1000; CX=W/2; }
+resizeVars();
+
+let scanPat=null;
+function makeScan(){
+  const p=document.createElement("canvas"); p.width=4; p.height=4;
+  const c=p.getContext("2d"); c.fillStyle="rgba(0,0,0,.30)"; c.fillRect(0,0,4,1);
+  scanPat=ctx.createPattern(p,"repeat");
+}
+makeScan();
+
+function rnd(n){ const s=Math.sin(n*127.1+311.7)*43758.5453; return s-Math.floor(s); }
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const outCubic=p=>1-Math.pow(1-p,3);
+
+function font(size,bold){ ctx.font=(bold?"bold ":"")+Math.round(size)+'px "Courier New",monospace'; }
+
+/* manual letter-spacing: the house look, and it renders the same everywhere */
+function tracked(text,cx,y,size,color,bold,track,align){
+  font(size,bold);
+  const chars=[...text], w=chars.map(ch=>ctx.measureText(ch).width);
+  const total=w.reduce((a,b)=>a+b,0)+track*(chars.length-1);
+  let x = align==="left" ? cx : align==="right" ? cx-total : cx-total/2;
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic"; ctx.fillStyle=color;
+  chars.forEach((ch,i)=>{ ctx.fillText(ch,x,y); x+=w[i]+track; });
+  return total;
+}
+/* cheap RGB split — teal/red ghosts under the white */
+function trackedGlitch(text,cx,y,size,color,bold,track,amt){
+  if(amt>0.02){
+    ctx.globalAlpha=0.55*amt;
+    tracked(text,cx-3.2*K*amt*3,y,size,TEAL,bold,track,"center");
+    tracked(text,cx+3.2*K*amt*3,y,size,RED,bold,track,"center");
+    ctx.globalAlpha=1;
+  }
+  tracked(text,cx,y,size,color,bold,track,"center");
+}
+
+function frameFX(t,fi){
+  ctx.save();
+  ctx.fillStyle=scanPat; ctx.globalAlpha=0.42; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=1;
+  /* signal dust */
+  for(let i=0;i<26;i++){
+    const r=rnd(fi*7+i*13);
+    ctx.fillStyle="rgba(255,255,255,"+(0.03+r*0.05)+")";
+    ctx.fillRect(rnd(fi*3+i)*W, rnd(fi*5+i*2)*H, 2*K, 2*K);
+  }
+  /* vignette */
+  const g=ctx.createRadialGradient(CX,H/2,Math.min(W,H)*0.28,CX,H/2,Math.max(W,H)*0.72);
+  g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.55)");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
+
+function brackets(color,alpha,inset,len){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=color; ctx.lineWidth=3*K;
+  const m=inset, L=len;
+  const corners=[[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]];
+  corners.forEach(([x,y,sx,sy])=>{
+    ctx.beginPath(); ctx.moveTo(x+sx*L,y); ctx.lineTo(x,y); ctx.lineTo(x,y+sy*L); ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function hud(label,value,y,color){
+  const hw=Math.min(W*0.84, 760*K);
+  tracked(label,CX-hw/2,y,20*K,"#555",false,3*K,"left");
+  tracked(value,CX+hw/2,y,20*K,color||"#888",true,3*K,"right");
+}
+
+function clock(sec){
+  const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=Math.floor(sec%60);
+  return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+
+/* ---------- SCENE 01 — THE STORM ---------- */
+function sceneStorm(t,fi){
+  const [a,b]=B.storm;
+  const p=clamp((t-a)/2.30,0,1);
+  const e=Math.pow(p,2.0);
+  const gap=330*K, CW=Math.min(W*0.78, 640*K), count=46;
+  const dist=e*count*gap;
+  const speed=(p<1)? (count*gap*2*p)/2.30 : 0;
+  const smear=clamp(speed/9000,0,1);
+  const fade=1-seg(t,a+2.38,b);
+
+  ctx.save(); ctx.globalAlpha=fade;
+  const CH=gap-46*K, x0=CX-CW/2;
+  for(let i=0;i<count;i++){
+    const y=H*1.05+i*gap-dist;
+    if(y<-gap*2||y>H+gap) continue;
+    const lbl=FEED[i%FEED.length];
+
+    /* motion streak — the feed as light leaving the building */
+    if(smear>0.12){
+      const sl=gap*1.5*smear;
+      const g=ctx.createLinearGradient(0,y,0,y+sl);
+      g.addColorStop(0,"rgba(0,255,198,"+(0.30*smear)+")");
+      g.addColorStop(1,"rgba(0,255,198,0)");
+      ctx.fillStyle=g; ctx.fillRect(x0,y,CW,sl);
+    }
+    const ghosts=smear>0.15?2:1;
+    for(let gI=ghosts-1; gI>=0; gI--){
+      const yy=y+gI*gap*0.30*smear;
+      const al=(gI===0?1:0.45)*(1-smear*0.35);
+      ctx.globalAlpha=fade*al;
+      ctx.fillStyle="rgba(255,255,255,.055)"; ctx.fillRect(x0,yy,CW,CH);
+      ctx.strokeStyle=(i%5===0)?TEAL:"#4a4a4a"; ctx.lineWidth=2*K;
+      ctx.strokeRect(x0,yy,CW,CH);
+      /* static hatch */
+      for(let s=0;s<9;s++){
+        const r=rnd(i*31+s*7+Math.floor(fi/2));
+        ctx.fillStyle="rgba(255,255,255,"+(0.07+r*0.16)+")";
+        ctx.fillRect(x0+5*K, yy+14*K+s*((CH-24*K)/9), CW-10*K, 4*K);
+      }
+      if(gI===0&&smear<0.86){
+        ctx.globalAlpha=fade*clamp(1.15-smear,0,1);
+        ctx.fillStyle="#000"; ctx.fillRect(x0+5*K, yy+CH*0.38, CW-10*K, 44*K);
+        tracked(lbl,CX,yy+CH*0.38+32*K,26*K,"#e2e2e2",true,3*K,"center");
+      }
+    }
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
+
+  const n=Math.max(1,Math.floor(1+399*e));
+  /* readout needs a floor to sit on */
+  ctx.fillStyle="#000"; ctx.fillRect(0,H*0.10-40*K,W,132*K);
+  ctx.fillStyle="rgba(0,255,198,.16)"; ctx.fillRect(0,H*0.10+92*K,W,2*K);
+  hud("VIDEOS WATCHED", String(n).padStart(3,"0"), H*0.10, TEAL);
+  hud("TIME SPENT", clock(e*3600), H*0.10+38*K, "#888");
+  hud("MEMORIES FILED", "000", H*0.10+76*K, RED);
+
+  /* the stop */
+  if(t>a+2.30&&t<a+2.40){
+    ctx.fillStyle="rgba(255,255,255,"+(0.45*(1-(t-a-2.30)/0.10))+")";
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+/* ---------- SCENE 02 — NAME ONE ---------- */
+function sceneName(t){
+  const [a]=B.name;
+  const p=seg(t,a+0.10,a+0.55);
+  ctx.globalAlpha=p;
+  trackedGlitch("NAME ONE.",CX,H*0.40,Math.min(96*K,W*0.115),WHITE,true,7*K,(1-p));
+  ctx.globalAlpha=1;
+
+  /* the attempt: type it, then take it all back */
+  const line="the one with the";
+  const typeIn=seg(t,a+0.95,a+1.85), typeOut=seg(t,a+2.05,a+2.55);
+  let shown=Math.floor(line.length*typeIn);
+  if(typeOut>0) shown=Math.floor(line.length*(1-typeOut));
+  const txt="> "+line.slice(0,Math.max(0,shown));
+  const caret=(Math.floor(t*3.2)%2===0)?"_":" ";
+  if(t>a+0.80) tracked(txt+caret,CX,H*0.50,34*K,"#7a7a7a",false,2*K,"center");
+
+  const q=seg(t,a+2.35,a+2.70);
+  if(q>0){
+    ctx.globalAlpha=q;
+    tracked("RECALL: 0 / 400",CX,H*0.585,30*K,RED,true,4*K,"center");
+    tracked("(not a you problem)",CX,H*0.635,24*K,"#5a5a5a",false,2*K,"center");
+    ctx.globalAlpha=1;
+  }
+}
+
+/* ---------- SCENE 03 — EVERY SWIPE IS A DOOR ---------- */
+const SLAMS=[6.30,7.05,7.70,8.25,8.70,9.05];
+function sceneDoor(t){
+  const [a]=B.door;
+  const head=seg(t,a+0.05,a+0.45);
+  ctx.globalAlpha=head;
+  tracked("MECHANISM 01",CX,H*0.215,26*K,TEAL,true,8*K,"center");
+  trackedGlitch("EVERY SWIPE",CX,H*0.285,Math.min(84*K,W*0.10),WHITE,true,6*K,(1-head));
+  trackedGlitch("IS A DOOR.",CX,H*0.345,Math.min(84*K,W*0.10),WHITE,true,6*K,(1-head));
+  ctx.globalAlpha=1;
+
+  const DW=Math.min(W*0.52,480*K), DH=DW*1.18;
+  const dx=CX-DW/2, dy=H*0.42;
+
+  /* the room */
+  ctx.strokeStyle="#333"; ctx.lineWidth=3*K; ctx.strokeRect(dx,dy,DW,DH);
+  ctx.fillStyle="rgba(255,255,255,.02)"; ctx.fillRect(dx,dy,DW,DH);
+
+  let last=-1, n=0;
+  for(let i=0;i<SLAMS.length;i++) if(t>=SLAMS[i]){ last=SLAMS[i]; n=i+1; }
+
+  /* whatever was in the room, while it lasts */
+  const refill=(last<0)? a+0.55 : last+0.20;
+  const alive=seg(t,refill,refill+0.18);
+  if(alive>0){
+    ctx.globalAlpha=alive;
+    for(let i=0;i<4;i++){
+      const cwd=DW*0.34, chg=DH*0.18;
+      const px=dx+DW*0.11+(i%2)*(DW*0.44), py=dy+DH*0.14+Math.floor(i/2)*(DH*0.40);
+      ctx.strokeStyle=TEAL; ctx.lineWidth=2*K; ctx.strokeRect(px,py,cwd,chg);
+      for(let s=0;s<4;s++){
+        ctx.fillStyle="rgba(0,255,198,"+(0.10+rnd(i*9+s+n*3)*0.16)+")";
+        ctx.fillRect(px+3*K,py+4*K+s*(chg-8*K)/4,cwd-6*K,3*K);
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+
+  /* the slam */
+  if(last>0){
+    const u=(t-last)/0.30;
+    if(u<1){
+      const cover=u<0.55? (u/0.55) : 1-((u-0.55)/0.45);
+      ctx.fillStyle="#0b0b0b"; ctx.fillRect(dx,dy,DW*clamp(cover,0,1),DH);
+      ctx.strokeStyle=RED; ctx.lineWidth=5*K;
+      ctx.beginPath(); ctx.moveTo(dx+DW*clamp(cover,0,1),dy);
+      ctx.lineTo(dx+DW*clamp(cover,0,1),dy+DH); ctx.stroke();
+    }
+    const st=1-clamp((t-last)/0.45,0,1);
+    if(st>0){
+      ctx.globalAlpha=st;
+      tracked("FLUSH",CX,dy+DH*0.56,44*K,RED,true,10*K,"center");
+      ctx.globalAlpha=1;
+    }
+  }
+
+  hud("DOORS SLAMMED",String(n).padStart(3,"0"),dy+DH+58*K,RED);
+  hud("KEPT",  "000", dy+DH+96*K,"#666");
+
+  const cap=seg(t,a+1.00,a+1.40);
+  ctx.globalAlpha=cap;
+  tracked("EVENT BOUNDARY — THE BRAIN CLOSES THE FILE",CX,H*0.905,Math.min(21*K,W*0.026),"#6f6f6f",false,2*K,"center");
+  tracked("AT EVERY SCENE CUT. A SWIPE IS A CUT.",CX,H*0.905+30*K,Math.min(21*K,W*0.026),"#6f6f6f",false,2*K,"center");
+  ctx.globalAlpha=1;
+}
+
+/* ---------- SCENE 04 — SAVING… ---------- */
+function sceneSave(t){
+  const [a]=B.save;
+  const head=seg(t,a+0.05,a+0.40);
+  ctx.globalAlpha=head;
+  tracked("MECHANISM 02",CX,H*0.215,26*K,TEAL,true,8*K,"center");
+  trackedGlitch("MEMORY SAVES",CX,H*0.285,Math.min(84*K,W*0.10),WHITE,true,6*K,(1-head));
+  trackedGlitch("IN THE GAPS.",CX,H*0.345,Math.min(84*K,W*0.10),WHITE,true,6*K,(1-head));
+  ctx.globalAlpha=1;
+
+  const start=a+0.55, period=0.48;
+  const swipes=Math.max(0,Math.floor((t-start)/period));
+  const local=Math.max(0,(t-start)-swipes*period);
+  const pct=(t<start)?0:clamp(local/period,0,1)*9;
+
+  const BW=Math.min(W*0.72,620*K), bx=CX-BW/2, by=H*0.50, BH=44*K;
+  ctx.strokeStyle="#333"; ctx.lineWidth=2*K; ctx.strokeRect(bx,by,BW,BH);
+  ctx.fillStyle=ORANGE; ctx.fillRect(bx+3*K,by+3*K,(BW-6*K)*(pct/100),BH-6*K);
+  /* the reset tick */
+  if(local<0.07&&t>start){ ctx.fillStyle="rgba(255,45,45,.30)"; ctx.fillRect(bx,by,BW,BH); }
+
+  tracked("SAVING MEMORY… "+pct.toFixed(0)+"%",CX,by-24*K,28*K,"#9a9a9a",true,3*K,"center");
+  ctx.globalAlpha=(local<0.14&&t>start)?1:0.34;
+  tracked("INTERRUPTED",CX,by+BH+42*K,26*K,RED,true,6*K,"center");
+  ctx.globalAlpha=1;
+
+  hud("SWIPES",String(Math.min(400,340+swipes*10)),H*0.68,"#888");
+  hud("IDLE GAPS AVAILABLE","0",H*0.68+38*K,RED);
+
+  const cap=seg(t,a+1.10,a+1.50);
+  ctx.globalAlpha=cap;
+  tracked("CONSOLIDATION HAPPENS IN THE QUIET AFTER —",CX,H*0.905,Math.min(21*K,W*0.026),"#6f6f6f",false,2*K,"center");
+  tracked("THE FEED'S ENTIRE JOB IS DELETING THE QUIET.",CX,H*0.905+30*K,Math.min(21*K,W*0.026),"#6f6f6f",false,2*K,"center");
+  ctx.globalAlpha=1;
+}
+
+/* ---------- SCENE 05 — THE FLIP ---------- */
+function sceneFlip(t){
+  const [a]=B.flip;
+  const l1=seg(t,a+0.30,a+0.65);
+  if(l1>0){
+    ctx.globalAlpha=l1;
+    trackedGlitch("YOU DIDN'T",CX,H*0.395,Math.min(88*K,W*0.105),WHITE,true,6*K,(1-l1));
+    ctx.globalAlpha=1;
+  }
+  const l2=seg(t,a+0.55,a+0.90);
+  if(l2>0){
+    ctx.globalAlpha=l2;
+    const w=tracked("FORGET THEM.",CX,H*0.465,Math.min(88*K,W*0.105),WHITE,true,6*K,"center");
+    ctx.globalAlpha=1;
+    /* strike the wrong word out */
+    const sx=seg(t,a+1.30,a+1.60);
+    if(sx>0){
+      ctx.strokeStyle=RED; ctx.lineWidth=7*K;
+      ctx.beginPath(); ctx.moveTo(CX-w/2,H*0.465-24*K);
+      ctx.lineTo(CX-w/2+w*sx,H*0.465-24*K); ctx.stroke();
+    }
+  }
+  const l3=seg(t,a+1.70,a+2.05);
+  if(l3>0){
+    ctx.globalAlpha=l3;
+    trackedGlitch("THEY NEVER",CX,H*0.585,Math.min(94*K,W*0.112),ORANGE,true,6*K,(1-l3));
+    ctx.globalAlpha=1;
+  }
+  const l4=seg(t,a+1.95,a+2.30);
+  if(l4>0){
+    ctx.globalAlpha=l4;
+    trackedGlitch("SAVED.",CX,H*0.660,Math.min(94*K,W*0.112),ORANGE,true,6*K,(1-l4));
+    ctx.globalAlpha=1;
+  }
+  const l5=seg(t,a+2.35,a+2.65);
+  if(l5>0){
+    ctx.globalAlpha=l5;
+    tracked("FILES WRITTEN: 0",CX,H*0.760,28*K,"#777",true,5*K,"center");
+    ctx.globalAlpha=1;
+  }
+  brackets(ORANGE,clamp(l3,0,1)*0.85,W*0.055,W*0.085);
+}
+
+/* ---------- SCENE 06 — VIDEO 401 ---------- */
+function sceneEnd(t){
+  const [a]=B.end;
+  const p=seg(t,a,a+0.35);
+  ctx.globalAlpha=p;
+  trackedGlitch("THIS WAS",CX,H*0.425,Math.min(74*K,W*0.088),"#9a9a9a",true,6*K,(1-p));
+  trackedGlitch("VIDEO 401.",CX,H*0.505,Math.min(92*K,W*0.110),WHITE,true,6*K,(1-p));
+  ctx.globalAlpha=1;
+
+  const q=seg(t,a+0.85,a+1.20);
+  if(q>0){
+    ctx.globalAlpha=q;
+    tracked("STOOPID BUT TRUE",CX,H*0.625,30*K,TEAL,true,7*K,"center");
+    tracked("SIGNAL RECEIVED.",CX,H*0.685,26*K,ORANGE,true,7*K,"center");
+    tracked("@stoopidshow",CX,H*0.745,22*K,"#555",false,4*K,"center");
+    ctx.globalAlpha=1;
+  }
+  brackets(TEAL,clamp(p,0,1)*0.8,W*0.055,W*0.085);
+}
+
+/* ---------- the reel ---------- */
+function render(t,fi){
+  t=clamp(t,0,DUR);
+  ctx.fillStyle="#000"; ctx.fillRect(0,0,W,H);
+  if(t<B.storm[1])      sceneStorm(t,fi);
+  else if(t<B.name[1])  sceneName(t);
+  else if(t<B.door[1])  sceneDoor(t);
+  else if(t<B.save[1])  sceneSave(t);
+  else if(t<B.flip[1])  sceneFlip(t);
+  else                  sceneEnd(t);
+  frameFX(t,fi);
+}
+
+/* ---------- transport ---------- */
+let raf=null, t0=0, frame=0, playing=false;
+let recorder=null, chunks=[];
+
+function setStatus(h){ $("#status").innerHTML=h; }
+
+function loop(now){
+  const t=(now-t0)/1000;
+  render(t,frame++);
+  if(t<DUR){ raf=requestAnimationFrame(loop); }
+  else{ playing=false; render(DUR,frame); if(recorder&&recorder.state==="recording") setTimeout(stopRec,220);
+        else setStatus("Done. 18.000s. <b>Hit record</b> for the file."); }
+}
+function play(){
+  cancelAnimationFrame(raf); frame=0; playing=true;
+  t0=performance.now(); raf=requestAnimationFrame(loop);
+}
+function startRec(){
+  if(!window.MediaRecorder){ setStatus("This browser won't record — screen-grab the canvas instead."); return; }
+  const mime=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+    ? "video/webm;codecs=vp9" : "video/webm";
+  chunks=[];
+  const stream=cv.captureStream(30);
+  recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:12_000_000});
+  recorder.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  recorder.onstop=save;
+  recorder.start();
+  $("#rec").disabled=true; $("#play").disabled=true; $("#stop").disabled=false;
+  setStatus("Recording 18.000s — <b>don't switch tabs</b>.");
+  play();
+}
+function stopRec(){
+  if(recorder&&recorder.state==="recording") recorder.stop();
+  $("#rec").disabled=false; $("#play").disabled=false; $("#stop").disabled=true;
+}
+function save(){
+  const blob=new Blob(chunks,{type:"video/webm"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="stoopid_scroll_amnesia_"+cv.width+"x"+cv.height+".webm";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  setStatus("Saved <b>stoopid_scroll_amnesia.webm</b> — drop it in CapCut, lay the VO on top.");
+}
+
+$("#play").addEventListener("click",play);
+$("#rec").addEventListener("click",startRec);
+$("#stop").addEventListener("click",()=>{ cancelAnimationFrame(raf); playing=false; stopRec(); });
+
+$("#aspect").addEventListener("change",e=>{
+  const v=e.target.value;
+  const d = v==="1:1" ? [1080,1080] : v==="16:9" ? [1920,1080] : [1080,1920];
+  cv.width=d[0]; cv.height=d[1]; resizeVars(); makeScan();
+  $("#dims").innerHTML=d[0]+"&times;"+d[1];
+  render(0,0);
+});
+
+$("#copyvo").addEventListener("click",()=>{
+  const txt=$("#vo").innerText;
+  navigator.clipboard.writeText(txt).then(
+    ()=>setStatus("VO script copied."),
+    ()=>setStatus("Copy failed — select it by hand."));
+});
+
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="SELECT") return;
+  if(e.code==="Space"){ e.preventDefault(); play(); }
+  else if(e.key==="r"||e.key==="R"){ if(!$("#rec").disabled) startRec(); }
+});
+
+render(0,0);
+</script>
+</body>
+</html>
