@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOOPID — THE THREAD</title>
+<!--
+  SUNK COST, ONLINE — 18s · 16:9 · lands (no loop)
+  RESOLVED: ABSURDITY 3 · SINCERITY 2 · CHAOS 2 · EDUCATION 5 · LOOPABLE no ·
+            DEV ON SCREEN no · LENGTH 18s · ASPECT 16:9
+  The impossible rule: the EXIT stays exactly one step away no matter how deep you go.
+  The mechanism that must survive every joke being cut: the thread above you is identical
+  whether you stay or leave — so it is not a reason to stay. Only the path below differs.
+  Controls: SPACE replay · ?t=11 freeze on a frame
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;width:100vw;height:auto;max-height:100vh;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1920" height="1080"></canvas></div>
+<div id="warm"><span style="font-family:'Bebas Neue'">B</span><span style="font-family:'Share Tech Mono'">M</span></div>
+<script>
+const BLACK='#000000', WHITE='#FFFFFF', TEAL='#00FFC6', RED='#FF2D2D', ORANGE='#CC5500';
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const S={w:cv.width,h:cv.height}, U=Math.min(S.w,S.h);
+
+/* ---------- BEATS ---------- */
+const HOOK=3.0, ESC=6.0, FLIP=5.0, REL=4.0;
+const T_HOOK=HOOK, T_ESC=T_HOOK+ESC, T_FLIP=T_ESC+FLIP, TOTAL=T_FLIP+REL;   // 18s
+
+/* ---------- THE MODEL (EDUCATION 5) ----------
+   Replies arrive on an accelerating schedule. Minutes spent are read off that same
+   schedule — nothing on screen is a number I chose.                                   */
+const SCHED=(()=>{ const a=[0.45]; let gap=1.25;
+  while(a[a.length-1]<T_ESC+3){ a.push(a[a.length-1]+gap); gap=Math.max(0.17,gap*0.83); } return a; })();
+const MIN_PER_REPLY=2.6;                       // schematic, and labelled as such on screen
+const repliesAt=t=>{ let n=0; for(const s of SCHED){ if(t>=s) n++; else break; } return n; };
+const clockAt=t=>{ const m=repliesAt(t)*MIN_PER_REPLY;
+  return String(Math.floor(m)).padStart(2,'0')+':'+String(Math.floor((m%1)*60)).padStart(2,'0'); };
+
+/* ---------- helpers ---------- */
+const p=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const easeOut=x=>1-Math.pow(1-x,3);
+const lerp=(a,b,x)=>a+(b-a)*x;
+function font(s,f){ ctx.font=s+"px '"+f+"', "+(f==='Bebas Neue'?'Impact, sans-serif':'monospace'); }
+function ls(px){ if('letterSpacing' in ctx) ctx.letterSpacing=px+'px'; }
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* ---------- BLOCKING ---------- */
+const BOX={ w:U*0.34, h:U*0.105, gap:U*0.215 };   // the gap has to fit a person standing on the reply below
+const COL=S.w*0.40;                                   // the thread's centre line
+const threadY=i=>i*BOX.gap;
+const threadX=i=>COL + (i%2?U*0.055:-U*0.055) - BOX.w/2;   // yours / theirs, offset like a thread
+
+/* ---------- THINGS THAT LOOK LIKE THINGS ---------- */
+function comment(x,y,mine,alpha,dim){
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.fillStyle='rgba(255,255,255,0.05)'; roundRect(x,y,BOX.w,BOX.h,U*0.012); ctx.fill();
+  ctx.strokeStyle=mine?TEAL:'rgba(255,255,255,0.55)'; ctx.lineWidth=Math.max(2,U*0.0025);
+  roundRect(x,y,BOX.w,BOX.h,U*0.012); ctx.stroke();
+  const pad=U*0.018, av=U*0.026;
+  ctx.fillStyle=mine?TEAL:'rgba(255,255,255,0.7)'; ctx.globalAlpha=alpha*(dim?0.5:1);
+  ctx.beginPath(); ctx.arc(x+pad+av/2, y+pad+av/2, av/2, 0, Math.PI*2); ctx.fill();   // avatar
+  ctx.fillStyle='rgba(255,255,255,'+(dim?0.22:0.45)+')';
+  [0.62,0.90,0.48].forEach((f,k)=>                                                    // text lines
+    ctx.fillRect(x+pad+av+U*0.014, y+pad+k*U*0.020, (BOX.w-pad*2-av-U*0.02)*f, U*0.009));
+  ctx.restore();
+}
+function person(x,y,alpha){                     // you: head, shoulders, legs — it has to read as a person
+  ctx.save(); ctx.globalAlpha=alpha===undefined?1:alpha; ctx.fillStyle=WHITE;
+  const h=U*0.105, w=h*0.46;
+  ctx.beginPath(); ctx.arc(x, y-h*0.84, h*0.155, 0, Math.PI*2); ctx.fill();        // head
+  ctx.beginPath();                                                                // torso
+  ctx.moveTo(x-w*0.50, y-h*0.62); ctx.lineTo(x+w*0.50, y-h*0.62);
+  ctx.lineTo(x+w*0.36, y-h*0.30); ctx.lineTo(x-w*0.36, y-h*0.30); ctx.closePath(); ctx.fill();
+  ctx.fillRect(x-w*0.34, y-h*0.30, w*0.26, h*0.30);                               // legs
+  ctx.fillRect(x+w*0.08, y-h*0.30, w*0.26, h*0.30);
+  ctx.restore();
+}
+function door(x,y,alpha,open){                                                        // the way out
+  const w=U*0.072, h=U*0.125;
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.fillStyle='rgba(0,255,198,0.10)'; ctx.fillRect(x-w/2,y-h,w,h);
+  ctx.strokeStyle=TEAL; ctx.lineWidth=Math.max(2,U*0.003); ctx.strokeRect(x-w/2,y-h,w,h);
+  if(open){ ctx.strokeStyle='rgba(0,255,198,0.45)';                                   // the door, ajar
+    ctx.beginPath(); ctx.moveTo(x-w/2,y-h); ctx.lineTo(x-w*0.95,y-h*0.88);
+    ctx.lineTo(x-w*0.95,y-h*0.06); ctx.lineTo(x-w/2,y); ctx.stroke(); }
+  ctx.fillStyle=TEAL; ctx.beginPath();
+  ctx.arc(x+w*0.30, y-h*0.50, U*0.006, 0, Math.PI*2); ctx.fill();                     // knob
+  ctx.textAlign='center'; font(U*0.021,'Share Tech Mono'); ls(2);
+  ctx.fillStyle=TEAL; ctx.fillText('EXIT', x, y-h-U*0.016); ls(0);
+  ctx.restore();
+}
+
+/* ---------- THE MAIN VIEW: a thread you are standing in ---------- */
+function threadView(t,scale,ox,oy){
+  const n=repliesAt(t);
+  const depth=Math.max(0,n-1);
+  const last=SCHED[Math.max(0,n-1)], next=SCHED[n]!==undefined?SCHED[n]:last+1;
+  const step=easeOut(p(t,last,Math.min(next,last+0.34)));
+  const camTarget=threadY(depth-1+step);
+  ctx.save();
+  ctx.translate(ox,oy); ctx.scale(scale,scale); ctx.translate(-COL, -camTarget);
+
+  for(let i=0;i<n;i++){
+    const drop=easeOut(p(t,SCHED[i]-0.22,SCHED[i]));
+    comment(threadX(i), threadY(i)-(1-drop)*U*0.05, i%2===1, drop, false);
+  }
+  // you, standing on the newest reply — and the exit, always exactly one step away
+  const fy=threadY(depth-1+step)+U*0.004;
+  const fx=threadX(Math.max(0,n-1))+BOX.w*0.22;
+  person(fx, fy);
+  door(COL+U*0.30, fy+U*0.002, 0.95, true);
+  ctx.restore();
+}
+
+/* ---------- THE FLIP: two futures, one identical past ---------- */
+function futures(t){
+  const a=easeOut(p(t,T_ESC,T_ESC+0.45));
+  const sc=0.52, ROW=BOX.gap*0.85, PAST=-U*0.62, FY=PAST+3*ROW+BOX.h+U*0.07;
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=Math.max(1,U*0.0018);
+  ctx.beginPath(); ctx.moveTo(S.w/2,S.h*0.16); ctx.lineTo(S.w/2,S.h*0.88); ctx.stroke();
+
+  [{cx:S.w*0.27,label:'STAY'},{cx:S.w*0.73,label:'LEAVE'}].forEach((pn,k)=>{
+    ctx.save(); ctx.translate(pn.cx,S.h*0.52); ctx.scale(sc,sc);
+
+    // THE PAST — drawn identically in both panels. This is the entire lesson.
+    for(let i=0;i<4;i++)
+      comment(-BOX.w/2+(i%2?U*0.035:-U*0.035), PAST+i*ROW, i%2===1, 1, true);
+    const pulse=0.70+0.30*Math.sin(t*4.0);
+    ctx.save(); ctx.strokeStyle=ORANGE; ctx.lineWidth=U*0.005; ctx.globalAlpha=pulse;
+    ctx.strokeRect(-BOX.w*0.62, PAST-U*0.03, BOX.w*1.24, 3*ROW+BOX.h+U*0.06);
+    ctx.restore();
+
+    // THE FUTURE — the only thing that differs
+    if(k===0){
+      let lastY=FY;
+      for(let j=0;j<3;j++){
+        const show=p(t,T_ESC+1.2+j*0.55,T_ESC+1.6+j*0.55);
+        if(show>0){ const y=FY+j*ROW;
+          comment(-BOX.w/2+((j+4)%2?U*0.035:-U*0.035), y, (j+4)%2===1, show, false); lastY=y; }
+      }
+      person(-BOX.w*0.30, lastY+BOX.h+U*0.055);        // still going down, more below him
+    } else {
+      const walk=easeOut(p(t,T_ESC+1.2,T_ESC+2.5));
+      const gone=p(t,T_ESC+2.2,T_ESC+2.6);
+      door(BOX.w*0.78, FY+U*0.15, 1, true);
+      person(lerp(-BOX.w*0.30, BOX.w*0.58, walk), FY+U*0.15, 1-gone);   // stops at the door and is gone
+    }
+    ctx.restore();
+
+    ctx.textAlign='center'; font(U*0.046,'Bebas Neue'); ls(U*0.006);
+    ctx.fillStyle=WHITE; ctx.fillText(pn.label, pn.cx, S.h*0.925); ls(0);
+  });
+
+  // one label, on the thing the eye is already comparing
+  ctx.textAlign='center'; font(U*0.026,'Share Tech Mono'); ls(2);
+  ctx.fillStyle=ORANGE;
+  ctx.fillText('ALREADY SPENT · '+clockAt(T_ESC)+' · IDENTICAL', S.w/2, S.h*0.105); ls(0);
+  ctx.restore();
+}
+
+function draw(t){
+  ctx.fillStyle=BLACK; ctx.fillRect(0,0,S.w,S.h);
+  const inFlip = t>=T_ESC && t<T_FLIP;
+  // the release is a HARD CUT back into the same thread, still running, a little slower.
+  // Nothing was learned; that is the joke, and it is dry (SINCERITY 2).
+  const tt = t<T_ESC ? t : T_ESC + Math.max(0,(t-T_FLIP))*0.55;
+  if(inFlip) futures(t); else threadView(tt, 1.0, S.w*0.42, S.h*0.62);
+  chrome(t, tt, inFlip);
+}
+
+function chrome(t,tt,inFlip){
+  const m=U*0.035, len=U*0.05;
+  ctx.save();
+  ctx.strokeStyle=TEAL; ctx.globalAlpha=.45; ctx.lineWidth=Math.max(1,U*0.0015);
+  [[m,m,1,1],[S.w-m,m,-1,1],[m,S.h-m,1,-1],[S.w-m,S.h-m,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*len,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*len); ctx.stroke(); });
+  ctx.globalAlpha=1;
+  function plate(txt,x,y,align,col,size,track){
+    font(size,'Share Tech Mono'); ls(track);
+    const w=ctx.measureText(txt).width, px=U*0.012, py=U*0.010;
+    const bx=align==='center'?x-w/2:align==='right'?x-w:x;
+    ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(bx-px,y-size*0.85-py*0.4,w+px*2,size*1.25+py*0.6);
+    ctx.textAlign=align; ctx.fillStyle=col; ctx.fillText(txt,x,y); ls(0);
+  }
+  plate('@stoopidshow', S.w/2, U*0.055, 'center', 'rgba(255,255,255,0.45)', U*0.024, 2);
+  if(!inFlip) plate('SCHEMATIC · '+MIN_PER_REPLY.toFixed(1)+' MIN PER REPLY',
+        S.w-U*0.05, S.h-U*0.04, 'right', 'rgba(0,255,198,0.55)', U*0.018, 1);
+  if(!inFlip){                                        // the meter that makes the cost visible
+    ctx.textAlign='left'; font(U*0.075,'Bebas Neue'); ls(U*0.006);
+    ctx.fillStyle=t>=T_FLIP?ORANGE:WHITE; ctx.fillText(clockAt(tt), U*0.05, S.h*0.90); ls(0);
+    font(U*0.021,'Share Tech Mono'); ls(2); ctx.fillStyle='rgba(255,255,255,0.6)';
+    ctx.fillText('TIME SPENT', U*0.05, S.h*0.925); ls(0);
+  }
+  ctx.restore();
+}
+
+const freeze=new URLSearchParams(location.search).get('t');
+let t0=null;
+function loop(now){ if(t0===null)t0=now; draw(Math.min((now-t0)/1000,TOTAL)); requestAnimationFrame(loop); }
+if(freeze!==null) document.fonts.ready.then(()=>draw(Math.min(parseFloat(freeze),TOTAL)));
+else requestAnimationFrame(loop);
+addEventListener('keydown',e=>{ if(e.code==='Space'){ t0=null; e.preventDefault(); }});
+addEventListener('click',()=>{ t0=null; });
+</script>
+</body>
+</html>
