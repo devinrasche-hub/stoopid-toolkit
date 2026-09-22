@@ -11,10 +11,16 @@ no video, no base64.
 
 **Paper plates** — cream stock, brown ink that doubles and misses register,
 directional hatching instead of gradients, faint construction arcs that run
-off the form, wide diagonal dusk stripes. Grain reseeds every drawn frame.
+off the form, wide diagonal dusk stripes.
 
 **Navy plates** — near-black indigo, thin lavender linework, hex lattices,
-measurement ticks and lab brackets. Grain holds almost still.
+measurement ticks and lab brackets.
+
+**Neither stock boils.** Grain is seeded per plate, not per frame, so
+consecutive drawn frames of a static shot are byte-identical — which is what
+the reference measures at, about 1/255 between frames. The one thing that does
+re-form is the pupa's wiring at 9.0, four times a second, and that is the
+subject changing rather than a texture crawling.
 
 **Overlay language** — thin chartreuse rings, arcs and guide lines laid on top
 of the illustration to mark photons, flash codes and chemical yield.

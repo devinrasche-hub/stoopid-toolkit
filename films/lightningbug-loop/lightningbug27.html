@@ -24,7 +24,9 @@
 // frames. One canvas, no images, no sprites. Score synthesized in code
 // against this same cut list.
 //
-// Grain reseeds every drawn frame on paper plates; navy plates hold still.
+// Textures do not boil: grain is seeded per plate, not per frame, on both
+// stocks. Measured off the reference, consecutive frames of a static shot
+// differ by about 1/255.
 // Hatch, never shade. Construction geometry always visible. Hard cuts only.
 //
 // Anchor: THE LANTERN. It takes the role the compound eye and the flight arcs
@@ -77,15 +79,15 @@ usePalette(DUSK);
 const GLOW = '#c8ff2e', GLOW2 = '#e8ff5a', WRONG = '#ff5a5a';   // hot = light only
 
 // ===================== PLATE =====================
-// Paper plates reseed their grain every drawn frame; navy plates hold still.
-function paperPlate(c, i) {
+// Both stocks hold their grain still between drawn frames of a shot.
+function paperPlate(c) {
   usePalette(DUSK); resetT(c);
   c.fillStyle = PAL.paper; c.fillRect(0, 0, W, H);
   c.save(); c.translate(CX, CY); c.rotate(-Math.PI / 4);
   c.fillStyle = PAL.paperBand;
   for (let k = -8; k <= 8; k++) c.fillRect(-1400, k * 232 - 64, 2800, 118);
   c.restore();
-  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 1700, PAL.shade, .07, 900 + i, 1.7);
+  grain(c, rectPath(0, 0, W, H), [0, 0, W, H], 1700, PAL.shade, .07, 17, 1.7);
 }
 function navyPlate(c) {
   usePalette(NAVY); resetT(c);
@@ -262,7 +264,7 @@ const L1 = layer();
 
 // --- 0.00 cold open: the adult, huge, on one blade ------------------------
 function sHero(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   cam(c, CX, CY + 40, lerp(1.04, 1.12, sm(0, 1.25, tau)));
   blades(c, H * 1.02, 9, 61, alpha(PAL.shade, .45), .30);
   // the blade of timothy he is on
@@ -316,7 +318,7 @@ function sHatch(c, tau, i) {
 
 // --- 7.00 the glowworm takes a snail --------------------------------------
 function sWorm(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   const u = sm(0, 1.9, tau, easeIO), soil = H * .70;
   cam(c, lerp(W * .50, W * .64, u), CY + 70, 1.02);
   // leaf litter, hatched
@@ -387,7 +389,8 @@ function sPupa(c, tau, i) {
   const ch = ellPts(CX, CY, 262, 322, 0, 60);
   c.strokeStyle = PAL.chalk; c.lineWidth = 3; wob(c, ch, 2.2, 132, true);
   c.strokeStyle = alpha(PAL.chalk, .5); c.lineWidth = 1.4; wob(c, ellPts(CX, CY, 238, 296, 0, 56), 2.4, 133, true);
-  // inside: a network rewriting itself, reseeded on a slow beat
+  // inside: a network rewriting itself. This is the subject changing on a
+  // slow beat, not a texture boiling - it re-forms 4 times a second.
   c.save(); c.clip(polyPath(ch));
   const gen = Math.floor(tau * 4), q = rng(140 + gen);
   const nodes = []; for (let k = 0; k < 22; k++) nodes.push([CX + (q() - .5) * 430, CY + (q() - .5) * 540]);
@@ -407,7 +410,7 @@ function sPupa(c, tau, i) {
 
 // --- 10.00 the teneral adult ----------------------------------------------
 function sEmerge(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   const u = sm(.1, 1.5, tau, easeIO);
   cam(c, CX, CY + 30, lerp(1.22, 1.04, sm(0, 2, tau)));
   blades(c, H * 1.02, 8, 171, alpha(PAL.shade, .4), .26);
@@ -429,7 +432,7 @@ function sEmerge(c, tau, i) {
 // --- 12.00 macro: the lantern as a floor of photocyte tiles ----------------
 // This is the shot the compound eye gets in the reference.
 function sMacro(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   const R = 452;
   construction(c, CX, CY, R + 92, 181, alpha(PAL.guide, .4));
   ring(c, CX, CY, R + 44, alpha(PAL.ink, .35), 182, 2);
@@ -507,7 +510,7 @@ function meadow(c, i) {
   blades(c, soil + 10, 12, 257, alpha(PAL.shade, .45), .16);
 }
 function sFlight(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   const u = sm(0, 1.9, tau, easeIO);
   const p = bez(...FLIGHT, u), p2 = bez(...FLIGHT, Math.min(1, u + .012));
   const dir = Math.atan2(p2[1] - p[1], p2[0] - p[0]);
@@ -527,7 +530,7 @@ function sFlight(c, tau, i) {
 
 // --- 16.00 pull back: the meadow is a bowl --------------------------------
 function sBowl(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   const u = sm(0, 1.9, tau, easeIO);
   cam(c, CX, CY + u * 80, lerp(1.0, .58, u));
   meadow(c, i);
@@ -550,7 +553,7 @@ function sBowl(c, tau, i) {
 
 // --- 18.00 a wrong answer -------------------------------------------------
 function sWrong(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   cam(c, CX, CY, .82);
   meadow(c, i);
   const hx = CX - 210, hy = CY - 130, wx = CX + 250, wy = CY - 40;
@@ -579,7 +582,7 @@ function sWrong(c, tau, i) {
 // He draws a J of light. She answers with one delayed blink.
 const J_PATH = [[-10, -170], [-6, -20], [-34, 66], [-104, 60]];
 function sCourt(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   // a field edge with the sun already gone: a pink-to-indigo band, hatched
   c.save(); resetT(c);
   const bandH = H * .56, bp = rectPath(0, 0, W, bandH);
@@ -621,7 +624,7 @@ function sCourt(c, tau, i) {
 
 // --- 21.00 she lays -------------------------------------------------------
 function sLay(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   cam(c, CX, CY + 60, 1.0);
   // sky goes purple: the band drops and deepens
   const bp = rectPath(0, 0, W, H * .565);
@@ -631,7 +634,7 @@ function sLay(c, tau, i) {
   c.fillStyle = PAL.fills[0]; c.fillRect(0, soil, W, H - soil);
   hatch(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], { angle: .7, gap: 6, len: 18, jitter: 6, color: PAL.shade, alpha: .38, width: 1.3, seed: 342 });
   c.strokeStyle = PAL.ink; c.lineWidth = 3; wob(c, [[0, soil], [W * .5, soil + 12], [W, soil - 6]], 3, 343);
-  grain(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], 2600, PAL.shade, .22, 900 + i, 1.8);
+  grain(c, rectPath(0, soil, W, H - soil), [0, soil, W, H - soil], 2600, PAL.shade, .22, 345, 1.8);
   // her, above the row
   c.save(); c.translate(CX + 210, soil - 54); c.rotate(.16); c.scale(1.0, 1.0);
   drawBug(c, 'ink', { wing: 0, flap: 0, tuck: .3, walk: 0, glow: pop(i, 14, 0) ? .8 : .2 }, 344);
@@ -654,7 +657,7 @@ function sLay(c, tau, i) {
 
 // --- 23.00 night count ----------------------------------------------------
 function sNight(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   // the sky, deep now
   c.fillStyle = mix(NAVY.night, PAL.blush, .18); c.globalAlpha = .88; c.fillRect(0, 0, W, H * .72); c.globalAlpha = 1;
   const q = rng(401);
@@ -698,7 +701,7 @@ function sNight(c, tau, i) {
 
 // --- 24.50 false dawn -----------------------------------------------------
 function sDawn(c, tau, i) {
-  paperPlate(c, i);
+  paperPlate(c);
   cam(c, CX, CY, lerp(1.0, 1.10, sm(0, 1.5, tau)));
   // a leaf with hatched veins
   const leaf = [];
