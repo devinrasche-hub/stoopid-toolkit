@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE STOOPID SHOW — Humani-Tea</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  canvas{display:block;height:100vh;width:auto;max-width:100vw;background:#000;}
+  #warm{position:absolute;left:-9999px;top:-9999px;}#warm .m{font-family:'Share Tech Mono';}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="c" width="1080" height="1920"></canvas></div>
+<div id="warm"><span class="m">M</span></div>
+<script>
+/* HUMANI-TEA — after a drawing by @RJtheJarring.
+   Everything on screen is marker strokes that get redrawn 9 times a second, so the whole
+   thing boils like hand-drawn animation. No fonts in the artwork — the alphabet below is
+   stroke paths, which is also how HUMANI-TEA can come apart and land on HUMANITY. */
+const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6',RED='#FF2D2D',ORANGE='#CC5500';
+const PINK='#FF9AA2';   /* straight off RJ's drawing */
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=1080,H=1920,CX=540;
+
+/* ---------------- boil ---------------- */
+const BOIL=9;                       /* redraws per second */
+let SB=0;                           /* current boil bucket */
+function h(x){const s=Math.sin(x*127.1+311.7)*43758.5453;return (s-Math.floor(s))*2-1;}
+function j(seed,amp){const k=seed+SB*17.13;return [h(k)*amp,h(k+57.3)*amp];}
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,u)=>a+(b-a)*u;
+const ease=u=>{u=clamp(u,0,1);return u*u*(3-2*u);};
+const fadeIn=(t,t0,d)=>ease((t-t0)/d);
+
+/* ---------------- marker strokes ---------------- */
+function wpath(pts,seed,lw,col,a,amp){
+  if(a<=0.004)return;
+  amp=amp==null?3:amp;
+  ctx.save();ctx.globalAlpha=clamp(a,0,1);ctx.strokeStyle=col||WHITE;ctx.lineWidth=lw||6;
+  ctx.lineCap='round';ctx.lineJoin='round';
+  const q=pts.map((p,i)=>{const d=j(seed+i*3.7,amp);return [p[0]+d[0],p[1]+d[1]];});
+  ctx.beginPath();
+  if(q.length===2){                                   /* a "straight" line always bows a little */
+    const d=j(seed+11.3,amp*1.7);
+    ctx.moveTo(q[0][0],q[0][1]);
+    ctx.quadraticCurveTo((q[0][0]+q[1][0])/2+d[0],(q[0][1]+q[1][1])/2+d[1],q[1][0],q[1][1]);
+  }else{
+    ctx.moveTo(q[0][0],q[0][1]);
+    for(let i=1;i<q.length-1;i++){
+      ctx.quadraticCurveTo(q[i][0],q[i][1],(q[i][0]+q[i+1][0])/2,(q[i][1]+q[i+1][1])/2);
+    }
+    ctx.lineTo(q[q.length-1][0],q[q.length-1][1]);
+  }
+  ctx.stroke();ctx.restore();
+}
+function wline(x1,y1,x2,y2,seed,lw,col,a,amp){wpath([[x1,y1],[x2,y2]],seed,lw,col,a,amp);}
+function wrect(x,y,w,hh,seed,lw,col,a,fill,fa){          /* corners overshoot, like a marker */
+  if(fill){ctx.save();ctx.globalAlpha=clamp(fa,0,1);ctx.fillStyle=fill;
+    const d=j(seed+40,2.5);ctx.fillRect(x+3+d[0],y+3+d[1],w-6,hh-6);ctx.restore();}
+  wline(x-4,y,x+w+4,y,seed,lw,col,a);
+  wline(x+w,y-4,x+w,y+hh+4,seed+7,lw,col,a);
+  wline(x+w+4,y+hh,x-4,y+hh,seed+14,lw,col,a);
+  wline(x,y+hh+4,x,y-4,seed+21,lw,col,a);
+}
+function wcircle(cx,cy,r,seed,lw,col,a){
+  const N=11,pts=[];
+  for(let i=0;i<=N;i++){const u=i/N*Math.PI*2,rr=r*(1+h(seed+i*4.1)*0.045);
+    pts.push([cx+Math.cos(u)*rr,cy+Math.sin(u)*rr]);}
+  wpath(pts,seed+2,lw,col,a,2.2);
+}
+function warc(cx,cy,r,a0,a1,seed,lw,col,a){
+  const N=7,pts=[];
+  for(let i=0;i<=N;i++){const u=lerp(a0,a1,i/N),rr=r*(1+h(seed+i*3.3)*0.05);
+    pts.push([cx+Math.cos(u)*rr,cy+Math.sin(u)*rr]);}
+  wpath(pts,seed+5,lw,col,a,2);
+}
+
+/* ---------------- a stroke alphabet, drawn not typed ---------------- */
+const RAW={
+ 'A':'0,1 .5,0 1,1|.17,.63 .83,.63','B':'0,0 0,1|0,0 .68,.1 .68,.4 0,.5|0,.5 .78,.62 .78,.9 0,1',
+ 'C':'.95,.14 .5,0 .1,.27 .1,.74 .5,1 .95,.86','D':'0,0 0,1|0,0 .62,.1 .88,.5 .62,.9 0,1',
+ 'E':'.92,0 0,0 0,1 .92,1|0,.5 .66,.5','F':'.92,0 0,0 0,1|0,.5 .66,.5',
+ 'G':'.95,.14 .5,0 .1,.27 .1,.74 .5,1 .95,.86 .95,.54 .56,.54',
+ 'H':'0,0 0,1|1,0 1,1|0,.52 1,.52','I':'.5,0 .5,1|.1,0 .9,.03|.1,1 .9,.97',
+ 'J':'.82,0 .8,.76 .45,1 .1,.84','K':'0,0 0,1|.95,0 .05,.55 .95,1','L':'0,0 0,1 .9,1',
+ 'M':'0,1 .08,0 .5,.62 .92,0 1,1','N':'0,1 .05,0 .95,1 1,0',
+ 'O':'.5,0 .1,.22 .08,.78 .5,1 .92,.78 .9,.22 .5,0','P':'0,1 0,0 .72,.1 .72,.44 0,.53',
+ 'Q':'.5,0 .1,.22 .08,.78 .5,1 .92,.78 .9,.22 .5,0|.58,.72 1,1.08',
+ 'R':'0,1 0,0 .72,.1 .72,.44 0,.53|.34,.53 .96,1',
+ 'S':'.92,.12 .45,0 .1,.21 .36,.45 .76,.56 .92,.8 .5,1 .08,.88',
+ 'T':'0,0 1,.02|.5,0 .5,1','U':'0,0 .05,.78 .5,1 .95,.78 1,0','V':'0,0 .5,1 1,0',
+ 'W':'0,0 .2,1 .5,.34 .8,1 1,0','X':'0,0 1,1|1,0 0,1','Y':'0,0 .5,.52 1,0|.5,.52 .5,1',
+ 'Z':'0,0 1,0 0,1 1,1',
+ '0':'.5,0 .1,.22 .08,.78 .5,1 .92,.78 .9,.22 .5,0','1':'.22,.18 .5,0 .5,1',
+ '2':'.08,.2 .5,0 .9,.26 .1,1 .95,1','3':'.1,.1 .55,0 .85,.26 .45,.5 .9,.72 .5,1 .08,.9',
+ '4':'.74,0 .06,.68 1,.68|.74,.36 .74,1','5':'.9,0 .2,0 .12,.45 .56,.4 .9,.63 .6,1 .1,.9',
+ '6':'.86,.05 .36,.12 .12,.6 .46,1 .86,.78 .56,.5 .16,.62',
+ '7':'.05,0 .95,0 .4,1','8':'.5,0 .15,.2 .5,.48 .85,.75 .5,1 .15,.75 .5,.48 .85,.2 .5,0',
+ '9':'.2,.95 .7,.86 .9,.4 .55,0 .2,.2 .46,.5 .88,.42',
+ '-':'.08,.55 .92,.55','.':'.44,.97 .56,1',',':'.52,.9 .38,1.12',"'":'.52,0 .42,.24',
+ ':':'.5,.28 .5,.4|.5,.72 .5,.84','!':'.5,0 .5,.66|.5,.92 .5,1'
+};
+const GLYPH={};
+for(const k in RAW)GLYPH[k]=RAW[k].split('|').map(s=>s.trim().split(/\s+/).map(p=>p.split(',').map(Number)));
+const WF=ch=>ch===' '?.42:'MW'.includes(ch)?1:ch==='I'?.42:'-.,\':!'.includes(ch)?.4:.78;
+const ADV=(ch,size)=>size*(WF(ch)+.26);
+const ROUND='CGOSUJQBDPR0235689';                  /* these get smoothed; the rest keep their corners */
+function wglyph(ch,x,y,size,seed,col,a,lw){        /* x = left edge, y = cap top */
+  const g=GLYPH[ch];if(!g||a<=0.004)return;
+  const gw=size*WF(ch),d=j(seed,size*.03),rot=h(seed*1.7+4.2)*.035,amp=size*.022;
+  ctx.save();ctx.translate(x+gw/2+d[0],y+size/2+d[1]);ctx.rotate(rot);ctx.translate(-gw/2,-size/2);
+  for(let k=0;k<g.length;k++){
+    const pts=g[k].map(p=>[p[0]*gw,p[1]*size]);
+    if(ROUND.includes(ch))wpath(pts,seed+k*7.7,lw,col,a,amp);
+    else for(let i=0;i<pts.length-1;i++)wpath([pts[i],pts[i+1]],seed+k*7.7+i*2.3,lw,col,a,amp);
+  }
+  ctx.restore();
+}
+function wtext(str,x,y,size,seed,col,a,lw,align){
+  let tot=0;for(const ch of str)tot+=ADV(ch,size);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x;
+  for(let i=0;i<str.length;i++){wglyph(str[i],cx,y,size,seed+i*13.1,col,a,lw);cx+=ADV(str[i],size);}
+  return tot;
+}
+
+/* ================= BEAT SHEET ================= */
+const CYC=[{t0:4.00,d:2.60},{t0:6.60,d:2.00},{t0:8.60,d:1.50},{t0:10.10,d:1.10},{t0:11.20,d:1.30}];
+const T={
+  stall:0.20, vendor:0.90, banner:1.70, sub:2.70, machine:3.20,
+  stop:12.50, morph:13.30, morphD:1.40,
+  line:15.00, paren:16.00, holdEnd:20.00, fadeEnd:20.80
+};
+const TOTAL=T.fadeEnd;
+const BASE_CUPS=1438899;
+
+/* where each cycle is: -1 before, else 0..1 */
+function cyc(t,i){const c=CYC[i];return (t<c.t0||t>c.t0+c.d)?-1:(t-c.t0)/c.d;}
+function cupsServed(t){let n=BASE_CUPS;for(let i=0;i<CYC.length;i++)if(t>=CYC[i].t0+CYC[i].d*0.62)n++;return n;}
+function packetsOnCounter(t){let n=2;for(let i=0;i<CYC.length;i++)if(t>=CYC[i].t0+CYC[i].d*0.95)n++;return n;}
+function shake(t){                                  /* the machine kicks on every grind */
+  for(let i=0;i<CYC.length;i++){const p=cyc(t,i);
+    if(p>0.44&&p<0.62){const k=(1-(p-0.44)/0.18)*9;return [h(SB*3.1)*k,h(SB*7.7+9)*k];}}
+  return [0,0];
+}
+
+/* ================= THE SIGN ================= */
+const SRC='HUMANI-TEA', DST='HUMANITY';
+const SFIT=920, SLW=9, BY=172;
+const SSIZE=(()=>{let w=0;for(const ch of SRC)w+=ADV(ch,100);return Math.min(112,100*SFIT/w);})();
+function bannerWord(t){
+  /* HUMANI-TEA comes apart and lands on HUMANITY: the hyphen goes, the E goes,
+     the A turns into a Y, and the letters close the gap. */
+  const m=T.morph, u=ease((t-m)/T.morphD), a0=fadeIn(t,T.banner,0.7);
+  let srcW=0;for(const ch of SRC)srcW+=ADV(ch,SSIZE);
+  let dstW=0;for(const ch of DST)dstW+=ADV(ch,SSIZE);
+  const sx0=CX-srcW/2, dx0=CX-dstW/2;
+  const sx=[];{let x=sx0;for(const ch of SRC){sx.push(x);x+=ADV(ch,SSIZE);}}
+  const dx=[];{let x=dx0;for(const ch of DST){dx.push(x);x+=ADV(ch,SSIZE);}}
+  /* SRC index -> DST index (-1 = dies) */
+  const MAP=[0,1,2,3,4,5,-1,6,-1,7];
+  for(let i=0;i<SRC.length;i++){
+    const d=MAP[i];
+    const glitch=(u>0&&u<1)?h(i*5.5+SB*2.3)*14*Math.sin(u*Math.PI):0;
+    if(d<0){                                        /* the hyphen and the E get processed */
+      const gone=clamp((u-(i===6?0.05:0.22))/0.28,0,1);
+      wglyph(SRC[i],sx[i]+glitch,BY,SSIZE,700+i*31,WHITE,a0*(1-gone),SLW);
+    }else{
+      const x=lerp(sx[i],dx[d],u);
+      if(SRC[i]===DST[d]){
+        wglyph(SRC[i],x+glitch,BY,SSIZE,700+i*31,WHITE,a0,SLW);
+      }else{                                        /* A crossfades into Y */
+        const k=clamp((u-0.45)/0.35,0,1);
+        wglyph(SRC[i],x+glitch,BY,SSIZE,700+i*31,WHITE,a0*(1-k),SLW);
+        wglyph(DST[d],x+glitch,BY,SSIZE,910+d*17,WHITE,a0*k,SLW);
+      }
+    }
+  }
+  /* the sign it hangs on */
+  const bw=Math.max(srcW,dstW)+90;
+  wrect(CX-bw/2,BY-42,bw,SSIZE+86,120,7,WHITE,a0*0.9);
+  if(u>0.55){                                       /* burnt orange: the flip landing */
+    const k=ease((u-0.55)/0.45);
+    wline(dx0-10,BY+SSIZE+34,dx0+dstW+10,BY+SSIZE+34,455,7,ORANGE,k*0.9);
+  }
+}
+function subSign(t){
+  const a=fadeIn(t,T.sub,0.6)*(1-clamp((t-T.morph)/0.5,0,1));
+  wtext('NOW WITH REAL PEOPLE',404,392,30,330,WHITE,a*0.75,4,'center');
+}
+
+/* ================= THE TEA MAKER ================= */
+const MX=624,MY=576,MW=392,MH=396;                 /* the box */
+const HOPX=MX-22,HOPY=516,HOPW=MW+44,HOPH=60;      /* the slatted mouth */
+function teaMaker(t){
+  const a=fadeIn(t,T.machine,0.8);if(a<=0.01)return;
+  const [kx,ky]=shake(t);
+  ctx.save();ctx.translate(kx,ky);
+  wrect(MX,MY,MW,MH,100,8,WHITE,a);
+  wtext('TEA',MX+MW/2,MY+30,86,140,WHITE,a,8,'center');
+  wtext('MAKER',MX+MW/2,MY+140,86,190,WHITE,a,8,'center');
+  wrect(HOPX,HOPY,HOPW,HOPH,240,8,WHITE,a);        /* hopper */
+  for(let i=1;i<14;i++){const x=HOPX+HOPW*i/14;wline(x,HOPY+5,x,HOPY+HOPH-5,260+i*4,4,WHITE,a*0.8);}
+  wrect(MX-116,850,116,92,300,7,WHITE,a);          /* output chute */
+  ctx.restore();
+}
+/* the red that comes off the top of the machine */
+function splat(t){
+  for(let i=0;i<CYC.length;i++){
+    const p=cyc(t,i);if(p<0.42||p>0.70)continue;
+    const k=1-clamp((p-0.42)/0.28,0,1);
+    const cx=HOPX+HOPW*0.5, cy=HOPY+6;
+    for(let s=0;s<11;s++){
+      const ang=-Math.PI/2+h(s*7.3+i*3.1)*1.25;
+      const len=(64+Math.abs(h(s*2.7+i*5.5))*118)*k;
+      wline(cx+h(s*4.4)*74,cy,cx+h(s*4.4)*74+Math.cos(ang)*len,cy+Math.sin(ang)*len,600+s*9+i*3,5,RED,0.95*k,2);
+    }
+  }
+}
+
+/* ================= THE FIGURES ================= */
+function panicFace(cx,cy,r,seed,a){
+  wline(cx-r*0.42,cy-r*0.34,cx-r*0.2,cy-r*0.06,seed+1,5,WHITE,a);
+  wline(cx+r*0.26,cy-r*0.34,cx+r*0.26,cy-r*0.04,seed+2,5,WHITE,a);
+  wcircle(cx-r*0.02,cy+r*0.36,r*0.3,seed+3,5,WHITE,a);            /* open mouth */
+  wline(cx-r*0.24,cy+r*0.34,cx+r*0.2,cy+r*0.42,seed+4,4,WHITE,a*0.85);
+}
+function smileFace(cx,cy,r,seed,a,blink){
+  warc(cx-r*0.36,cy-r*0.18,r*0.24,Math.PI*1.06,Math.PI*1.94,seed+1,5,WHITE,a);
+  warc(cx+r*0.34,cy-r*0.18,r*0.24,Math.PI*1.06,Math.PI*1.94,seed+2,5,WHITE,a);
+  warc(cx,cy+r*0.08,r*0.52,blink?Math.PI*0.28:Math.PI*0.12,blink?Math.PI*0.72:Math.PI*0.88,seed+3,6,WHITE,a);
+}
+/* the one going in */
+function victim(t){
+  for(let i=0;i<CYC.length;i++){
+    const p=cyc(t,i);if(p<0||p>0.52)continue;
+    const a=clamp(p/0.10,0,1)*(p>0.34?clamp(1-(p-0.34)/0.12,0,1):1);
+    const drop=p<0.34?0:ease((p-0.34)/0.14);
+    const cx=HOPX+HOPW*0.5;
+    const hy=lerp(382,502,drop), r=56;
+    const flail=Math.sin(t*26+i)*0.42*(1-drop);
+    wcircle(cx,hy,r,10+i*3,8,WHITE,a);
+    /* the last one going in is wearing the vendor's smile */
+    if(i===CYC.length-1)smileFace(cx,hy,r,40+i*3,a,false);else panicFace(cx,hy,r,40+i*3,a);
+    const sy=hy+r+14, by=sy+lerp(96,30,drop);
+    wline(cx,sy,cx,by,60+i*3,8,WHITE,a);
+    wline(cx,sy+16,cx-84,sy-42+flail*40,70+i*3,8,WHITE,a);
+    wline(cx,sy+16,cx+84,sy-42-flail*40,74+i*3,8,WHITE,a);
+    wline(cx,by,cx-52,by+lerp(78,10,drop),78+i*3,8,WHITE,a);
+    wline(cx,by,cx+52,by+lerp(78,10,drop),82+i*3,8,WHITE,a);
+  }
+}
+/* a tea packet: pink on the shelf, red when it's fresh */
+function packet(x,y,s,seed,a,fresh){
+  wrect(x,y,s,s*0.86,seed,5,WHITE,a,fresh?RED:PINK,a*(fresh?0.95:0.8));
+  wline(x+s*0.24,y,x+s*0.24,y-s*0.24,seed+30,4,WHITE,a);
+  wline(x+s*0.74,y,x+s*0.74,y-s*0.24,seed+34,4,WHITE,a);
+}
+/* out of the chute, down onto the counter */
+const PSZ=74, PX0=148, PY0=1136;                   /* the pile on the counter */
+const pileX=n=>PX0+(n%3)*112+h(n*4.7)*11, pileY=n=>PY0-Math.floor(n/3)*84;
+function freshPackets(t){
+  for(let i=0;i<CYC.length;i++){
+    const p=cyc(t,i);if(p<0.56)continue;
+    const k=ease(clamp((p-0.56)/0.40,0,1)), n=i+2;
+    const x=lerp(MX-104,pileX(n),k);
+    const y=lerp(872,pileY(n),k)-Math.sin(k*Math.PI)*70;
+    packet(x,y,PSZ,400+i*11,1,k<0.92);
+  }
+}
+
+/* ================= THE STALL ================= */
+const TBX=80,TBY=1198,TBW=800,TBH=372;
+function stall(t){
+  const a=fadeIn(t,T.stall,0.7);
+  wpath([[TBX-14,TBY+34],[TBX+120,TBY+6],[TBX+TBW-40,TBY+2],[TBX+TBW+18,TBY+30]],500,8,WHITE,a);  /* counter top */
+  wline(TBX-14,TBY+34,TBX-6,TBY+TBH,510,8,WHITE,a);
+  wline(TBX+TBW+18,TBY+30,TBX+TBW+8,TBY+TBH,514,8,WHITE,a);
+  wline(TBX-6,TBY+TBH,TBX+TBW+8,TBY+TBH,518,8,WHITE,a);
+  wline(TBX+6,TBY+96,TBX+TBW-2,TBY+88,522,7,WHITE,a*0.85);        /* cloth fold */
+  const n=packetsOnCounter(t);
+  for(let i=0;i<n;i++){const done=i<2||t>CYC[i-2].t0+CYC[i-2].d*0.95;
+    if(done)packet(pileX(i),pileY(i),PSZ,540+i*9,a,false);}
+}
+function vendor(t){
+  const a=fadeIn(t,T.vendor,0.7);if(a<=0.01)return;
+  const cx=690,r=64,hy=1060,bob=Math.sin(t*1.6)*3;
+  wcircle(cx,hy+bob,r,600,8,WHITE,a);
+  const blink=(t>17.3&&t<17.44)||(t>7.4&&t<7.52);
+  smileFace(cx,hy+bob,r,620,a,blink);
+  wline(cx,hy+r+8+bob,cx,TBY+6,640,8,WHITE,a);                    /* neck + body into the counter */
+  const sy=hy+r+46+bob, wv=Math.sin(t*3.2)*22;                    /* the wave never stops */
+  wpath([[cx-4,sy],[cx-76,sy-6],[cx-112,sy-72+wv]],650,8,WHITE,a);
+  wpath([[cx+4,sy+4],[cx+62,sy+22],[cx+98,sy+20]],660,8,WHITE,a);
+}
+
+/* ================= WORDS AT THE BOTTOM ================= */
+function tally(t){
+  const a=fadeIn(t,4.6,0.8)*(1-clamp((t-T.stop)/0.8,0,1));
+  if(a<=0.01)return;
+  const n=cupsServed(t).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  wtext('CUPS SERVED   '+n,CX,1642,34,770,WHITE,a*0.8,5,'center');
+}
+function flipLine(t){
+  const a=fadeIn(t,T.line,0.9);
+  wtext("SOMEBODY'S ALWAYS",CX,1636,50,800,ORANGE,a,6,'center');
+  wtext('IN THE MACHINE.',CX,1706,50,830,ORANGE,a,6,'center');
+  const b=fadeIn(t,T.paren,0.8);
+  ctx.save();ctx.font="34px 'Share Tech Mono'";ctx.textAlign='center';
+  if('letterSpacing' in ctx)ctx.letterSpacing='4px';
+  ctx.globalAlpha=clamp(b,0,1)*0.8;ctx.fillStyle=WHITE;
+  ctx.fillText('(usually the one smiling)',CX,1806);
+  if('letterSpacing' in ctx)ctx.letterSpacing='0px';
+  ctx.restore();
+}
+
+/* ================= FRAME FURNITURE ================= */
+function brackets(){
+  const m=46,L=64;ctx.save();ctx.globalAlpha=.26;ctx.strokeStyle=TEAL;ctx.lineWidth=4;
+  [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]].forEach(([x,y,sx,sy])=>{
+    ctx.beginPath();ctx.moveTo(x+sx*L,y);ctx.lineTo(x,y);ctx.lineTo(x,y+sy*L);ctx.stroke();});
+  ctx.restore();
+}
+function scanlines(){ctx.save();ctx.globalAlpha=.035;ctx.fillStyle=WHITE;for(let y=0;y<H;y+=4)ctx.fillRect(0,y,W,1);ctx.restore();}
+function chrome(){
+  ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";
+  if('letterSpacing' in ctx)ctx.letterSpacing='2px';
+  ctx.fillText("@stoopidshow",CX,96);
+  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";
+  ctx.fillText("ART: @RJTHEJARRING",40,1876);
+  ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.30)";
+  ctx.fillText("SPACE PAUSE · R REPLAY",1040,1876);
+  if('letterSpacing' in ctx)ctx.letterSpacing='0px';
+  ctx.restore();
+}
+
+/* ================= LOOP ================= */
+let startT=null,paused=false,pauseAt=0;
+function frame(now){
+  if(startT===null)startT=now;
+  let t=paused?pauseAt:(now-startT)/1000;
+  if(t>=TOTAL){startT=now;t=0;}
+  SB=Math.floor(t*BOIL);
+  ctx.fillStyle=BLACK;ctx.fillRect(0,0,W,H);
+  teaMaker(t);victim(t);splat(t);freshPackets(t);
+  stall(t);vendor(t);
+  bannerWord(t);subSign(t);
+  tally(t);
+  if(t>=T.line)flipLine(t);
+  scanlines();brackets();chrome();
+  if(t>T.holdEnd){ctx.save();ctx.globalAlpha=clamp((t-T.holdEnd)/(T.fadeEnd-T.holdEnd),0,1);
+    ctx.fillStyle=BLACK;ctx.fillRect(0,0,W,H);ctx.restore();}
+  requestAnimationFrame(frame);
+}
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();if(!paused){paused=true;pauseAt=(performance.now()-startT)/1000;}else{paused=false;startT=performance.now()-pauseAt*1000;}}
+  if(e.key==='r'||e.key==='R'){startT=performance.now();paused=false;}
+});
+function boot(){requestAnimationFrame(frame);}
+if(document.fonts&&document.fonts.ready)Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).then(boot);else boot();
+</script>
+</body>
+</html>
