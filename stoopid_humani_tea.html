@@ -340,7 +340,8 @@ function chrome(){
   }
   /* credit block: right edge at 940 clears the corner bracket, top at 1818 clears
      the parenthetical, bottom at 1872 sits above where the vault tab can reach */
-  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";
+  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="right";
+  if('letterSpacing' in ctx)ctx.letterSpacing='1px';
   ctx.fillText("ART:  @RJtheJarring",940,1836);
   ctx.fillText("ANIMATION:  @xbSTOOPID",940,1872);
   if('letterSpacing' in ctx)ctx.letterSpacing='0px';
