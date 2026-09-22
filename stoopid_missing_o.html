@@ -235,10 +235,15 @@ function scanlines(){ctx.save();ctx.globalAlpha=.035;ctx.fillStyle=WHITE;for(let
 function chrome(){
   ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);
   ctx.fillText("@stoopidshow",CX,96);setLS(0);
-  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";setLS(1);
-  ctx.fillText("THE MISSING O",40,1876);
-  ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.30)";
-  ctx.fillText("SPACE PAUSE · R REPLAY",1040,1876);setLS(0);ctx.restore();
+  /* controls up top, so the bottom belongs to the credit block alone */
+  ctx.font="20px 'Share Tech Mono'";ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.28)";setLS(1);
+  ctx.fillText("SPACE PAUSE · R REPLAY",1010,94);
+  /* right edge at 940 clears the corner bracket; the block sits above where the
+     THE VAULT tab can reach on a short window */
+  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";
+  ctx.fillText("THE MISSING O",940,1836);
+  ctx.fillText("ANIMATION:  @xbSTOOPID",940,1872);
+  setLS(0);ctx.restore();
 }
 
 /* ================= LOOP ================= */
