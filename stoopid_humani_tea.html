@@ -306,13 +306,13 @@ function tally(t){
 }
 function flipLine(t){
   const a=fadeIn(t,T.line,0.9);
-  wtext("SOMEBODY'S ALWAYS",CX,1636,50,800,ORANGE,a,6,'center');
-  wtext('IN THE MACHINE.',CX,1706,50,830,ORANGE,a,6,'center');
+  wtext("SOMEBODY'S ALWAYS",CX,1596,50,800,ORANGE,a,6,'center');
+  wtext('IN THE MACHINE.',CX,1666,50,830,ORANGE,a,6,'center');
   const b=fadeIn(t,T.paren,0.8);
   ctx.save();ctx.font="34px 'Share Tech Mono'";ctx.textAlign='center';
   if('letterSpacing' in ctx)ctx.letterSpacing='4px';
   ctx.globalAlpha=clamp(b,0,1)*0.8;ctx.fillStyle=WHITE;
-  ctx.fillText('(usually the one smiling)',CX,1806);
+  ctx.fillText('(usually the one smiling)',CX,1756);
   if('letterSpacing' in ctx)ctx.letterSpacing='0px';
   ctx.restore();
 }
@@ -329,10 +329,15 @@ function chrome(){
   ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";
   if('letterSpacing' in ctx)ctx.letterSpacing='2px';
   ctx.fillText("@stoopidshow",CX,96);
-  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";ctx.textAlign="left";
-  ctx.fillText("ART: @RJTHEJARRING",40,1876);
-  ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.30)";
-  ctx.fillText("SPACE PAUSE · R REPLAY",1040,1876);
+  /* controls live up top now, so the bottom belongs to the credits alone */
+  ctx.font="20px 'Share Tech Mono'";ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.28)";
+  if('letterSpacing' in ctx)ctx.letterSpacing='1px';
+  ctx.fillText("SPACE PAUSE · R REPLAY",1010,94);
+  /* credit block: right edge at 940 clears the corner bracket, top at 1818 clears
+     the parenthetical, bottom at 1872 sits above where the vault tab can reach */
+  ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";
+  ctx.fillText("ART:  @RJtheJarring",940,1836);
+  ctx.fillText("ANIMATION:  @xbSTOOPID",940,1872);
   if('letterSpacing' in ctx)ctx.letterSpacing='0px';
   ctx.restore();
 }
