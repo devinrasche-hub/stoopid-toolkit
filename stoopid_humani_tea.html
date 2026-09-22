@@ -24,6 +24,9 @@
 const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6',RED='#FF2D2D',ORANGE='#CC5500';
 const PINK='#FF9AA2';   /* straight off RJ's drawing */
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+/* ?export=1 strips the page furniture (vault tab, key hints) for clean video capture */
+const EXPORT=/[?&]export/.test(location.search);
+if(EXPORT){const vr=document.querySelector('.vault-return');if(vr)vr.style.display='none';}
 const W=1080,H=1920,CX=540;
 
 /* ---------------- boil ---------------- */
@@ -330,9 +333,11 @@ function chrome(){
   if('letterSpacing' in ctx)ctx.letterSpacing='2px';
   ctx.fillText("@stoopidshow",CX,96);
   /* controls live up top now, so the bottom belongs to the credits alone */
-  ctx.font="20px 'Share Tech Mono'";ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.28)";
-  if('letterSpacing' in ctx)ctx.letterSpacing='1px';
-  ctx.fillText("SPACE PAUSE · R REPLAY",1010,94);
+  if(!EXPORT){
+    ctx.font="20px 'Share Tech Mono'";ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.28)";
+    if('letterSpacing' in ctx)ctx.letterSpacing='1px';
+    ctx.fillText("SPACE PAUSE · R REPLAY",1010,94);
+  }
   /* credit block: right edge at 940 clears the corner bracket, top at 1818 clears
      the parenthetical, bottom at 1872 sits above where the vault tab can reach */
   ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";

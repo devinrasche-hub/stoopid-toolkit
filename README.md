@@ -4,7 +4,7 @@ Public brand tools for **THE STOOPID SHOW** (@stoopidshow) — hosted free on Gi
 
 **Live site:** https://devinrasche-hub.github.io/stoopid-toolkit/
 
-The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmark, signal dust, and **THE VAULT**: all 15 tools catalogued as artifacts across four wings (The Courthouse, The Arcade, The Broadcast Floor, The Writers Room), each with its own live animated preview. Every tool page carries a `◂ THE VAULT` tab back to the studio.
+The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmark, signal dust, and **THE VAULT**: all 31 artifacts catalogued across six wings (The Courthouse, The Arcade, The Broadcast Floor, The Writers Room, Signal: The Math, The Cutting Room), most with their own live animated preview. Every page carries a `◂ THE VAULT` tab back to the studio.
 
 | # | Artifact | What it does |
 |---|---|---|
@@ -23,6 +23,9 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 | 013 | [The Credits Machine](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_credits_roll.html) | Roll your own fake-serious end credits — paste names, SPACE, record the clip |
 | 014 | [Empress Heavy](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_empress_heavy.html) | ASCII rocket launch — countdown, fireworks (GOOD LUCK EMPRESS HEAVY), zoom into space, star-shine vanish |
 | 015 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
+| 016–029 | **SIGNAL: THE MATH** — fourteen generative pieces (curves, coin, collatz, life, mandelbrot, rule 30, Turing spots and the rest) | Catalogued in the vault |
+| 030 | [The Missing O](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_missing_o.html) | Cold open — the title card lands spelled wrong, he looks up, it stays wrong |
+| 031 | [Humani-Tea](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_humani_tea.html) | Cold open — friendly stall out front, grinder out back; the sign lands on HUMANITY (art by @RJtheJarring) |
 
 Everything is a single self-contained HTML file. No server, no accounts, no tracking, no API keys — safe to publish.
 

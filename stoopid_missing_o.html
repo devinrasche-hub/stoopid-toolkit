@@ -20,6 +20,9 @@
 /* THE MISSING O — 13.9s loop.  Dev sits. The title lands wrong. He looks up. It stays wrong. */
 const BLACK='#000000',WHITE='#FFFFFF',TEAL='#00FFC6',RED='#FF2D2D',ORANGE='#CC5500';
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+/* ?export=1 strips the page furniture (vault tab, key hints) for clean video capture */
+const EXPORT=/[?&]export/.test(location.search);
+if(EXPORT){const vr=document.querySelector('.vault-return');if(vr)vr.style.display='none';}
 const W=1080,H=1920,CX=540;
 
 /* ---- beat sheet (seconds) ---- */
@@ -236,8 +239,10 @@ function chrome(){
   ctx.save();ctx.font="30px 'Share Tech Mono'";ctx.fillStyle="rgba(255,255,255,0.40)";ctx.textAlign="center";setLS(2);
   ctx.fillText("@stoopidshow",CX,96);setLS(0);
   /* controls up top, so the bottom belongs to the credit block alone */
-  ctx.font="20px 'Share Tech Mono'";ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.28)";setLS(1);
-  ctx.fillText("SPACE PAUSE · R REPLAY",1010,94);
+  if(!EXPORT){
+    ctx.font="20px 'Share Tech Mono'";ctx.textAlign="right";ctx.fillStyle="rgba(255,255,255,0.28)";setLS(1);
+    ctx.fillText("SPACE PAUSE · R REPLAY",1010,94);
+  }
   /* right edge at 940 clears the corner bracket; the block sits above where the
      THE VAULT tab can reach on a short window */
   ctx.font="24px 'Share Tech Mono'";ctx.fillStyle="rgba(0,255,198,0.55)";

@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="29">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="31">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">29 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">31 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -494,6 +494,31 @@ STUDIO">THE STOOPID
       <div class="body"><h3>TURING SPOTS</h3>
       <p>Two chemicals argue. The spots do the math.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ARGUING</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+  </div>
+
+  <!-- ================= WING 06 — THE CUTTING ROOM ================= -->
+  <div class="wing"><span class="wno">[ WING 06 ]</span><span class="wname">THE CUTTING ROOM</span>
+    <span class="wtag">&mdash; cold opens. drawn by hand. on loop.</span><span class="wline"></span></div>
+  <div class="grid">
+
+    <a class="item" href="stoopid_missing_o.html" style="--ac:var(--orange)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 030</span><span class="cls">COLD OPEN</span></div>
+      <canvas class="viz" data-viz="missingo"></canvas>
+      <div class="body"><h3>THE MISSING O</h3>
+      <p>The title card lands spelled wrong. He notices. He looks up. It stays wrong. Fourteen seconds, no punchline, one correction refused.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>STILL WRONG</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_humani_tea.html" style="--ac:var(--red)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 031</span><span class="cls">COLD OPEN</span></div>
+      <canvas class="viz" data-viz="humanitea"></canvas>
+      <div class="body"><h3>HUMANI-TEA</h3>
+      <p>Friendly little stall out front, grinder out back. The sign gets processed with everything else and lands on what it was always saying. Art by @RJtheJarring.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>NOW SERVING</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -989,6 +1014,84 @@ VIZ.flip = function(x,w,h,t){
     x.fillStyle='#CC5500'; x.textAlign='right';
     x.fillText('FLIP FOUND ▸ BLOCK 17', w-20, 12);
   }
+};
+
+/* 030 — the missing O */
+VIZ.missingo = function(x,w,h,t){
+  var cyc=5200, p=t%cyc, T='THE STUPID SHOW';
+  x.font=F(16,true); x.textAlign='center'; x.textBaseline='alphabetic';
+  x.fillStyle='#fff'; x.fillText(T,w*.5,26);
+  /* the O that should be there */
+  var g=0;
+  if(p>1500&&p<2150) g=(Math.floor(p/70)%2)?.15:.95;
+  if(p>3000&&p<3800) g=(1-(p-3000)/800)*((Math.floor(p/90)%2)?1:.4);
+  if(g>.02){
+    var cw=x.measureText('M').width, x0=w*.5-x.measureText(T).width/2;
+    x.save(); x.globalAlpha=g; x.fillStyle='#00FFC6'; x.shadowColor='#00FFC6'; x.shadowBlur=8;
+    x.textAlign='left'; x.fillText('O',x0+cw*6,26); x.restore(); x.textAlign='center';
+  }
+  /* desk, monitor, and one guy slowly giving up on the spelling */
+  x.strokeStyle='#fff'; x.lineWidth=1.4; x.lineCap='round';
+  x.beginPath(); x.moveTo(w*.30,92); x.lineTo(w-18,92); x.stroke();
+  x.strokeRect(w-56,64,34,26);
+  x.fillStyle='rgba(0,255,198,'+(.35+.2*Math.sin(t/260))+')';
+  x.fillRect(w-52,69,22,3); x.fillRect(w-52,76,14,3);
+  var u=p<2300?0:Math.min(1,(p-2300)/1400); u=u*u*(3-2*u);
+  var tilt=.6-1.5*u, sx=w*.36, sy=78, nl=15;
+  var hx=sx+nl*Math.sin(tilt), hy=sy-nl*Math.cos(tilt);
+  x.beginPath(); x.moveTo(sx,sy); x.lineTo(sx,92); x.stroke();
+  x.beginPath(); x.moveTo(sx,sy); x.lineTo(hx,hy); x.stroke();
+  x.beginPath(); x.arc(hx,hy,7.5,0,6.284); x.stroke();
+  x.beginPath(); x.moveTo(sx,sy+3); x.lineTo(w*.30+34,90); x.stroke();
+  x.save(); x.translate(hx,hy); x.rotate(tilt);
+  x.beginPath(); x.moveTo(6,0); x.lineTo(11,2); x.stroke(); x.restore();
+  if(p>3900){
+    x.globalAlpha=Math.min(1,(p-3900)/500); x.fillStyle='#CC5500'; x.font=F(9);
+    x.fillText("No. That's right.",w*.5,50); x.globalAlpha=1;
+  }
+};
+
+/* 031 — humani-tea */
+VIZ.humanitea = function(x,w,h,t){
+  var cyc=4600, p=t%cyc, m=p>3200?Math.min(1,(p-3200)/900):0;
+  var SRC='HUMANI-TEA', MAP=[0,1,2,3,4,5,-1,6,-1,7], DST='HUMANITY';
+  x.font=F(17,true); x.textBaseline='alphabetic'; x.textAlign='left';
+  var cw=x.measureText('M').width;
+  var sx0=w*.5-SRC.length*cw/2, dx0=w*.5-DST.length*cw/2;
+  for(var i=0;i<SRC.length;i++){
+    var d=MAP[i];
+    if(d<0){ x.globalAlpha=Math.max(0,1-m/(i===6?.3:.55)); x.fillStyle='#fff';
+      x.fillText(SRC[i],sx0+i*cw,24); }
+    else { var cx=sx0+i*cw+(dx0+d*cw-(sx0+i*cw))*m; x.fillStyle='#fff';
+      if(SRC[i]===DST[d]){ x.globalAlpha=1; x.fillText(SRC[i],cx,24); }
+      else { var k=Math.max(0,Math.min(1,(m-.45)/.4));
+        x.globalAlpha=1-k; x.fillText(SRC[i],cx,24);
+        x.globalAlpha=k;   x.fillText(DST[d],cx,24); } }
+  }
+  x.globalAlpha=1; x.textAlign='center';
+  if(m>.6){ x.strokeStyle='#CC5500'; x.lineWidth=1.6; x.beginPath();
+    x.moveTo(dx0,30); x.lineTo(dx0+DST.length*cw,30); x.stroke(); }
+  /* the machine, and the pile it keeps making */
+  var mx=w-62, my=52;
+  x.strokeStyle='#fff'; x.lineWidth=1.3; x.lineCap='round';
+  x.strokeRect(mx,my,46,34);
+  for(var s2=1;s2<7;s2++){ x.beginPath(); x.moveTo(mx+46*s2/7,my-7); x.lineTo(mx+46*s2/7,my-1); x.stroke(); }
+  x.beginPath(); x.moveTo(mx-3,my-8); x.lineTo(mx+49,my-8); x.stroke();
+  var gp=(p%900)/900;                                  /* one in, one out */
+  if(gp<.42){ var fy=22+gp/.42*16, hx2=mx+23;
+    x.beginPath(); x.arc(hx2,fy,5,0,6.284); x.stroke();
+    x.beginPath(); x.moveTo(hx2,fy+5); x.lineTo(hx2,fy+13); x.stroke();
+    x.beginPath(); x.moveTo(hx2-7,fy+2); x.lineTo(hx2,fy+7); x.lineTo(hx2+7,fy+2); x.stroke(); }
+  else if(gp<.6){ x.strokeStyle='#FF2D2D'; x.lineWidth=1.6;
+    for(var r=0;r<5;r++){ var a2=-1.6+(r-2)*.32, L=7+(r%2)*7;
+      x.beginPath(); x.moveTo(mx+23,my-8); x.lineTo(mx+23+Math.cos(a2)*L,my-8+Math.sin(a2)*L); x.stroke(); }
+    x.strokeStyle='#fff'; x.lineWidth=1.3; }
+  x.beginPath(); x.moveTo(14,94); x.lineTo(w-20,94); x.stroke();
+  var n=2+Math.floor(p/900);
+  for(var q=0;q<n;q++){ var bx=16+(q%4)*17, by=94-11-Math.floor(q/4)*13;
+    x.fillStyle='#FF9AA2'; x.fillRect(bx,by,13,11); x.strokeRect(bx,by,13,11); }
+  if(gp>.6){ var k2=(gp-.6)/.4, px=mx-10-(mx-10-(16+(n%4)*17))*k2, py=my+30+(94-11-(my+30))*k2;
+    x.fillStyle='#FF2D2D'; x.fillRect(px,py,13,11); x.strokeRect(px,py,13,11); }
 };
 
 /* ==================== RENDER LOOP ==================== */
