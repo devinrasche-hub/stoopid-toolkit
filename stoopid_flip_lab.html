@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>STOOPID FLIP LAB</title>
+<meta name="description" content="THE FLIP LAB — Season 1 of THE STOOPID SHOW mapped by where the absurd turned true, the nine flip mechanisms it proved, and a gate to run the next idea through.">
+<style>
+  :root{
+    --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500;
+    --ink:#fff; --dim:#7d8a87; --dimmer:#4a5452; --line:#1f2625; --panel:#070a0a;
+    color-scheme:dark;
+  } /* SIGNAL palette v2 — orange = the Flip landing. Single dark world by design. */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:#000;}
+  body{color:var(--ink); font-family:'Courier New',Courier,monospace; font-size:14px; line-height:1.55;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0; z-index:900;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  .wrap{max-width:1120px; margin:0 auto; padding-inline:18px; padding-block:26px 90px;}
+  a{color:var(--teal);}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  /* ---------- masthead ---------- */
+  .kick{font-size:11px; letter-spacing:5px; color:var(--dim);}
+  h1{font-size:clamp(38px,8vw,78px); letter-spacing:.04em; line-height:.95; margin:10px 0 12px; text-wrap:balance;}
+  h1 b{color:var(--orange);}
+  .thesis{max-width:62ch; color:#c9d1cf;}
+  .thesis em{font-style:normal; color:var(--orange);}
+
+  /* the season as a signal strip */
+  .strip{display:grid; grid-template-columns:repeat(20,1fr); gap:3px; margin:26px 0 8px; height:74px; align-items:end;}
+  .strip i{display:block; background:#161b1a; height:22%;}
+  .strip i.landed{background:var(--orange); height:100%;}
+  .strip i.partial{background:var(--purple); height:58%;}
+  .strip i.none{background:var(--red); height:34%;}
+  .strip i.dark{background:transparent; border:1px dashed var(--dimmer); height:22%;}
+  .striplab{display:flex; justify-content:space-between; font-size:10px; letter-spacing:2px; color:var(--dimmer);}
+  .tally{display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:14px; font-size:11px; letter-spacing:2px; color:var(--dim);}
+  .tally span::before{content:""; display:inline-block; width:10px; height:10px; margin-right:8px; vertical-align:-1px;}
+  .tally .t1::before{background:var(--orange);} .tally .t2::before{background:var(--purple);}
+  .tally .t3::before{background:var(--red);} .tally .t4::before{border:1px dashed var(--dim);}
+  .tally b{color:var(--ink); font-weight:bold;}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex; flex-wrap:wrap; gap:0; margin:36px 0 22px; border-bottom:1px solid var(--line);}
+  .tabs button{background:none; border:none; border-bottom:2px solid transparent; color:var(--dim);
+    font:inherit; font-size:12px; letter-spacing:3px; padding:12px 16px 10px; cursor:pointer;}
+  .tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--orange);}
+  .tabs button:hover{color:var(--ink);}
+  .tabs .n{color:var(--dimmer); margin-right:6px;}
+
+  .lbl{font-size:10px; letter-spacing:3px; color:var(--dim); text-transform:uppercase;}
+
+  /* ---------- MAP ---------- */
+  .grid20{display:grid; grid-template-columns:repeat(10,1fr); gap:6px;}
+  .ep{background:var(--panel); border:1px solid var(--line); color:var(--ink); font:inherit; text-align:left;
+    padding:8px 8px 9px; cursor:pointer; position:relative; min-height:62px; display:flex; flex-direction:column; justify-content:space-between;}
+  .ep .no{font-size:18px; font-weight:bold; font-variant-numeric:tabular-nums;}
+  .ep .st{font-size:9px; letter-spacing:1.5px; color:var(--dim);}
+  .ep::before{content:""; position:absolute; left:0; right:0; top:0; height:3px;}
+  .ep.landed::before{background:var(--orange);} .ep.partial::before{background:var(--purple);}
+  .ep.none::before{background:var(--red);} .ep.dark{border-style:dashed;} .ep.dark .no{color:var(--dim);}
+  .ep[aria-pressed="true"]{border-color:var(--ink); background:#0e1312;}
+  .ep:hover{border-color:var(--dim);}
+
+  .dossier{margin-top:18px; border:1px solid var(--line); background:var(--panel); padding:22px; display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.35fr); gap:26px;}
+  .dossier h2{font-size:24px; letter-spacing:.06em; line-height:1.1; text-wrap:balance;}
+  .dossier .epno{color:var(--dim); font-size:11px; letter-spacing:3px; margin-bottom:6px;}
+  .badge{display:inline-block; font-size:10px; letter-spacing:2px; padding:4px 8px; margin:12px 8px 0 0; border:1px solid currentColor;}
+  .badge.landed{color:var(--orange);} .badge.partial{color:#b77cff;} .badge.none{color:var(--red);} .badge.dark{color:var(--dim);}
+  .badge.score{color:var(--ink);}
+  .laws{display:grid; gap:6px; margin-top:18px;}
+  .law{display:flex; justify-content:space-between; font-size:11px; letter-spacing:2px; border-top:1px solid var(--line); padding-top:6px;}
+  .law .on{color:var(--orange);} .law .off{color:var(--dimmer);} .law .q{color:var(--dim);}
+  .quote{border-left:2px solid var(--dimmer); padding:2px 0 2px 14px; margin:8px 0 18px; color:#c9d1cf; max-width:62ch;}
+  .quote.flip{border-left-color:var(--orange); color:var(--ink); font-weight:bold;}
+  .why{max-width:62ch; color:#c9d1cf; margin:6px 0 16px;}
+  .lesson{border:1px solid var(--orange); padding:12px 14px; max-width:62ch;}
+  .lesson .lbl{color:var(--orange); margin-bottom:4px;}
+  .note{font-size:12px; color:var(--dim); margin-top:14px; max-width:62ch;}
+  .note b{color:var(--teal); font-weight:normal;}
+
+  /* ---------- MECHANISMS ---------- */
+  .mechs{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+  .mech{border:1px solid var(--line); background:var(--panel); padding:16px 16px 14px; display:flex; flex-direction:column; gap:10px;}
+  .mech h3{font-size:15px; letter-spacing:.08em; line-height:1.2;}
+  .mech .from{font-size:10px; letter-spacing:2px; color:var(--orange);}
+  .mech p{font-size:13px; color:#c9d1cf;}
+  .mech blockquote{font-size:12.5px; border-left:2px solid var(--orange); padding-left:10px; color:var(--ink);}
+  .mech .run{margin-top:auto; font-size:12px; color:var(--teal); border-top:1px dashed var(--dimmer); padding-top:10px;}
+  .mech .run::before{content:"RUN IT ▸ "; color:var(--dim); letter-spacing:2px; font-size:10px;}
+  .pattern{margin:0 0 20px; max-width:70ch; color:#c9d1cf;}
+  .pattern b{color:var(--orange);}
+
+  /* ---------- GATE ---------- */
+  .gate{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; align-items:start;}
+  .field{display:grid; gap:6px; margin-bottom:16px;}
+  .field .hint{font-size:11px; color:var(--dimmer);}
+  input,textarea,select{width:100%; background:#0b0f0e; color:var(--ink); border:1px solid #2a3331;
+    font:inherit; font-size:14px; padding:9px 10px;}
+  textarea{resize:vertical; min-height:62px;}
+  input:focus,textarea:focus,select:focus{outline:1px solid var(--teal); border-color:var(--teal);}
+  .blank{display:flex; gap:10px; align-items:baseline;}
+  .blank .k{color:var(--orange); font-weight:bold;}
+  .chk{font-size:12px; min-height:1.4em; letter-spacing:.5px;}
+  .ok{color:var(--teal);} .warn{color:#e3873f;} .bad{color:var(--red);}
+  .row{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn{background:#000; border:1px solid var(--teal); color:var(--teal); font:inherit; font-size:12px; letter-spacing:3px;
+    padding:10px 14px; cursor:pointer;}
+  .btn:hover{background:var(--teal); color:#000;}
+  .btn.ghost{border-color:var(--dimmer); color:var(--dim);}
+  .btn.ghost:hover{background:var(--dimmer); color:#000;}
+
+  .readout{border:1px solid var(--line); background:var(--panel); padding:18px;}
+  .meter{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:10px 0 14px;}
+  .meter div{border:1px solid var(--line); padding:10px 8px; font-size:10px; letter-spacing:2px; color:var(--dimmer); text-align:center;}
+  .meter div.on{border-color:var(--orange); color:var(--orange); background:rgba(204,85,0,.08);}
+  .forecast{font-size:20px; font-weight:bold; letter-spacing:.05em; line-height:1.2;}
+  .forecast small{display:block; font-size:12px; font-weight:normal; color:var(--dim); letter-spacing:0; margin-top:6px;}
+  pre.card{white-space:pre-wrap; word-break:break-word; font:inherit; font-size:12.5px; line-height:1.6; color:#dfe6e4;
+    background:#000; border:1px dashed var(--dimmer); padding:14px; margin:14px 0 10px; max-height:460px; overflow:auto;}
+  .toast{font-size:11px; letter-spacing:2px; color:var(--teal); min-height:1.3em;}
+
+  .foot{margin-top:56px; border-top:1px solid var(--line); padding-top:18px; font-size:11px; letter-spacing:2px; color:var(--dimmer); display:grid; gap:4px;}
+  .foot b{color:var(--dim); font-weight:normal;}
+
+  .vault-return{position:fixed; left:56px; bottom:0; z-index:999; font-size:10px; letter-spacing:2px; color:var(--teal); background:#000;
+    border:1px solid var(--teal); border-bottom:none; padding:5px 13px calc(5px + env(safe-area-inset-bottom,0px)); text-decoration:none; opacity:.55;}
+  .vault-return:hover{opacity:1; background:var(--teal); color:#000;}
+
+  @media (max-width:860px){
+    .dossier,.gate{grid-template-columns:1fr;}
+    .mechs{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+  @media (max-width:600px){
+    .grid20{grid-template-columns:repeat(5,1fr);}
+    .mechs{grid-template-columns:1fr;}
+    .strip{height:54px;}
+    .vault-return{left:14px;}
+    .dossier{padding:16px;}
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .strip i{transform-origin:bottom; animation:rise .5s cubic-bezier(.2,.8,.2,1) both;}
+    @keyframes rise{from{transform:scaleY(.15);}}
+  }
+</style>
+
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div class="wrap">
+
+  <header>
+    <div class="kick">THE STOOPID SHOW · SEASON 1 · WRITERS ROOM</div>
+    <h1>THE FLIP <b>LAB</b></h1>
+    <p class="thesis">Twenty episodes, sorted by one question: where did the absurd turn true? The best ones spent about 80% of the runtime earning one sincere sentence. This lab keeps a record of those sentences, pulls out the moves that made them work, and gives you a gate to run your next idea through before you write any prose.</p>
+
+    <div class="strip" id="strip" aria-hidden="true"></div>
+    <div class="striplab"><span>E01</span><span>E10</span><span>E20</span></div>
+    <div class="tally" id="tally"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Lab sections">
+    <button role="tab" id="tab-map" aria-controls="p-map" aria-selected="true"><span class="n">A</span>THE MAP</button>
+    <button role="tab" id="tab-mech" aria-controls="p-mech" aria-selected="false"><span class="n">B</span>THE MECHANISMS</button>
+    <button role="tab" id="tab-gate" aria-controls="p-gate" aria-selected="false"><span class="n">C</span>THE GATE</button>
+  </nav>
+
+  <!-- ================= A · THE MAP ================= -->
+  <section id="p-map" role="tabpanel" aria-labelledby="tab-map">
+    <div class="grid20" id="grid"></div>
+    <article class="dossier" id="dossier" aria-live="polite"></article>
+  </section>
+
+  <!-- ================= B · MECHANISMS ================= -->
+  <section id="p-mech" role="tabpanel" aria-labelledby="tab-mech" hidden>
+    <p class="pattern">The flip is never announced. The absurdity <b>buys</b> it. Season 1 used nine different ways to make that trade, and each one is written down here with the episode that proved it. Pick one before you script. When a flip doesn't have a mechanism, it turns into a speech.</p>
+    <div class="mechs" id="mechs"></div>
+  </section>
+
+  <!-- ================= C · THE GATE ================= -->
+  <section id="p-gate" role="tabpanel" aria-labelledby="tab-gate" hidden>
+    <div class="gate">
+      <form id="gateform" autocomplete="off">
+        <div class="field">
+          <label class="lbl" for="g-title">Working title</label>
+          <input id="g-title" maxlength="80">
+        </div>
+        <div class="field">
+          <label class="lbl blank" for="g-idea"><span class="k">1</span> The one idea is…</label>
+          <textarea id="g-idea" rows="2"></textarea>
+          <div class="hint">One sentence. No "and". If you need an "and", you have two episodes.</div>
+          <div class="chk" id="c-idea"></div>
+        </div>
+        <div class="field">
+          <label class="lbl blank" for="g-flip"><span class="k">2</span> The flip is the moment when…</label>
+          <textarea id="g-flip" rows="4"></textarea>
+          <div class="hint">Describe the moment itself. Don't write a moral.</div>
+          <div class="chk" id="c-flip"></div>
+        </div>
+        <div class="field">
+          <label class="lbl blank" for="g-anchor"><span class="k">3</span> The family / real-life anchor is…</label>
+          <textarea id="g-anchor" rows="2"></textarea>
+          <div class="hint">Put it inside the premise. Don't just mention it in passing.</div>
+          <div class="chk" id="c-anchor"></div>
+        </div>
+        <div class="field">
+          <label class="lbl" for="g-mech">Flip mechanism</label>
+          <select id="g-mech"></select>
+          <div class="hint" id="g-mechhint"></div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn ghost" id="b-example">LOAD E16 EXAMPLE</button>
+          <button type="button" class="btn ghost" id="b-clear">CLEAR</button>
+        </div>
+      </form>
+
+      <div class="readout">
+        <div class="lbl">Law check</div>
+        <div class="meter">
+          <div id="m-flip">FLIP LAW</div>
+          <div id="m-family">FAMILY LAW</div>
+          <div id="m-one">ONE IDEA LAW</div>
+        </div>
+        <div class="forecast" id="forecast"></div>
+        <pre class="card" id="card"></pre>
+        <div class="row">
+          <button type="button" class="btn" id="b-copy">COPY PRODUCTION CARD</button>
+        </div>
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>PRODUCED BY <b>@stoopidshow &amp; THE INTERNET</b></span>
+    <span>QUESTIONABLE INPUT FROM <b>THE VOID</b> · DATA FROM <b>THE FLIP EVIDENCE BANK</b></span>
+    <span>THE ALGORITHM <b>(BARELY)</b> · HATERS <b>(FUEL)</b> · SUPPORTERS <b>(EVERYTHING)</b></span>
+    <span>ENTERTAIN FIRST. TRUTH UNDERNEATH. NEVER THE REVERSE. — <b>SIGNAL RECEIVED</b></span>
+  </footer>
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+   THE DATA. Quotes are verbatim from the Flip Evidence Bank
+   (sourced from the vault transcripts). Episodes with no
+   transcript in reach say so. Nothing here is invented.
+   status: landed | partial | none | dark
+   laws: true / false / null (null = not on file)
+---------------------------------------------------------------- */
+const MECH = {
+  real:    {name:"PREMISE INSIDE REAL LIFE", from:"E16", how:"Do the bit where the real thing is actually happening. When the premise and your life are the same event, the truth doesn't need an introduction.",
+            q:"You're allowed to exist without absorbing everyone else's bad mood… That's not selfish. That's maintenance.",
+            run:"Film the absurd premise from inside the real situation that it's secretly about."},
+  fail:    {name:"FORMAT FAILURE AS PROOF", from:"E14 · E13", how:"Let the production visibly fall apart. Then the mess is the argument, and the sincere line lands as a conclusion instead of a sermon.",
+            q:"Christmas isn't a day you win. It's a posture you practice.",
+            run:"Promise polish. Let every failure stay in. Say the true line after the last thing breaks."},
+  ask:     {name:"ESCALATE UNTIL THEY ASK", from:"E2", how:"Push one pattern until the audience asks the question themselves. The flip is the answer they just asked for.",
+            q:"So the secret is admit it's made up then make it up on purpose… Reality is user-generated content — be a creator, not just a consumer.",
+            run:"Knock down the same kind of thing five times, deadpan. The sixth beat answers “then why bother?”"},
+  recurse: {name:"RECURSIVE BUTTON", from:"E4", how:"End on a joke that springs the same trap on the viewer. Two words stop the sincerity from turning into a lecture.",
+            q:"…deciding who you actually are instead of letting the crowd decide for you. Now clap.",
+            run:"After the truth line, add a tiny command that makes the audience do the thing you just called out."},
+  drop:    {name:"IRONIC FORMAT DROP", from:"E18", how:"Use a formal format like the news or a documentary for ironic distance. Then drop the format and let a plain sentence land.",
+            q:"None of them went viral… It just exists because I made them… Built it anyway. Even when nobody was watching.",
+            run:"Report your own life like breaking news. Kill the graphics and say it plainly."},
+  armor:   {name:"ARMOR CONFESSION", from:"E8", how:"Say out loud what the bit is protecting you from, then keep wearing it. Being aware of the armor is more honest than taking it off.",
+            q:"Except they do. And that's terrifying. So yeah — let's just keep pretending it's stupid.",
+            run:"Name the reason you're joking about this one. Then go right back to joking."},
+  scale:   {name:"SCALE CONTRAST", from:"E17", how:"Put the biggest idea in the smallest moment. The mismatch in size is the punchline.",
+            q:"People think money is the most valuable thing they have. It's not. It's attention.",
+            run:"Drop the thesis in the middle of something trivial, like chapstick or car seats. No windup."},
+  image:   {name:"SHARED IMAGE", from:"E12", how:"Find one object that's both the joke and the metaphor. The pivot is seamless because the image doesn't change.",
+            q:"Cranberry sauce is the only side dish that shows up still wearing the shape of its can… Marked by where we came from, but still sweet inside.",
+            run:"Find the one prop the whole bit is about. Let it turn into the metaphor without swapping it for another."},
+  concede: {name:"CONCEDE, THEN REDEFINE", from:"E10", how:"Agree to the absurd premise completely, then change what counts as winning halfway through giving in. Agreeing gives you a better launchpad than objecting.",
+            q:"Slop is made to be consumed. Substance is made to be felt. One fills the feed, the other fills the soul.",
+            run:"Say “fine, you win” to the dumb thing. Do it your way. Show that your way was the point."}
+};
+
+const EP = [
+ {n:1, t:"BEANS", s:"none", score:"70s", laws:{flip:false,family:null,one:null}, mech:null,
+  setup:"little flavor pillows from the dirt",
+  why:"Fully committed to the bit, with no pivot at all. The season's most quotable lines disappear on contact because the viewer has nothing to take away. It's a great clip running at episode length.",
+  lesson:"If the bit is this strong, post it as a bit. If it's going to be an episode, it needs a flip."},
+ {n:2, t:"TIME", s:"landed", rank:3, laws:{flip:true,family:null,one:null}, mech:"ask",
+  setup:"Calendars. We reboot the year because January needed main character energy.",
+  flip:"So the secret is admit it's made up then make it up on purpose… Reality is user-generated content — be a creator, not just a consumer.",
+  why:"Five deadpan takedowns of social constructs build up a real question (“then why do any of it?”), and the flip actually answers it.",
+  lesson:"Escalate one pattern until the audience asks the question themselves. Then the flip is the answer they asked for."},
+ {n:3, t:"IMAGINE", s:"partial", score:"mid-70s", laws:{flip:"partial",family:null,one:null}, mech:null,
+  setup:"I thought everybody believed in themselves.",
+  flip:"I do. Don't you? / No.",
+  why:"The blurred-face fame premise builds to a perfect trigger. Then the episode breaks character into gratitude and never turns the premise into a stated truth. The closing promise is left unfinished.",
+  lesson:"The episode had a ceiling shape. The best deadpan exchange of the season needed one more sentence to land on."},
+ {n:4, t:"AUDIENCE CAPTURE", s:"landed", rank:4, laws:{flip:true,family:null,one:null}, mech:"recurse",
+  setup:"Every like, every view, every click has reshaped my fragile little brain until I'm basically your pet hamster on a content wheel.",
+  flip:"The stupid move is noticing it, laughing at it, and deciding who you actually are instead of letting the crowd decide for you. Now clap.",
+  why:"The flip calls out everyone, not only creators. Then “Now clap.” runs the whole trap on the viewer in two words.",
+  lesson:"End the flip on a joke that proves the thesis. The recursive gag stops the sincerity from turning into a lecture."},
+ {n:5, t:"CRAM", s:"partial", score:"68–73", laws:{flip:"partial",family:null,one:"partial"}, mech:null,
+  setup:"Dolphin grievances. A pancake. A news segment that literally airs twice.",
+  flip:"you probably shouldn't do much other than just make one",
+  why:"Three competing premises and no thesis to turn any of them. It landed in the season's lowest scoring band. The pancake line was a real flip seed that never got developed.",
+  lesson:"The episode's title is the diagnosis. Cut it down to the pancake and the flip is already sitting there."},
+ {n:6, t:"ABSURDITY", s:"dark"},
+ {n:7, t:"BEANS2", s:"none", score:"70s", laws:{flip:false,family:null,one:null}, mech:null,
+  why:"Same shape as E1, and same ceiling. Committing fully to the bit without a pivot hits the same wall twice.",
+  lesson:"When a sequel repeats the original's missing flip, it repeats the original's score."},
+ {n:8, t:"CORRUPTED", s:"landed", rank:6, score:"69–72*", laws:{flip:true,family:null,one:null}, mech:"armor",
+  setup:"Now we're just two idiots on a call at two in the morning trading I love yous like they don't mean anything.",
+  flip:"Except they do. And that's terrifying. So yeah — let's just keep pretending it's stupid. That way, if it falls apart later, we can say we were kidding.",
+  why:"The flip says out loud what the show's own defense mechanism is (stupidity as emotional armor) and then keeps wearing it anyway.",
+  lesson:"The strongest flip can be admitting what the bit is for.",
+  flag:"The scoring table marks the Flip Law as off, but the Show Bible tags the 2am confession as the flip. The vault wins, so this needs a re-score."},
+ {n:9, t:"CONSPIRACIES", s:"dark", note:"This is where STOOPID vs STUPID started, the idea behind the Verdict Cards and the Courtroom."},
+ {n:10, t:"SLOP V SUBSTANCE", s:"landed", rank:10, laws:{flip:true,family:null,one:null}, mech:"concede",
+  setup:"Fine. If this is what gets views, then I'll make slop too — but I'm gonna make it ours.",
+  flip:"Slop is made to be consumed. Substance is made to be felt. One fills the feed, the other fills the soul.",
+  why:"The show accepts the algorithm's terms, then changes what counts as winning halfway through giving in. A toilet-paper ad also interrupts the sermon, which accidentally proves the point.",
+  lesson:"Accept the absurd premise completely before you flip it."},
+ {n:11, t:"LADY STOOPID", s:"dark"},
+ {n:12, t:"THANKSGIVING SPECIAL", s:"landed", rank:9, laws:{flip:true,family:null,one:null}, mech:"image",
+  setup:"We asked for a cranberry sauce line. Sora gave us a philosopher because, of course, it did.",
+  flip:"Cranberry sauce is the only side dish that shows up still wearing the shape of its can. And maybe we're all a little like that. Marked by where we came from, but still sweet inside.",
+  why:"A chaotic AI gag hands the mic to the gentlest metaphor of the season. The joke and the truth share one image, so you never feel the gear shift.",
+  lesson:"Find the one object that's both the joke and the metaphor."},
+ {n:13, t:"STOOPID SHOW SUCKS", s:"landed", rank:7, laws:{flip:true,family:null,one:null}, mech:"fail",
+  setup:"I wake up thinking okay, this is it, main quest, let's go — and the universe goes cool, here's a side quest.",
+  flip:"This isn't polished optimism. It's hope that's been dropped a few times and still works.",
+  why:"The episode acts out its own thesis. Deliveries and calls from Mom literally interrupt the monologue that's defending interruptions.",
+  lesson:"Make the episode's flaws the evidence for its claim. An argument that demonstrates itself can't be written off as a take."},
+ {n:14, t:"XMAS SPECIAL", s:"landed", rank:2, score:"91", laws:{flip:true,family:true,one:true}, mech:"fail",
+  setup:"Welcome to the most professional Christmas broadcast on X… This is a carefully planned and macularly produced holiday special.",
+  flip:"Christmas isn't a day you win. It's a posture you practice.",
+  why:"Twenty minutes of broken cords and failed polish earn the right to redefine the holiday. The mess is the argument.",
+  lesson:"Let the format visibly fail so the failure does the persuading. Then the sincere line arrives as a conclusion, not a sermon."},
+ {n:15, t:"SOCKS", s:"dark"},
+ {n:16, t:"NO TOUCHY FOR FREE", s:"landed", rank:1, score:"92", laws:{flip:true,family:true,one:true}, mech:"real",
+  setup:"Dev, this guy is attacking me online. Dev, can you emotionally process this for me?",
+  flip:"Here's the thing nobody tells you. You're allowed to exist without absorbing everyone else's bad mood… That's not selfish. That's maintenance.",
+  why:"The bit (a literal cover charge for feelings) is filmed in a hospital waiting room before baby #2 arrives. The absurd premise and the real stakes are the same event.",
+  lesson:"Put the flip inside real life, not next to it. When the premise and the person can't be separated, the truth doesn't need an announcement."},
+ {n:17, t:"PYOP", s:"landed", rank:8, laws:{flip:true,family:null,one:null}, mech:"scale",
+  setup:"I'm gonna put some chapstick on it. Just in case you wanted to get extra pretty for the people.",
+  flip:"People think money is the most valuable thing they have. It's not. It's attention.",
+  why:"It drops in between chapstick and car seats with no windup. The season's lowest-production moment carries its sharpest observation about money. It closes on the line that sums up the season: “𝕏 I love you. As is.”",
+  lesson:"Deliver the biggest idea at the smallest moment."},
+ {n:18, t:"SPACES", s:"landed", rank:5, laws:{flip:true,family:null,one:null}, mech:"drop",
+  setup:"Breaking news tonight: a local man is making things. The internet, however, seems largely unbothered.",
+  flip:"None of them went viral. None of them got boosted by an algorithm. It just exists because I made them… Built it anyway. Even when nobody was watching.",
+  why:"The news-desk framing treats internet indifference as an absurd event. That makes the quiet confession underneath land as the real headline.",
+  lesson:"Use a formal format for ironic distance, then drop the format and let the plain sentence land."},
+ {n:19, t:"WHERE IS EVERYONE", s:"dark", note:"On file: Pack, the lost dog. The Sora shutdown. Buckley Thunder Meat. Looking for what's missing while the world keeps not answering. No flip quote has been banked yet."},
+ {n:20, t:"THE MILESTONE WAS A TRAP", s:"dark", flip:"The milestone was a trap. So I moved it.",
+  note:"The finale. A milestone is a checkpoint with a clipboard, not a finish line. The flip line is on record as top-3 in the season, but the episode has no transcript. The whiteboard says SEASON 2, EMOTIONALLY."}
+];
+
+const STATUS = {
+  landed:{label:"FLIP LANDED", short:"LANDED"},
+  partial:{label:"FLIP PARTIAL", short:"PARTIAL"},
+  none:{label:"NO FLIP", short:"NO FLIP"},
+  dark:{label:"NOT IN THE LAB YET", short:"NO TAPE"}
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad = n => "E" + String(n).padStart(2,"0");
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+
+/* ---------- header strip + tally ---------- */
+$("strip").innerHTML = EP.map((e,i) => `<i class="${e.s}" style="animation-delay:${i*28}ms"></i>`).join("");
+const count = s => EP.filter(e => e.s === s).length;
+$("tally").innerHTML =
+  `<span class="t1"><b>${count("landed")}</b> FLIPS BANKED</span>` +
+  `<span class="t2"><b>${count("partial")}</b> PARTIAL</span>` +
+  `<span class="t3"><b>${count("none")}</b> NO FLIP</span>` +
+  `<span class="t4"><b>${count("dark")}</b> AWAITING TRANSCRIPT</span>`;
+
+/* ---------- MAP ---------- */
+$("grid").innerHTML = EP.map(e =>
+  `<button class="ep ${e.s}" data-n="${e.n}" aria-pressed="false" title="${esc(e.t)}">
+     <span class="no">${pad(e.n).slice(1)}</span><span class="st">${STATUS[e.s].short}</span>
+   </button>`).join("");
+
+function lawCell(v){
+  if(v === true) return `<span class="on">ACTIVE</span>`;
+  if(v === false) return `<span class="off">OFF</span>`;
+  if(v === "partial") return `<span class="on" style="color:#b77cff">PARTIAL</span>`;
+  return `<span class="q">NOT ON FILE</span>`;
+}
+function showEp(n){
+  const e = EP.find(x => x.n === n); if(!e) return;
+  document.querySelectorAll(".ep").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === n)));
+  const m = e.mech ? MECH[e.mech] : null;
+  const left = `
+    <div>
+      <div class="epno">${pad(e.n)}${e.rank ? ` · FLIP RANK #${e.rank} OF 10` : ""}</div>
+      <h2>${esc(e.t)}</h2>
+      <span class="badge ${e.s}">${STATUS[e.s].label}</span>${e.score ? `<span class="badge score">SIGNAL ${esc(e.score)}</span>` : ""}
+      ${e.laws ? `<div class="laws">
+        <div class="law"><span>FLIP LAW</span>${lawCell(e.laws.flip)}</div>
+        <div class="law"><span>FAMILY LAW</span>${lawCell(e.laws.family)}</div>
+        <div class="law"><span>ONE IDEA LAW</span>${lawCell(e.laws.one)}</div>
+      </div>` : ""}
+      ${m ? `<p class="note">MECHANISM: <b>${m.name}</b></p>` : ""}
+      ${e.flag ? `<p class="note">* ${esc(e.flag)}</p>` : ""}
+    </div>`;
+  let right;
+  if(e.s === "dark"){
+    right = `<div>
+      ${e.flip ? `<div class="lbl">Flip line on record</div><div class="quote flip">${esc(e.flip)}</div>` : ""}
+      ${e.note ? `<p class="why">${esc(e.note)}</p>` : ""}
+      <div class="lesson"><div class="lbl">To do</div>This episode isn't in the lab because its transcript isn't in the vault. Transcribe it with Faster-Whisper, then bank the setup line and the flip line. Anything without a transcript is invisible to the analyzer.</div>
+    </div>`;
+  } else {
+    right = `<div>
+      ${e.setup ? `<div class="lbl">${e.s === "partial" && e.n === 5 ? "The episode" : "Setup"}</div><div class="quote">${esc(e.setup)}</div>` : ""}
+      ${e.flip ? `<div class="lbl">${e.s === "landed" ? "The flip" : "The flip seed"}</div><div class="quote flip">${esc(e.flip)}</div>` : ""}
+      <div class="lbl">${e.s === "landed" ? "Why it lands" : "Why it stalled"}</div>
+      <p class="why">${esc(e.why)}</p>
+      <div class="lesson"><div class="lbl">Reusable lesson</div>${esc(e.lesson)}</div>
+    </div>`;
+  }
+  $("dossier").innerHTML = left + right;
+  store.set("fliplab.ep", String(n));
+}
+$("grid").addEventListener("click", ev => { const b = ev.target.closest(".ep"); if(b) showEp(+b.dataset.n); });
+
+/* ---------- MECHANISMS ---------- */
+$("mechs").innerHTML = Object.values(MECH).map(m => `
+  <div class="mech">
+    <div class="from">PROVEN IN ${m.from}</div>
+    <h3>${m.name}</h3>
+    <p>${esc(m.how)}</p>
+    <blockquote>${esc(m.q)}</blockquote>
+    <div class="run">${esc(m.run)}</div>
+  </div>`).join("");
+
+/* ---------- GATE ---------- */
+$("g-mech").innerHTML = `<option value="">— pick how the flip gets bought —</option>` +
+  Object.entries(MECH).map(([k,m]) => `<option value="${k}">${m.name} (${m.from})</option>`).join("");
+
+const ANNOUNCE = /\b(the (lesson|moral|point|message|takeaway) (is|here)|what i learned|in conclusion|and that'?s why|the real meaning|we should all|you should all|remember to)\b/i;
+const ANCHOR_WORDS = /\b(son|sons|kid|kids|baby|wife|husband|mom|dad|family|home|hospital|car|errand|job|work|school|kitchen|garage|house|dog|birthday|bills?|bedtime|daycare)\b/i;
+const MENTION = /\b(shout ?out|mention|reference|nod to|quick (bit|shot) of)\b/i;
+const EXAMPLE = {
+  title:"NO TOUCHY FOR FREE (run backwards through the gate)",
+  idea:"Emotional labor has a cover charge.",
+  flip:"the bit about charging people to process their feelings turns out to be filmed from a hospital waiting room, and the cover charge is really permission to stop absorbing everyone else's bad mood",
+  anchor:"waiting for our second son to be born; the whole episode is shot from the hospital",
+  mech:"real"
+};
+const F = ["title","idea","flip","anchor","mech"];
+
+function evaluate(){
+  const v = Object.fromEntries(F.map(k => [k, $("g-"+k).value.trim()]));
+  const w = s => s ? s.split(/\s+/).length : 0;
+
+  // 1 — one idea
+  let one = false, ci;
+  if(!v.idea) ci = `<span class="bad">EMPTY. It's a clip, not an episode.</span>`;
+  else if(/\band\b|&|\+/i.test(v.idea)) ci = `<span class="warn">THERE'S AN "AND" IN HERE. Two ideas are hiding. Pick one.</span>`;
+  else if(w(v.idea) > 22) ci = `<span class="warn">${w(v.idea)} WORDS. A thesis that needs this many words is still a draft.</span>`;
+  else { ci = `<span class="ok">ONE IDEA. ${w(v.idea)} words.</span>`; one = true; }
+  $("c-idea").innerHTML = ci;
+
+  // 2 — flip
+  let flip = false, cf;
+  if(!v.flip) cf = `<span class="bad">EMPTY. If you can't name the flip, the episode isn't ready.</span>`;
+  else if(ANNOUNCE.test(v.flip)) cf = `<span class="warn">SOUNDS ANNOUNCED. Describe the moment, not the moral.</span>`;
+  else if(w(v.flip) < 6) cf = `<span class="warn">TOO THIN TO SHOOT. What actually happens on camera?</span>`;
+  else { cf = `<span class="ok">A MOMENT, NOT A SPEECH.</span>`; flip = true; }
+  $("c-flip").innerHTML = cf;
+
+  // 3 — anchor
+  let fam = false, ca;
+  if(!v.anchor) ca = `<span class="bad">EMPTY. Family is the score multiplier. Without it, expect the 70s.</span>`;
+  else if(MENTION.test(v.anchor)) ca = `<span class="warn">THAT'S A MENTION. Put it inside the premise instead.</span>`;
+  else { ca = ANCHOR_WORDS.test(v.anchor) ? `<span class="ok">REAL LIFE, IN THE ROOM.</span>` : `<span class="ok">ANCHORED.</span> <span class="warn">Make sure it happens on camera, not just in the voiceover.</span>`; fam = true; }
+  $("c-anchor").innerHTML = ca;
+
+  const m = v.mech ? MECH[v.mech] : null;
+  $("g-mechhint").textContent = m ? m.run : "Nine ways Season 1 earned its flips. See THE MECHANISMS.";
+
+  $("m-flip").className = flip ? "on" : "";
+  $("m-family").className = fam ? "on" : "";
+  $("m-one").className = one ? "on" : "";
+  const n = [flip,fam,one].filter(Boolean).length;
+  const FC = [
+    ["STATUS: A CLIP.", "Zero laws active. Season 1 episodes in this shape scored in the 60s. Post it as a bit and protect the season."],
+    ["STATUS: 70s SHAPE.", "One law active. That's the band where Beans (E1) and Beans2 (E7) landed: a strong bit with nothing to carry out."],
+    ["STATUS: STRONG 80s SHAPE.", "Two laws active. Solid episode. Find the third and it becomes a ceiling episode."],
+    ["STATUS: CEILING SHAPE.", "All three laws active. That's E14 (91) and E16 (92) territory. Go write it."]
+  ][n];
+  $("forecast").innerHTML = `${FC[0]}<small>${FC[1]}</small>`;
+
+  const L = s => s || "______";
+  $("card").textContent =
+`▌ ${ (v.title || "UNTITLED EPISODE").toUpperCase() }
+THE STOOPID SHOW · PRODUCTION CARD
+
+THE GATE
+  1  THE ONE IDEA IS ......... ${L(v.idea)}
+  2  THE FLIP IS THE MOMENT WHEN ${L(v.flip)}
+  3  THE ANCHOR IS ........... ${L(v.anchor)}
+
+LAWS   FLIP ${flip?"■":"□"}   FAMILY ${fam?"■":"□"}   ONE IDEA ${one?"■":"□"}   → ${FC[0].replace("STATUS: ","")}
+MECHANISM  ${m ? m.name + " (proven in " + m.from + ")" : "______"}
+
+SPINE
+  HOOK ....... absurd or relatable way in. First 5 seconds.
+  ESCALATION . push "${L(v.idea)}" further. Rehook every 30–60s.
+  FLIP ....... ${m ? m.run : "______"}
+  RELEASE .... humor or calm. Land it clean.
+
+GUARDRAIL
+  □ funny or weird enough to hook   □ truth underneath
+  □ Dev in control                  □ laugh, then think for a second
+
+SIGNAL RECEIVED.`;
+
+  store.set("fliplab.draft", JSON.stringify(v));
+}
+F.forEach(k => $("g-"+k).addEventListener("input", evaluate));
+$("g-mech").addEventListener("change", evaluate);
+function fill(o){ F.forEach(k => $("g-"+k).value = o[k] || ""); evaluate(); }
+$("b-example").addEventListener("click", () => fill(EXAMPLE));
+$("b-clear").addEventListener("click", () => fill({}));
+$("gateform").addEventListener("submit", e => e.preventDefault());
+
+$("b-copy").addEventListener("click", () => {
+  const txt = $("card").textContent;
+  const done = () => { $("toast").textContent = "COPIED. PASTE IT INTO THE SCRIPT."; setTimeout(() => $("toast").textContent = "", 2600); };
+  const fallback = () => {
+    const r = document.createRange(); r.selectNodeContents($("card"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    $("toast").textContent = "CARD SELECTED. PRESS COPY.";
+  };
+  try{ navigator.clipboard.writeText(txt).then(done, fallback); }catch(e){ fallback(); }
+});
+
+/* ---------- tabs ---------- */
+const TABS = [["tab-map","p-map","map"],["tab-mech","p-mech","mechanisms"],["tab-gate","p-gate","gate"]];
+function openTab(id){
+  TABS.forEach(([t,p]) => { const on = t === id; $(t).setAttribute("aria-selected", String(on)); $(p).hidden = !on; });
+  store.set("fliplab.tab", id);
+}
+TABS.forEach(([t]) => $(t).addEventListener("click", () => openTab(t)));
+
+/* ---------- boot ---------- */
+let draft = null; try{ draft = JSON.parse(store.get("fliplab.draft") || "null"); }catch(e){}
+fill(draft && Object.values(draft).some(Boolean) ? draft : EXAMPLE);
+showEp(+(store.get("fliplab.ep") || 16));
+const hashTab = TABS.find(([,,h]) => location.hash === "#" + h);
+openTab(hashTab ? hashTab[0] : (store.get("fliplab.tab") || "tab-map"));
+</script>
+</html>
