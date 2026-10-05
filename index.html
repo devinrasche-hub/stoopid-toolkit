@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 29 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 30 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="29">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="30">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">29 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">30 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -359,6 +359,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>EMPRESS HEAVY</h3>
       <p>ASCII launch pad. Countdown, liftoff, fireworks &mdash; GOOD LUCK EMPRESS HEAVY &mdash; zoom into the black and vanish like a star.</p></div>
       <div class="foot"><span class="st">STATUS: <em>GO FOR LAUNCH</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_please_remain_seen.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 030</span><span class="cls">HALLOWEEN SPECIAL</span></div>
+      <canvas class="viz" data-viz="seen"></canvas>
+      <div class="body"><h3>PLEASE REMAIN SEEN</h3>
+      <p>STOOPID AFTER HOURS. A 90-second broadcast horror film. Something lives inside the audience metrics, and it survives by being watched. Headphones. Lights off.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>VIEWERS: 1</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -961,6 +970,32 @@ VIZ.rocket = function(x,w,h,t){
     x.fillStyle='#4aa8ff'; x.font=F(9);
     x.fillText('GOOD LUCK EMPRESS HEAVY', cx, h-14);
   }
+};
+
+/* 030 — please remain seen: a CRT in the dark, VIEWERS: 1, a figure that isn't there */
+VIZ.seen = function(x,w,h,t){
+  var cx=w/2, cy=h/2-4, sw=Math.min(w*.46,120), sh=sw*.75;
+  var on = (t%9000) < 7600;
+  x.fillStyle='#0c0f0f'; x.fillRect(cx-sw/2-8, cy-sh/2-8, sw+16, sh+22);
+  x.fillStyle = on ? '#0b1716' : '#020303'; x.fillRect(cx-sw/2, cy-sh/2, sw, sh);
+  if(on){
+    x.fillStyle='rgba(111,165,157,.07)';
+    for(var y=0;y<sh;y+=3) x.fillRect(cx-sw/2, cy-sh/2+y, sw, 1);
+    var p=(t%9000)/7600, fx=cx+sw*.18;
+    x.globalAlpha = .15 + .5*Math.max(0, Math.sin(p*Math.PI));
+    x.fillStyle='#000';
+    x.fillRect(fx-3, cy-sh*.28, 6, 6);
+    x.fillRect(fx-5, cy-sh*.28+6, 10, sh*.34);
+    x.fillRect(fx-5, cy-sh*.28+6+sh*.34, 4, sh*.22); x.fillRect(fx+1, cy-sh*.28+6+sh*.34, 4, sh*.22);
+    x.globalAlpha=1;
+    x.textAlign='left'; x.font=F(9);
+    x.fillStyle='#ff4a2a'; x.fillText('\u25CF', cx-sw/2+6, cy+sh/2-7);
+    x.fillStyle='#d9d6c6'; x.fillText('VIEWERS: 1', cx-sw/2+16, cy+sh/2-7);
+  } else {
+    x.fillStyle='rgba(190,240,255,'+(1-((t%9000)-7600)/1400)+')';
+    x.fillRect(cx-1, cy-1, 2, 2);
+  }
+  x.fillStyle='#ff2a14'; x.globalAlpha=.6+.4*Math.sin(t/900); x.fillRect(cx+sw/2-4, cy-sh/2-14, 3, 3); x.globalAlpha=1;
 };
 
 /* 014 — flip finder */
