@@ -5,6 +5,7 @@ How **PLEASE REMAIN SEEN** (the 2026 Halloween special, VAULT item 030) was made
 - The film: `../stoopid_please_remain_seen.html`
 - The source: `please-remain-seen/`
 - The exact prompt that produced it: `please-remain-seen/BRIEF.md`
+- The sequels: `please-hold/` (02) and `still-here/` (03), each with its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `still-here/`.** It has the newest engine: caption layers burned into captures, portals, feed atlas, per-world looks, and a master silence gate.
 
 ---
 
@@ -131,6 +132,17 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **A master gate on the mix** is the reliable way to make silence silent: it removes every reverb tail at once.
 - **Prewarm**: compile each scene and render each shot once behind the opening screen, then enable Start.
 
+### Added after STILL HERE (03)
+- **Lock three blanks before designing anything:** the one idea, the flip, and a real-life anchor (`still-here/BRIEF.md`). The anchor gave the film a single concrete line to build toward, "You forgot our minute.", and every beat could be tested against it.
+- **Two worlds, two photographic treatments.** Mark each shot `world: 'false' | 'real'` and switch the look per world in `main.js`. For the real world that means no instability, no halation, less grain, no teal. It's the cheapest way to make the ending feel more real than everything before it.
+- **Story captions can carry who is speaking.** Station text wavers on its raster; The Algorithm is thin; family lines are clean and stable. Viewers read the difference before they read the words.
+- **Outline and seam strips: additive blending, in front of the surface.** A black `MeshBasicMaterial` "off" state draws visible black lines; additive black is invisible. And a door box in front of its seams hides them.
+- **Bodies: one smooth shape, not a pile of spheres.** Spheres stacked into a head or hand read as a doll. Instead, build the body under a blanket from one smooth profile along a centreline (height and width keyed along its length), and a hand from an extruded, bevelled outline with the fingers together. Keep them small, at the edge of the frame, in lamplight.
+- **Put the practical lamp on the camera's side.** A lamp behind the headboard turned the headboard into a black slab that filled half the frame.
+- **Metal needs an environment map.** Without one, `metalness: 0.8` renders black. Use low metalness and a light colour.
+- **Reduced motion can break a shot whose story is the motion.** Damping toward the shot's midpoint turned the sit-down into a hover. Mark those moves `essential`.
+- **A scripted silence gates everything**, voice slots included. Say so wherever the slots are documented.
+
 ## 7. Brand note
 
 The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sickly off-white, a little emergency red/orange). That's darker and dirtier than the SIGNAL palette (`#000 #FFF #00FFC6 #8A2BE2 #FF2D2D #CC5500`). For a special, the brief wins. For on-brand pieces, start from SIGNAL, and keep Burnt Orange `#CC5500` for the moment the flip lands.
@@ -150,4 +162,11 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Moments people mentioned:
 - Did the elevator / control-room reveal read without explanation?
 - Did the phone joke land?
+- What to do more of:
+
+**STILL HERE (03)**
+- Moments people mentioned:
+- Did the knocks and "You forgot our minute." land as the turn without explanation?
+- Did the real room feel more real than the station, or just different?
+- Did the simple hands and the child under the quilt hold up, or distract?
 - What to do more of:

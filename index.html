@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 31 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 32 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="31">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="32">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">31 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">32 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -377,6 +377,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>PLEASE HOLD</h3>
       <p>STOOPID AFTER HOURS 02. The viewer stayed. Something is trying to show you the way out of a station that would rather you didn't leave. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ON HOLD</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_still_here.html" style="--ac:#ffd6a2">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 032</span><span class="cls">AFTER HOURS 03</span></div>
+      <canvas class="viz" data-viz="here"></canvas>
+      <div class="body"><h3>STILL HERE</h3>
+      <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -1023,6 +1032,25 @@ VIZ.hold = function(x,w,h,t){
   x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
   x.textAlign='center'; x.font=F(9);
   x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
+};
+
+/* 032 — still here: a plain wall, a strip of light under it, a door that was always there */
+VIZ.here = function(x,w,h,t){
+  var cyc=9000, p=(t%cyc)/cyc, cx=w/2, cy=h/2, dw=Math.min(44,w*0.16), dh=Math.min(h*0.62,92);
+  var top=cy-dh/2-6, bot=top+dh;
+  x.fillStyle='#0c1110'; x.fillRect(0,0,w,h);
+  // the strip of real light beneath the wall, then the seams, then the door opening
+  var strip=Math.min(1,Math.max(0,(p-0.12)/0.1)), seams=Math.min(1,Math.max(0,(p-0.35)/0.15)), open=Math.min(1,Math.max(0,(p-0.62)/0.2));
+  x.fillStyle='rgba(255,214,162,'+(0.85*strip)+')'; x.fillRect(cx-dw/2, bot-1, dw, 2);
+  x.fillStyle='rgba(255,214,162,'+(0.55*seams)+')';
+  x.fillRect(cx-dw/2-1, top, 1, dh); x.fillRect(cx+dw/2, top, 1, dh); x.fillRect(cx-dw/2, top-1, dw, 1);
+  if(open>0){
+    x.fillStyle='rgba(255,214,162,'+(0.22+0.5*open)+')'; x.fillRect(cx-dw/2, top, dw*open, dh);
+    x.fillStyle='#0c1110'; x.fillRect(cx-dw/2+dw*open, top, Math.max(0,dw*(1-open)*0.35), dh);
+  }
+  x.textAlign='center'; x.font=F(9);
+  x.fillStyle = p<0.62 ? '#5d6b66' : '#ffd6a2';
+  x.fillText(p<0.62 ? 'AUTOPLAY STARTING…' : 'STILL HERE', cx, h-12);
 };
 
 /* 014 — flip finder */
