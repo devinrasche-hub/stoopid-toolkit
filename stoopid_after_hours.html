@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STOOPID AFTER HOURS</title>
+<meta name="description" content="THE STOOPID SHOW — STOOPID AFTER HOURS. Broadcast horror installments.">
+<style>
+  :root { --ink: #d9d6c6; --dim: #6d7976; --amber: #ffb347; --line: #1f2a28; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #000; color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  body { display: grid; place-items: center; min-height: 100vh; padding: 48px 16px; background: radial-gradient(ellipse at 50% 40%, #0a1111 0%, #000 70%); }
+  main { width: min(640px, 100%); }
+  .kicker { font-size: 11px; letter-spacing: 0.5em; color: var(--dim); text-align: center; }
+  h1 { font-weight: 300; font-size: clamp(24px, 5vw, 44px); letter-spacing: 0.2em; text-align: center; margin: 14px 0 44px; }
+  ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  li a { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 12px; padding: 20px 6px; border-bottom: 1px solid var(--line);
+    color: var(--ink); text-decoration: none; transition: background .2s; }
+  li a:hover, li a:focus-visible { background: #071010; outline: none; }
+  .no { color: var(--amber); font-family: "DejaVu Sans Mono", "Courier New", monospace; letter-spacing: 0.1em; }
+  .t { letter-spacing: 0.24em; font-size: 15px; }
+  .t small { display: block; margin-top: 6px; color: var(--dim); font-size: 12px; letter-spacing: 0.04em; }
+  .len { color: var(--dim); font-family: "DejaVu Sans Mono", "Courier New", monospace; font-size: 12px; }
+  .lamp { display: block; width: 14px; height: 6px; margin: 40px auto 0; border-radius: 2px; background: var(--amber); box-shadow: 0 0 14px rgba(255,170,70,.6); }
+  .note { margin-top: 18px; text-align: center; color: #4f5957; font-size: 11px; letter-spacing: 0.08em; }
+  .vault { position: fixed; left: 56px; bottom: 0; font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; color: #00FFC6; background: #000;
+    border: 1px solid #00FFC6; border-bottom: none; padding: 5px 13px; text-decoration: none; opacity: .55; }
+  .vault:hover { opacity: 1; background: #00FFC6; color: #000; }
+  @media (max-width: 700px) { .vault { left: 14px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">THE STOOPID SHOW</div>
+  <h1>STOOPID AFTER HOURS</h1>
+  <ol>
+    <li><a href="stoopid_please_remain_seen.html"><span class="no">01</span><span class="t">PLEASE REMAIN SEEN<small>Something lives inside the audience metrics.</small></span><span class="len">1:30</span></a></li>
+    <li><a href="stoopid_please_hold.html"><span class="no">02</span><span class="t">PLEASE HOLD<small>The viewer stayed. The station would like you to keep staying.</small></span><span class="len">2:00</span></a></li>
+    <li><a href="stoopid_still_here.html"><span class="no">03</span><span class="t">STILL HERE<small>Autoplay found you a home. Someone behind the wall is still waiting.</small></span><span class="len">2:00</span></a></li>
+  </ol>
+  <span class="lamp" aria-hidden="true"></span>
+  <p class="note">Contains unsettling imagery and mild flicker. Headphones. Lights off.</p>
+</main>
+<a class="vault" href="index.html">&#9666; THE VAULT</a>
+</body>
+</html>

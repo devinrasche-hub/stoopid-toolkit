@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Please Remain Seen — STOOPID AFTER HOURS</title>
+<meta name="description" content="THE STOOPID SHOW Halloween special: a 90-second supernatural broadcast cinematic.">
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="frame">
+  <div id="stage">
+    <canvas id="view"></canvas>
+    <div id="captions" aria-live="polite"><div class="label"></div><div class="line"></div></div>
+  </div>
+</div>
+
+<div id="intro">
+  <div class="intro-inner">
+    <div class="kicker">THE STOOPID SHOW &middot; HALLOWEEN</div>
+    <h1>STOOPID AFTER HOURS</h1>
+    <button id="enter" type="button">Enter broadcast</button>
+    <p class="note">Contains unsettling imagery and mild flicker.</p>
+    <div class="intro-opts">
+      <button id="introSound" type="button" class="opt" aria-pressed="true">Sound: on</button>
+      <label class="opt">Quality
+        <select id="introQuality"><option value="high">1080p</option><option value="medium">720p</option><option value="low">540p</option></select>
+      </label>
+      <button id="introCapture" type="button" class="opt" aria-pressed="false">Clean capture: off</button>
+    </div>
+    <p class="fine">Nothing here watches you. No camera, no microphone, nothing leaves the page.</p>
+  </div>
+</div>
+
+<div id="ended" hidden>
+  <button id="replay" type="button">Replay</button>
+</div>
+
+<div id="controls" class="hidden">
+  <button id="bPlay" type="button" title="Play / pause (Space)">❚❚</button>
+  <button id="bRestart" type="button" title="Restart (R)">↺</button>
+  <span id="time">0:00.0</span>
+  <input id="scrub" type="range" min="0" max="90" step="0.01" value="0" aria-label="Timeline">
+  <span id="dur">1:30.0</span>
+  <button id="bCC" type="button" title="Captions (C)" aria-pressed="true">CC</button>
+  <button id="bMute" type="button" title="Mute (M)">SND</button>
+  <select id="quality" title="Quality"><option value="high">1080p</option><option value="medium">720p</option><option value="low">540p</option></select>
+  <button id="bCapture" type="button" title="Clean capture mode (H). Press H or Esc to exit.">CAPTURE</button>
+  <button id="bRec" type="button" title="Record the full broadcast to a .webm file">REC</button>
+  <button id="bWav" type="button" title="Render the soundtrack to a .wav file">WAV</button>
+  <button id="bFull" type="button" title="Fullscreen (F)">⛶</button>
+</div>
+<div id="toast" hidden></div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
