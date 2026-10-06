@@ -43,6 +43,16 @@ URL options: `?capture=1` (start in clean capture and go fullscreen on Enter), `
   ```
   Add `--cc 0` for textless frames, so captions can be added in the edit.
 
+## Checking your work
+
+```
+npm i -D playwright
+npm run snapshot -- --t 4.5,13,52,87 --quality low   # stills + contact sheet + console errors
+npm run audio-levels                                 # peak / RMS per second of the soundtrack
+```
+
+The original prompt is in `BRIEF.md`. The method, the brief template and the lessons learned are in `../PLAYBOOK.md`.
+
 ## How it's built
 
 Everything derives from timeline time `t`. Pausing, seeking, scrubbing, replaying and offline rendering all produce the same frame and the same sound. All randomness (flicker, grain, entity glitches, dust, cable layout, noise buffers) is seeded.
