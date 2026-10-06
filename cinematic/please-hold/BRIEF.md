@@ -1,0 +1,67 @@
+# The brief — PLEASE HOLD (STOOPID AFTER HOURS 02)
+
+This is the prompt that produced the film, kept for the next installment. Its shape follows `../PLAYBOOK.md` §2: continuity, a new story with one emotional idea, an evolving visual motif, three spaces, rules for the entity, an exact storyboard, and quality gates.
+
+**Key lines**
+- Title "PLEASE HOLD"; series STOOPID AFTER HOURS; installment 02; exactly 120 seconds; 16:9 1920×1080.
+- Continuity: begins on 01's closing shot (CRT, "Stay?", scanline hand, relay, silence).
+- Story: the viewer stayed. The entity guides them out. The station itself is alive and mistakes continued attention for permission to keep everyone inside.
+- Emotional idea: *Being needed can become a prison when you are never allowed to leave.*
+- One absurd customer-service interruption: the phone, "ESTIMATED WAIT TIME: THE REST OF THE EPISODE", the hold melody, "PLEASE DO NOT HANG UP."
+- Motif: amber HOLD indicators. They start as ordinary equipment, then appear above doors, in the elevator, and finally in impossible places.
+- Horror through:
+  - a room that changes while out of view
+  - a reflection that keeps the previous layout
+  - an elevator that opens onto the place it just left
+  - shadows of objects no longer present
+  - a steady camera witnessing something physically wrong
+- Spaces:
+  - the original control room, with a backstage service door
+  - THE CONTINUITY DEPARTMENT corridor: phone, framed house with one lit window, elevator
+  - the transmission chamber: suspended CRT audience, walkway, "END TRANSMISSION" switch
+- Entity beats:
+  - fingers tighten on the CRT
+  - a hesitant gesture toward the service door
+  - its body blocks a dangerous screen
+  - a hand braces the elevator door
+  - stillness beside the switch
+- The Algorithm: composed at first. It realizes its narration has helped the station hold the viewer, and grows quieter and more direct.
+- Storyboard beats:
+  - 0–12 STILL HERE
+  - 12–27 THE FIRST EXIT
+  - 27–43 CONTINUITY
+  - 43–54 CUSTOMER SUPPORT
+  - 54–72 THE WRONG AUDIENCE
+  - 72–91 END TRANSMISSION
+  - 91–107 LET IT END
+  - 107–120 RELEASE: title, then a tiny amber light and "AUTOPLAY STARTING…"
+- Cinematography:
+  - opening intimate; corridor symmetric and compressed; elevator confined; chamber vast; ending the first breathable frame
+  - 10–14 deliberate shots
+  - at least one sustained steady shot
+  - a focus shift revealing a threat
+  - a motivated occlusion hiding a spatial change
+  - one impossible connection held long enough to understand
+  - a silent climax
+- Technical:
+  - one deterministic timeline; seeking needs no earlier shots
+  - seeded randomness
+  - a reliable impossible-architecture technique, with no recursion
+  - instancing for the chamber
+  - captions rendered into captured output
+  - shader prewarm
+- Audio:
+  - the four-note hold melody that loses notes
+  - CRT hum, ballast buzz, one phone ring, elevator contactors, structural creaks, electrical clicks, low pressure, exterior ambience at the end
+  - silence as an actual cue
+- Playback:
+  - installment selector
+  - start, pause/resume, restart, seek, mute, fullscreen, quality, captions, clean capture
+  - reduced motion and reduced flicker
+- Capture:
+  - keep the existing export
+  - recording includes picture, text and audio
+  - format detection
+  - exactly 120 s
+  - honest about real-time limits
+  - a deterministic frame entry point

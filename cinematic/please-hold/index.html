@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Please Hold — STOOPID AFTER HOURS 02</title>
+<meta name="description" content="THE STOOPID SHOW — STOOPID AFTER HOURS 02: PLEASE HOLD. A 120-second broadcast horror cinematic.">
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="frame">
+  <div id="stage">
+    <canvas id="view"></canvas>
+  </div>
+</div>
+
+<div id="intro">
+  <div class="intro-inner">
+    <div class="kicker">THE STOOPID SHOW &middot; STOOPID AFTER HOURS &middot; 02</div>
+    <h1>PLEASE HOLD</h1>
+    <button id="enter" type="button" disabled>Preparing…</button>
+    <p class="note">Contains unsettling imagery and mild flicker. Best with headphones.</p>
+    <div class="intro-opts">
+      <button id="introSound" type="button" class="opt" aria-pressed="true">Sound: on</button>
+      <label class="opt">Quality
+        <select id="introQuality"><option value="high">1080p</option><option value="medium">720p</option><option value="low">540p</option></select>
+      </label>
+      <button type="button" class="opt" data-set="motion" aria-pressed="false">Reduced motion: off</button>
+      <button type="button" class="opt" data-set="flicker" aria-pressed="false">Reduced flicker: off</button>
+      <button id="introCapture" type="button" class="opt" aria-pressed="false">Clean capture: off</button>
+    </div>
+    <nav class="episodes" aria-label="Installments">
+      <a href="stoopid_please_remain_seen.html"><span>01</span> PLEASE REMAIN SEEN</a>
+      <a href="stoopid_please_hold.html" aria-current="page"><span>02</span> PLEASE HOLD</a>
+    </nav>
+    <p class="fine">Nothing here watches you. No camera, no microphone, nothing leaves the page.</p>
+  </div>
+</div>
+
+<div id="ended" hidden>
+  <button id="replay" type="button">Replay</button>
+</div>
+
+<div id="controls" class="hidden">
+  <button id="bPlay" type="button" title="Play / pause (Space)">❚❚</button>
+  <button id="bRestart" type="button" title="Restart (R)">↺</button>
+  <span id="time">0:00.0</span>
+  <input id="scrub" type="range" min="0" max="120" step="0.01" value="0" aria-label="Timeline">
+  <span id="dur">2:00.0</span>
+  <button id="bCC" type="button" title="Captions (C)" aria-pressed="true">CC</button>
+  <button id="bMute" type="button" title="Mute (M)">SND</button>
+  <select id="quality" title="Quality"><option value="high">1080p</option><option value="medium">720p</option><option value="low">540p</option></select>
+  <button type="button" data-set="motion" class="small" title="Reduced motion" aria-pressed="false">Reduced motion: off</button>
+  <button type="button" data-set="flicker" class="small" title="Reduced flicker" aria-pressed="false">Reduced flicker: off</button>
+  <button id="bCapture" type="button" title="Clean capture mode (H). Press H or Esc to exit.">CAPTURE</button>
+  <button id="bRec" type="button" title="Record the whole film in real time (picture, captions, sound). Dropped frames are recorded as dropped.">REC</button>
+  <button id="bWav" type="button" title="Render the soundtrack offline to a .wav file">WAV</button>
+  <button id="bFull" type="button" title="Fullscreen (F)">⛶</button>
+</div>
+<div id="toast" hidden></div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -121,6 +121,16 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **Close foreground blur needs a big aperture value** (blur ≈ 0.045). Small values do nothing at short distances.
 - **Keep lens-side clutter on render layer 2** so in-world cameras don't see props meant only for the cinematic camera.
 
+### Added after PLEASE HOLD (02)
+- **Burn captions into the picture.** HTML captions don't appear in canvas recordings. Paint them on a canvas layer composited in the final pass (`cards.js` + `post.js`).
+- **Impossible architecture:** use a portal (render the far scene from `toAnchor · fromAnchor⁻¹ · viewer`, sample in screen space, clip plane at the doorway). Set the portal camera's `matrix`, not only `matrixWorld`, because `render()` copies one into the other. Sample with the *main* frame size, not the render-target size.
+- **"Frame-exact" means settled.** Double-buffered feeds need two passes. A portal whose CRT shows a feed containing the portal needs three. Reflectors inside a portal must render, not be skipped, or they show a stale image.
+- **A reaching arm must shorten to its target**, or it passes through what it touches (and across the lens).
+- **Self-lit indicators shouldn't take fog** (`fog: false`), or a row of distant lamps vanishes.
+- **A shadow-only object** is a material with `colorWrite: false, depthWrite: false`; it still casts into shadow maps.
+- **A master gate on the mix** is the reliable way to make silence silent: it removes every reverb tail at once.
+- **Prewarm**: compile each scene and render each shot once behind the opening screen, then enable Start.
+
 ## 7. Brand note
 
 The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sickly off-white, a little emergency red/orange). That's darker and dirtier than the SIGNAL palette (`#000 #FFF #00FFC6 #8A2BE2 #FF2D2D #CC5500`). For a special, the brief wins. For on-brand pieces, start from SIGNAL, and keep Burnt Orange `#CC5500` for the moment the flip lands.
@@ -134,4 +144,10 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Moments people mentioned:
 - Where people said it dragged or confused them:
 - Where it was posted and how it did:
+- What to do more of:
+
+**PLEASE HOLD (02)**
+- Moments people mentioned:
+- Did the elevator / control-room reveal read without explanation?
+- Did the phone joke land?
 - What to do more of:

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 30 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 31 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="30">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="31">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">30 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">31 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -368,6 +368,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>PLEASE REMAIN SEEN</h3>
       <p>STOOPID AFTER HOURS. A 90-second broadcast horror film. Something lives inside the audience metrics, and it survives by being watched. Headphones. Lights off.</p></div>
       <div class="foot"><span class="st">STATUS: <em>VIEWERS: 1</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_please_hold.html" style="--ac:var(--orange)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 031</span><span class="cls">AFTER HOURS 02</span></div>
+      <canvas class="viz" data-viz="hold"></canvas>
+      <div class="body"><h3>PLEASE HOLD</h3>
+      <p>STOOPID AFTER HOURS 02. The viewer stayed. Something is trying to show you the way out of a station that would rather you didn't leave. Two minutes.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>ON HOLD</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -996,6 +1005,24 @@ VIZ.seen = function(x,w,h,t){
     x.fillRect(cx-1, cy-1, 2, 2);
   }
   x.fillStyle='#ff2a14'; x.globalAlpha=.6+.4*Math.sin(t/900); x.fillRect(cx+sw/2-4, cy-sh/2-14, 3, 3); x.globalAlpha=1;
+};
+
+/* 031 — please hold: amber HOLD lamps, a stuck progress of floors, a door of light */
+VIZ.hold = function(x,w,h,t){
+  var cyc=8000, p=(t%cyc)/cyc, cx=w/2, cy=h/2;
+  x.fillStyle='#050606'; x.fillRect(0,0,w,h);
+  // a corridor of lamps receding
+  for(var i=0;i<7;i++){
+    var d=1/(1+i*0.9), lx=w*0.5+(i%2?1:-1)*w*0.32*d, ly=cy-4+8*d;
+    var on = p*7>i;
+    x.fillStyle = on ? 'rgba(255,179,71,'+(0.35+0.65*d)+')' : '#1a1206';
+    x.fillRect(lx-9*d, ly-3*d, 18*d, 6*d);
+  }
+  // the door at the end
+  var open = Math.max(0, (p-0.7)/0.3);
+  x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
+  x.textAlign='center'; x.font=F(9);
+  x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
 };
 
 /* 014 — flip finder */
