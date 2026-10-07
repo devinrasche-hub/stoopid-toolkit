@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 32 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 33 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="32">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="33">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">32 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">33 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -386,6 +386,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_intro.html" style="--ac:var(--pink)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 033</span><span class="cls">OPENING TITLES</span></div>
+      <canvas class="viz" data-viz="zoom"></canvas>
+      <div class="body"><h3>THE ZOOM</h3>
+      <p>The show&rsquo;s opening titles. One continuous cartoon zoom: outer space, a planet, a house on a hill, through the window, into the TV, onto the stage, into the logo. Original jingle. Change the words, press REC.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>ZOOMING</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -1051,6 +1060,22 @@ VIZ.here = function(x,w,h,t){
   x.textAlign='center'; x.font=F(9);
   x.fillStyle = p<0.62 ? '#5d6b66' : '#ffd6a2';
   x.fillText(p<0.62 ? 'AUTOPLAY STARTING…' : 'STILL HERE', cx, h-12);
+};
+
+/* 033 — the zoom: worlds nested inside worlds, forever */
+VIZ.zoom = function(x,w,h,t){
+  var cols=['#1b0a3a','#8fdcff','#fff0c4','#ffcc80','#24124a','#7a26de'];
+  var names=['SPACE','THE LAND','THE HOUSE','THE TV','THE STAGE','THE SHOW'];
+  var ratio=0.27, d=(t%7000)/7000*5, i=Math.floor(d), f=d-i, Z=Math.pow(1/ratio,f), cx=w/2, cy=h/2-6;
+  for(var k=i;k<6;k++){
+    var sc=Z*Math.pow(ratio,k-i), rw=w*sc, rh=(h-12)*sc;
+    if(rw<3) break;
+    x.fillStyle=cols[k]; x.fillRect(cx-rw/2, cy-rh/2, rw, rh);
+    if(k>i){ x.strokeStyle='#000'; x.lineWidth=2; x.strokeRect(cx-rw/2, cy-rh/2, rw, rh); }
+    if(k===5){ x.textAlign='center'; x.font=F(Math.max(4,rh*0.22),true); x.fillStyle='#00FFC6'; x.fillText('STOOPID', cx, cy+rh*0.08); }
+  }
+  x.textAlign='left'; x.font=F(9); x.fillStyle='#FF40CD';
+  x.fillText('ZOOM \u25B8 '+names[Math.min(5,i+(f>.6?1:0))], 10, h-6);
 };
 
 /* 014 — flip finder */
