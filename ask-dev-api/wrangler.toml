@@ -1,0 +1,14 @@
+name = "ask-dev"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+workers_dev = true
+
+[vars]
+# Only pages on these origins may submit. Comma-separated.
+ALLOWED_ORIGINS = "https://devinrasche-hub.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ask_dev_requests"
+# Filled in by .github/workflows/deploy-ask-dev.yml at deploy time.
+database_id = "00000000-0000-0000-0000-000000000000"

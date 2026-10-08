@@ -29,6 +29,10 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 
 Everything is a single self-contained HTML file. (The Halloween cinematic is built from source with Vite into one self-contained HTML file — see `cinematic/please-remain-seen/README.md`.) No server, no accounts, no tracking, no API keys — safe to publish.
 
+## Also hosted here: Ask Dev
+
+[**Ask Dev**](https://devinrasche-hub.github.io/stoopid-toolkit/ask-dev/) — the request-for-quote intake page for Dev's Magic Errands (`ask-dev/index.html`). Not a STOOPID SHOW tool, so it isn't in THE VAULT. It's the one exception to "no server": submissions go to a private, write-only Cloudflare Worker + D1 database in `ask-dev-api/` (setup, deploy and how to read requests: `ask-dev-api/README.md`). No keys live in this repo — they're GitHub/Cloudflare secrets.
+
 ## How this repo works
 
 - **Source of truth is the vault** (`C:\STOOPID_VAULT\`). Edit tools there first.

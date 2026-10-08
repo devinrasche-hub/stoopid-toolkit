@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ask Dev — Need something done, made, or figured out?</title>
+<meta name="description" content="Tell Dev what you need done, made, or figured out. Local help in the Quad Cities; digital and creative projects wherever you are.">
+<meta property="og:title" content="Ask Dev">
+<meta property="og:description" content="Need something done, made, or figured out? Tell me a little about it.">
+<meta name="theme-color" content="#FBF6EC">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='8' fill='%23C2410C'/%3E%3Cpath d='M10 21c3-7 9-7 12-10' stroke='%23FBF6EC' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='11' r='2.5' fill='%23FBF6EC'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --paper:#FBF6EC;      /* warm off-white */
+    --card:#FFFDF8;
+    --ink:#1F1C18;        /* charcoal */
+    --ink-2:#4A443C;      /* secondary text, 8.9:1 on paper */
+    --line:#1F1C18;
+    --soft:#E7DFD0;
+    --accent:#C2410C;     /* errand orange, 5.1:1 on paper */
+    --accent-ink:#FFFFFF;
+    --accent-tint:#FCE7D9;
+    --error:#B42318;
+    --error-tint:#FDECEA;
+    --ok:#1E6B3A;
+    --radius:14px;
+    --shadow:4px 4px 0 var(--line);
+    --font:"Avenir Next","Avenir","Segoe UI","Helvetica Neue",system-ui,-apple-system,Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.5;
+    background-image:radial-gradient(rgba(31,28,24,.07) 1px, transparent 1.2px);background-size:22px 22px;}
+  a{color:var(--accent)}
+  .skip{position:absolute;left:-9999px}
+  .skip:focus{left:16px;top:16px;background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:8px;z-index:10}
+
+  .page{max-width:1100px;margin:0 auto;padding:20px 16px 56px;display:grid;gap:22px}
+  @media (min-width:900px){
+    .page{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;padding:56px 32px 80px;align-items:start}
+    .intro{position:sticky;top:48px}
+  }
+
+  /* ---------- intro ---------- */
+  .brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em;font-size:15px;text-transform:uppercase}
+  .brand .dot{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);transform:rotate(-6deg)}
+  .brand .dot svg{display:block}
+  h1{font-size:clamp(30px,7.6vw,52px);line-height:1.05;letter-spacing:-.02em;margin:16px 0 10px;font-weight:800}
+  h1 .hl{position:relative;white-space:nowrap}
+  h1 .hl svg{position:absolute;left:-2%;bottom:-.18em;width:104%;height:.36em;overflow:visible}
+  .lede{font-size:18px;color:var(--ink-2);margin:14px 0 0;max-width:34em}
+  .where{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:15px;color:var(--ink-2);
+    border:2px dashed #CDBFA8;border-radius:12px;padding:10px 12px;max-width:30em;background:rgba(255,253,248,.6)}
+  .where svg{flex:none;margin-top:2px}
+  .not-booking{display:none}
+  @media (min-width:900px){ .not-booking{display:block;margin-top:22px;font-size:14px;color:var(--ink-2)} }
+
+  /* ---------- form shell ---------- */
+  .panel{background:var(--card);border:2px solid var(--line);border-radius:20px;box-shadow:6px 6px 0 var(--line);padding:22px 16px 26px}
+  @media (min-width:600px){ .panel{padding:32px 32px 34px} }
+
+  .q{margin:0 0 28px;padding:0;border:0;min-width:0}
+  .q:last-of-type{margin-bottom:22px}
+  .q > legend, .q > label.qlabel{display:block;font-weight:800;font-size:19px;line-height:1.3;margin:0 0 4px;padding:0}
+  .num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:13px;margin-right:8px;vertical-align:2px}
+  .opt{font-weight:600;font-size:14px;color:var(--ink-2);margin-left:4px}
+  .req{font-weight:700;font-size:14px;color:var(--accent);margin-left:4px}
+  .help{margin:0 0 10px;color:var(--ink-2);font-size:15px}
+  .qlabel + .help{margin-top:0}
+
+  /* ---------- big category cards ---------- */
+  .cards{display:grid;gap:12px;margin-top:12px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr))}
+  .card{position:relative;display:block}
+  .card input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .card .face{display:flex;gap:14px;align-items:center;min-height:76px;padding:14px 16px;border:2px solid var(--line);border-radius:var(--radius);
+    background:var(--card);transition:transform .12s ease, box-shadow .12s ease, background .12s ease}
+  .card .ico{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--accent-tint);border:2px solid var(--line)}
+  .card .t{display:block;font-weight:800;font-size:17px;line-height:1.25}
+  .card .d{display:block;font-size:15px;color:var(--ink-2);line-height:1.35}
+  .card .check{margin-left:auto;flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;background:var(--card)}
+  .card .check svg{opacity:0}
+  .card input:hover + .face{box-shadow:var(--shadow);transform:translate(-2px,-2px)}
+  .card input:checked + .face{background:var(--accent-tint);box-shadow:var(--shadow);transform:translate(-2px,-2px)}
+  .card input:checked + .face .check{background:var(--accent);border-color:var(--line)}
+  .card input:checked + .face .check svg{opacity:1}
+  .card input:checked + .face .ico{background:var(--accent)}
+  .card input:checked + .face .ico svg{stroke:#fff}
+  .card input:focus-visible + .face{outline:3px solid var(--accent);outline-offset:3px}
+
+  /* ---------- chips (timeline, contact pref) ---------- */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .chip{position:relative}
+  .chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .chip span{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:10px 16px;border:2px solid var(--line);border-radius:999px;background:var(--card);font-weight:600;font-size:16px;transition:background .12s ease, box-shadow .12s ease, transform .12s ease}
+  .chip input:hover + span{box-shadow:3px 3px 0 var(--line);transform:translate(-1px,-1px)}
+  .chip input:checked + span{background:var(--ink);color:var(--paper);box-shadow:3px 3px 0 var(--accent);transform:translate(-1px,-1px)}
+  .chip input:checked + span::before{content:"✓";font-weight:800}
+  .chip input:focus-visible + span{outline:3px solid var(--accent);outline-offset:3px}
+  .clear-hint{font-size:13px;color:var(--ink-2);margin:8px 0 0}
+
+  /* ---------- text inputs ---------- */
+  input[type=text], input[type=email], input[type=tel], textarea{
+    display:block;width:100%;font:inherit;font-size:17px;color:var(--ink);background:#fff;
+    border:2px solid var(--line);border-radius:12px;padding:13px 14px;min-height:52px;margin-top:8px;
+    transition:box-shadow .12s ease}
+  textarea{min-height:140px;resize:vertical;line-height:1.45}
+  input[type=text]:focus, input[type=email]:focus, input[type=tel]:focus, textarea:focus{outline:none;box-shadow:0 0 0 4px var(--accent-tint), 3px 3px 0 var(--accent);border-color:var(--line)}
+  ::placeholder{color:#8A8174}
+  .count{font-size:13px;color:var(--ink-2);text-align:right;margin-top:4px}
+  .row2{display:grid;gap:0}
+  @media (min-width:600px){ .row2{grid-template-columns:1fr 1fr;gap:20px} }
+
+  /* ---------- errors ---------- */
+  .err{display:none;align-items:flex-start;gap:8px;color:var(--error);font-weight:700;font-size:15px;margin-top:8px}
+  .err.on{display:flex}
+  .err::before{content:"!";flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--error);color:#fff;font-size:13px;margin-top:1px}
+  [aria-invalid=true]{border-color:var(--error)!important;background:var(--error-tint)!important}
+  .q.invalid .face, .q.invalid .chip span{border-color:var(--error)}
+  .alert{display:none;border:2px solid var(--error);background:var(--error-tint);color:var(--ink);border-radius:12px;padding:12px 14px;margin:0 0 18px;font-size:16px}
+  .alert.on{display:block}
+  .alert strong{color:var(--error)}
+
+  /* honeypot */
+  .hp{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}
+
+  /* ---------- submit ---------- */
+  .send{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:60px;font:inherit;font-size:19px;font-weight:800;
+    color:var(--accent-ink);background:var(--accent);border:2px solid var(--line);border-radius:14px;box-shadow:var(--shadow);cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease, background .12s ease}
+  .send:hover{background:#A9370A}
+  .send:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--line)}
+  .send:focus-visible{outline:3px solid var(--ink);outline-offset:4px}
+  .send[disabled]{cursor:progress;background:#8E3B16}
+  .spin{display:none;width:20px;height:20px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .8s linear infinite}
+  .send[aria-busy=true] .spin{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .fine{font-size:14px;color:var(--ink-2);margin:14px 2px 0;text-align:center}
+
+  /* ---------- success ---------- */
+  .done{display:none;text-align:left}
+  .done.on{display:block}
+  .stamp{display:inline-flex;align-items:center;gap:8px;border:2px dashed var(--accent);color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:13px;padding:6px 12px;border-radius:999px;transform:rotate(-2deg)}
+  .done h2{font-size:clamp(28px,6vw,40px);line-height:1.1;margin:16px 0 10px;font-weight:800}
+  .done h2:focus{outline:none}
+  .done p{color:var(--ink-2);font-size:18px;margin:0 0 14px}
+  .ref{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;background:var(--paper);border:2px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--ink)}
+  .again{display:inline-block;margin-top:18px;font:inherit;font-weight:700;background:none;border:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:10px 0;min-height:44px}
+  .again:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+  footer{grid-column:1/-1;font-size:13px;color:var(--ink-2);text-align:center;margin-top:8px}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition:none!important;animation:none!important}
+    .spin{border-top-color:rgba(255,255,255,.35);border-right-color:#fff}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#ask">Skip to the form</a>
+
+<div class="page">
+  <header class="intro">
+    <div class="brand">
+      <span class="dot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 17c4-9 9-9 13-12"/><circle cx="18" cy="5" r="1.5" fill="#fff"/></svg></span>
+      Ask Dev
+    </div>
+    <h1>Need something <span class="hl">done,<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C 20 2, 40 11, 60 5 S 90 4, 98 7" fill="none" stroke="#C2410C" stroke-width="4" stroke-linecap="round"/></svg></span> made, or figured out?</h1>
+    <p class="lede">Got something you need done, made, or figured out? Tell me a little about it. You don’t need a perfect plan—that’s part of what I can help with.</p>
+    <p class="where">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <span>Local help in the Quad Cities. Digital and creative projects wherever you are.</span>
+    </p>
+    <p class="not-booking">This is a request for a quote — sending it doesn’t book anything or cost anything.</p>
+  </header>
+
+  <main id="ask" class="panel" aria-labelledby="formTitle">
+    <h2 id="formTitle" class="skip">Request form</h2>
+
+    <form id="f" novalidate>
+      <div class="alert" id="alert" role="alert" tabindex="-1"></div>
+
+      <fieldset class="q" id="q-category" aria-describedby="err-category">
+        <legend><span class="num" aria-hidden="true">1</span>What do you need help with? <span class="req">(required)</span></legend>
+        <div class="cards">
+          <label class="card">
+            <input type="radio" name="category" value="local" required>
+            <span class="face">
+              <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1F1C18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/><path d="M4 21h16"/></svg></span>
+              <span><span class="t">Local help</span><span class="d">Yard work, cleanup, errands</span></span>
+              <span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+            </span>
+          </label>
+          <label class="card">
+            <input type="radio" name="category" value="business">
+            <span class="face">
+              <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1F1C18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18"/><path d="M7 13h5"/><path d="M9 21h6"/></svg></span>
+              <span><span class="t">Business help</span><span class="d">A website, graphics, content</span></span>
+              <span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+            </span>
+          </label>
+          <label class="card">
+            <input type="radio" name="category" value="creative">
+            <span class="face">
+              <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1F1C18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg></span>
+              <span><span class="t">Creative help</span><span class="d">Video, music, bringing an idea to life</span></span>
+              <span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+            </span>
+          </label>
+          <label class="card">
+            <input type="radio" name="category" value="other">
+            <span class="face">
+              <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1F1C18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5"/><circle cx="12" cy="18.5" r=".6" fill="#1F1C18"/><circle cx="12" cy="12" r="9.5"/></svg></span>
+              <span><span class="t">Something else / I’m not sure</span><span class="d">We can start with what you know</span></span>
+              <span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+            </span>
+          </label>
+        </div>
+        <p class="err" id="err-category"></p>
+      </fieldset>
+
+      <div class="q" id="q-details">
+        <label class="qlabel" for="details"><span class="num" aria-hidden="true">2</span>Tell me what you’re trying to do. <span class="req">(required)</span></label>
+        <p class="help" id="help-details">What’s the problem or idea? What would a good result look like?</p>
+        <textarea id="details" name="details" required maxlength="4000" aria-describedby="help-details err-details count-details"></textarea>
+        <p class="count" id="count-details" aria-live="off"></p>
+        <p class="err" id="err-details"></p>
+      </div>
+
+      <fieldset class="q" id="q-timeline" aria-describedby="err-timeline">
+        <legend><span class="num" aria-hidden="true">3</span>When do you need it? <span class="opt">(optional)</span></legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="timeline" value="asap"><span>As soon as possible</span></label>
+          <label class="chip"><input type="radio" name="timeline" value="weeks"><span>Within a couple of weeks</span></label>
+          <label class="chip"><input type="radio" name="timeline" value="flexible"><span>I’m flexible</span></label>
+          <label class="chip"><input type="radio" name="timeline" value="exploring"><span>Just exploring</span></label>
+        </div>
+        <p class="clear-hint" hidden>Tap your pick again to clear it.</p>
+        <p class="err" id="err-timeline"></p>
+      </fieldset>
+
+      <div class="row2">
+        <div class="q" id="q-budget">
+          <label class="qlabel" for="budget"><span class="num" aria-hidden="true">4</span>What’s your approximate budget? <span class="opt">(optional)</span></label>
+          <p class="help" id="help-budget">It’s okay to say ‘I need help estimating.’</p>
+          <input type="text" id="budget" name="budget" maxlength="120" autocomplete="off" aria-describedby="help-budget err-budget">
+          <p class="err" id="err-budget"></p>
+        </div>
+        <div class="q" id="q-location">
+          <label class="qlabel" for="location"><span class="num" aria-hidden="true">5</span>Where are you located? <span class="opt">(optional)</span></label>
+          <p class="help" id="help-location">City or neighborhood—only needed for local help.</p>
+          <input type="text" id="location" name="location" maxlength="120" autocomplete="address-level2" aria-describedby="help-location err-location">
+          <p class="err" id="err-location"></p>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="q" id="q-name">
+          <label class="qlabel" for="name"><span class="num" aria-hidden="true">6</span>Your name <span class="req">(required)</span></label>
+          <input type="text" id="name" name="name" required maxlength="100" autocomplete="name" aria-describedby="err-name">
+          <p class="err" id="err-name"></p>
+        </div>
+        <div class="q" id="q-contact">
+          <label class="qlabel" for="contact"><span class="num" aria-hidden="true">7</span>Your email or phone number <span class="req">(required)</span></label>
+          <p class="help" id="help-contact">Where can I reach you?</p>
+          <input type="text" id="contact" name="contact" required maxlength="200" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" aria-describedby="help-contact err-contact">
+          <p class="err" id="err-contact"></p>
+        </div>
+      </div>
+
+      <fieldset class="q" id="q-contact_pref" aria-describedby="err-contact_pref">
+        <legend><span class="num" aria-hidden="true">8</span>How would you prefer to hear from me? <span class="opt">(optional)</span></legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="contact_pref" value="email"><span>Email</span></label>
+          <label class="chip"><input type="radio" name="contact_pref" value="text"><span>Text</span></label>
+          <label class="chip"><input type="radio" name="contact_pref" value="call"><span>Phone call</span></label>
+        </div>
+        <p class="clear-hint" hidden>Tap your pick again to clear it.</p>
+        <p class="err" id="err-contact_pref"></p>
+      </fieldset>
+
+      <div class="hp" aria-hidden="true">
+        <label for="website">Leave this empty</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+      </div>
+
+      <button class="send" id="send" type="submit"><span class="spin" aria-hidden="true"></span><span id="sendLabel">Send my request</span></button>
+      <p class="fine">I’ll review your request and follow up about fit, questions, and pricing. Submitting doesn’t book a service or commit you to buying anything.</p>
+    </form>
+
+    <section class="done" id="done" aria-labelledby="doneTitle">
+      <span class="stamp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Request received</span>
+      <h2 id="doneTitle" tabindex="-1">You’re on my radar.</h2>
+      <p>Thanks for reaching out! I’ll review your request and follow up about whether I can help and what it would cost. Nothing is booked or charged by submitting this form.</p>
+      <p style="font-size:15px;margin-bottom:6px">Your reference number:</p>
+      <span class="ref" id="refId"></span>
+      <div><button type="button" class="again" id="again">Start a new request</button></div>
+    </section>
+  </main>
+
+  <footer>Ask Dev · Dev’s Magic Errands · Quad Cities, IA/IL</footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // Where requests are saved (Cloudflare Worker in ask-dev-api/). Local testing talks to `wrangler dev`.
+  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const ENDPOINT = LOCAL ? "http://127.0.0.1:8787/request" : "https://ask-dev.stoopidshow.workers.dev/request";
+  const DRAFT_KEY = "askdev.draft.v1";
+
+  const $ = id => document.getElementById(id);
+  const form = $("f"), send = $("send"), sendLabel = $("sendLabel"), alertBox = $("alert");
+  let inFlight = false;
+
+  const store = {
+    get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    del(k) { try { sessionStorage.removeItem(k); } catch {} },
+  };
+  const newKey = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+
+  // One key per filled-in form, so a double tap or a retry after a dropped connection can't create two requests.
+  let clientKey = (store.get(DRAFT_KEY) || {}).client_key || newKey();
+  let startedAt = (store.get(DRAFT_KEY) || {}).started || Date.now();
+
+  // ---------- values ----------
+  const radio = n => (form.querySelector(`input[name="${n}"]:checked`) || {}).value || "";
+  const values = () => ({
+    category: radio("category"),
+    details: $("details").value.trim(),
+    timeline: radio("timeline"),
+    budget: $("budget").value.trim(),
+    location: $("location").value.trim(),
+    name: $("name").value.trim(),
+    contact: $("contact").value.trim(),
+    contact_pref: radio("contact_pref"),
+  });
+
+  // ---------- draft (survives a refresh or a failed send) ----------
+  function saveDraft() { store.set(DRAFT_KEY, { ...values(), client_key: clientKey, started: startedAt }); }
+  function restoreDraft() {
+    const d = store.get(DRAFT_KEY);
+    if (!d) return;
+    for (const n of ["category", "timeline", "contact_pref"]) {
+      const el = d[n] && form.querySelector(`input[name="${n}"][value="${CSS.escape(d[n])}"]`);
+      if (el) el.checked = true;
+    }
+    for (const n of ["details", "budget", "location", "name", "contact"]) if (typeof d[n] === "string") $(n).value = d[n];
+  }
+
+  // ---------- validation (the server re-checks all of this) ----------
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  function contactType(v) {
+    if (EMAIL_RE.test(v)) return "email";
+    const digits = v.replace(/\D/g, "");
+    if (/^[\d\s().+\-]+$/.test(v) && digits.length >= 10 && digits.length <= 15) return "phone";
+    return "";
+  }
+  function check(v) {
+    const e = {};
+    if (!v.category) e.category = "Pick what you need help with.";
+    if (v.details.length < 5) e.details = "Tell me a little about what you’re trying to do.";
+    if (!v.name) e.name = "Add your name.";
+    const t = contactType(v.contact);
+    if (!v.contact) e.contact = "Add an email or phone number so I can reach you.";
+    else if (!t) e.contact = "That doesn’t look like an email or phone number. Phone numbers need the area code.";
+    else if (v.contact_pref === "email" && t !== "email") e.contact = "You picked email — please add an email address here.";
+    else if ((v.contact_pref === "text" || v.contact_pref === "call") && t !== "phone") e.contact = "You picked " + (v.contact_pref === "text" ? "text" : "a phone call") + " — please add a phone number here.";
+    return e;
+  }
+
+  const FIELDS = ["category", "details", "timeline", "budget", "location", "name", "contact", "contact_pref"];
+  function showErrors(errs) {
+    for (const f of FIELDS) {
+      const msg = errs[f] || "", box = $("err-" + f), q = $("q-" + f), input = $(f);
+      if (box) { box.textContent = msg; box.classList.toggle("on", !!msg); }
+      if (q) q.classList.toggle("invalid", !!msg);
+      if (input) input.setAttribute("aria-invalid", msg ? "true" : "false");
+    }
+  }
+  function focusFirst(errs) {
+    const f = FIELDS.find(k => errs[k]);
+    if (!f) return;
+    const el = $(f) || form.querySelector(`input[name="${f}"]:checked`) || form.querySelector(`input[name="${f}"]`);
+    el.focus();
+    const q = $("q-" + f);
+    if (q && q.scrollIntoView) q.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+  function setAlert(html) {
+    alertBox.innerHTML = html;
+    alertBox.classList.toggle("on", !!html);
+  }
+
+  // ---------- interactions ----------
+  // Optional single-selects: tapping the current pick again clears it.
+  for (const name of ["timeline", "contact_pref"]) {
+    let wasChecked = null;
+    form.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+      r.addEventListener("pointerdown", () => { wasChecked = r.checked; });
+      r.addEventListener("click", () => {
+        if (wasChecked) { r.checked = false; saveDraft(); }
+        wasChecked = null;
+      });
+    });
+    const fs = $("q-" + name);
+    fs.querySelector(".clear-hint").hidden = false;
+  }
+
+  // Contact field: offer the right keyboard once we can tell.
+  const contact = $("contact");
+  function tuneContactKeyboard() {
+    const pref = radio("contact_pref");
+    const v = contact.value;
+    const looksPhone = pref === "text" || pref === "call" || (/^[\d\s().+\-]+$/.test(v) && v.length > 0);
+    contact.setAttribute("inputmode", looksPhone && !v.includes("@") ? "tel" : "email");
+    contact.setAttribute("autocomplete", looksPhone ? "tel" : "email");
+  }
+
+  const details = $("details"), count = $("count-details");
+  function updateCount() {
+    const n = details.value.length;
+    count.textContent = n > 3200 ? `${n} / 4000` : "";
+  }
+
+  let touched = false;
+  form.addEventListener("input", () => {
+    saveDraft(); updateCount(); tuneContactKeyboard();
+    if (touched) showErrors(check(values()));
+  });
+  form.addEventListener("change", () => {
+    saveDraft(); tuneContactKeyboard();
+    if (touched) showErrors(check(values()));
+  });
+
+  // ---------- submit ----------
+  function busy(on) {
+    inFlight = on;
+    send.disabled = on;
+    send.setAttribute("aria-busy", on ? "true" : "false");
+    sendLabel.textContent = on ? "Sending…" : "Send my request";
+  }
+
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    if (inFlight) return;               // no double sends
+    touched = true;
+    setAlert("");
+
+    const v = values();
+    const errs = check(v);
+    showErrors(errs);
+    if (Object.keys(errs).length) {
+      const n = Object.keys(errs).length;
+      setAlert(`<strong>Almost there.</strong> ${n === 1 ? "One thing needs" : n + " things need"} a look before this can send.`);
+      focusFirst(errs);
+      return;
+    }
+
+    busy(true);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    let res, data = null;
+    try {
+      res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...v, website: $("website").value, client_key: clientKey, elapsed_ms: Date.now() - startedAt }),
+        signal: ctrl.signal,
+      });
+      data = await res.json().catch(() => null);
+    } catch (e) {
+      res = null;
+    } finally {
+      clearTimeout(timer);
+    }
+
+    // Success only when the server says the request was saved and gives back its ID.
+    if (res && res.ok && data && data.ok && data.id) {
+      store.del(DRAFT_KEY);
+      $("refId").textContent = data.id;
+      form.style.display = "none";
+      $("done").classList.add("on");
+      $("doneTitle").focus();
+      window.scrollTo({ top: 0 });
+      busy(false);
+      return;
+    }
+
+    busy(false);
+    saveDraft();
+    if (data && data.fields) {
+      showErrors(data.fields);
+      setAlert(`<strong>Almost there.</strong> ${escapeHtml(data.error || "Please fix the highlighted fields.")}`);
+      focusFirst(data.fields);
+      return;
+    }
+    const why = !res
+      ? "Your request didn’t go through — it looks like the connection dropped or the server couldn’t be reached."
+      : escapeHtml((data && data.error) || "Something went wrong on my end and your request wasn’t saved.");
+    setAlert(`<strong>Not sent yet.</strong> ${why} Your answers are still here — tap <b>Send my request</b> to try again.`);
+    alertBox.focus();
+  });
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+  $("again").addEventListener("click", () => {
+    form.reset();
+    clientKey = newKey();
+    startedAt = Date.now();
+    touched = false;
+    showErrors({}); setAlert(""); updateCount();
+    $("done").classList.remove("on");
+    form.style.display = "";
+    window.scrollTo({ top: 0 });
+    form.querySelector('input[name="category"]').focus();
+  });
+
+  restoreDraft(); updateCount(); tuneContactKeyboard();
+})();
+</script>
+</body>
+</html>
