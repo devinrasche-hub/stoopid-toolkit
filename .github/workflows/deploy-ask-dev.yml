@@ -1,0 +1,103 @@
+name: Deploy Ask Dev backend
+
+# Deploys ask-dev-api/ (Cloudflare Worker + D1 database) — the private inbox behind ask-dev/.
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Optional notification secrets:
+# RESEND_API_KEY + NOTIFY_EMAIL (+ NOTIFY_FROM) for email, NTFY_TOPIC for phone push.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ask-dev-api/**"
+      - ".github/workflows/deploy-ask-dev.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ask-dev-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ask-dev-api
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check Cloudflare secrets
+        id: gate
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::warning::Ask Dev backend NOT deployed: add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository secrets, then run this workflow. See ask-dev-api/README.md."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            [ "${{ github.event_name }}" = "workflow_dispatch" ] && exit 1
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+        working-directory: .
+
+      - if: steps.gate.outputs.ok == 'true'
+        uses: actions/checkout@v5
+
+      - if: steps.gate.outputs.ok == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - if: steps.gate.outputs.ok == 'true'
+        run: npm ci
+
+      - if: steps.gate.outputs.ok == 'true'
+        name: Find or create the D1 database
+        run: |
+          DB_ID=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="ask_dev_requests") | .uuid')
+          if [ -z "$DB_ID" ]; then
+            npx wrangler d1 create ask_dev_requests
+            DB_ID=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="ask_dev_requests") | .uuid')
+          fi
+          [ -n "$DB_ID" ] || { echo "::error::Could not find or create the ask_dev_requests database."; exit 1; }
+          sed -i "s/^database_id = .*/database_id = \"$DB_ID\"/" wrangler.toml
+          echo "Using D1 database $DB_ID"
+
+      - if: steps.gate.outputs.ok == 'true'
+        name: Apply schema (safe to re-run)
+        run: npx wrangler d1 execute ask_dev_requests --remote --file schema.sql
+
+      - if: steps.gate.outputs.ok == 'true'
+        name: Deploy worker
+        run: npx wrangler deploy
+
+      - if: steps.gate.outputs.ok == 'true'
+        name: Sync notification secrets
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          NOTIFY_FROM: ${{ secrets.NOTIFY_FROM }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          IP_SALT: ${{ secrets.IP_SALT }}
+        run: |
+          set_count=0
+          for name in RESEND_API_KEY NOTIFY_EMAIL NOTIFY_FROM NTFY_TOPIC IP_SALT; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              printf '%s' "$value" | npx wrangler secret put "$name" >/dev/null
+              echo "set $name"
+              set_count=$((set_count+1))
+            fi
+          done
+          if [ -z "$NTFY_TOPIC" ] && { [ -z "$RESEND_API_KEY" ] || [ -z "$NOTIFY_EMAIL" ]; }; then
+            echo "::warning::No notifications configured. Requests still save; add NTFY_TOPIC and/or RESEND_API_KEY + NOTIFY_EMAIL to get alerts."
+          fi
+
+      - if: steps.gate.outputs.ok == 'true'
+        name: Smoke test (no data saved)
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://ask-dev.stoopidshow.workers.dev/request \
+            -H 'origin: https://devinrasche-hub.github.io' -H 'content-type: application/json' -d '{}')
+          echo "POST /request with an empty body -> HTTP $code (expected 422)"
+          [ "$code" = "422" ] || { echo "::error::Worker isn't answering at ask-dev.stoopidshow.workers.dev — check the workers.dev subdomain in the Cloudflare dashboard."; exit 1; }
