@@ -22,3 +22,13 @@ Source URL: the episode's post on x.com/stoopidshow.
 | stoopidshow_just_kidding.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, just kidding, jk, kidding, where are you, hello, missing you, lol |
 | stoopidshow_approved.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, approved, yes, ok, agreed, sounds good, permission granted, stamp of approval |
 | stoopidshow_bingo.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, bingo, exactly, correct, you got it, nailed it, thats right, yes |
+
+## EP03 IMAGINE
+
+| File | Tags |
+|---|---|
+| stoopidshow_why_always_a_but.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, why, but why, there is always a but, confused, questions, why tho, ugh |
+| stoopidshow_i_can_see_you.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, i see you, i can see you, watching you, caught, busted, on your phone, scrolling |
+| stoopidshow_what_was_the_question.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, what was the question, what, confused, lost, huh, i forgot, wait |
+| stoopidshow_im_going_crazy.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, going crazy, losing it, stressed, overwhelmed, i cant, meltdown, too much |
+| stoopidshow_thats_weird.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, thats weird, weird, awkward, sorry, uncomfortable, odd, cringe |
