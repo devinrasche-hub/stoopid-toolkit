@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 32 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 33 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="32">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="33">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">32 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">33 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -359,6 +359,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>EMPRESS HEAVY</h3>
       <p>ASCII launch pad. Countdown, liftoff, fireworks &mdash; GOOD LUCK EMPRESS HEAVY &mdash; zoom into the black and vanish like a star.</p></div>
       <div class="foot"><span class="st">STATUS: <em>GO FOR LAUNCH</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_gif_press.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 033</span><span class="cls">GIF PRESS</span></div>
+      <canvas class="viz" data-viz="gif"></canvas>
+      <div class="body"><h3>THE GIF PRESS</h3>
+      <p>Drop a clip, trim the moment, caption it, tag it the way people search. Out comes a GIF ready for GIPHY &mdash; the library behind the &#120143; GIF button.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>OMG LOL</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_please_remain_seen.html" style="--ac:var(--teal)">
@@ -1078,6 +1087,26 @@ VIZ.flip = function(x,w,h,t){
   if(idx>=flipIdx){
     x.fillStyle='#CC5500'; x.textAlign='right';
     x.fillText('FLIP FOUND ▸ BLOCK 17', w-20, 12);
+  }
+};
+
+/* 033 — gif press */
+VIZ.gif = function(x,w,h,t){
+  var fw=Math.min(w*0.42, (h-40)*1.5), fh=fw/1.5, fx=24, fy=(h-fh)/2+6;
+  var fr=Math.floor(t/120)%12, bounce=Math.abs(6-fr)/6;
+  x.fillStyle='#111'; x.fillRect(fx,fy,fw,fh);
+  x.fillStyle='#00FFC6'; x.beginPath(); x.arc(fx+fw/2, fy+fh*0.38+bounce*fh*0.18, fh*0.18, 0, 6.283); x.fill();
+  x.fillStyle='#000'; x.fillRect(fx+fw*0.42, fy+fh*0.34+bounce*fh*0.18, fw*0.04, fh*0.05); x.fillRect(fx+fw*0.54, fy+fh*0.34+bounce*fh*0.18, fw*0.04, fh*0.05);
+  x.font='bold '+Math.round(fh*0.16)+'px Impact, "Arial Black", sans-serif'; x.textAlign='center';
+  x.lineWidth=3; x.strokeStyle='#000'; x.strokeText('OMG LOL', fx+fw/2, fy+fh*0.9); x.fillStyle='#fff'; x.fillText('OMG LOL', fx+fw/2, fy+fh*0.9);
+  for(var i=0;i<12;i++){ x.fillStyle = i===fr ? '#00FFC6' : '#2a2a2a'; x.fillRect(fx+i*(fw/12), fy+fh+6, fw/12-2, 4); }
+  var sx=fx+fw+26, sw=w-sx-20, sy=fy;
+  x.strokeStyle='#333'; x.lineWidth=1; x.strokeRect(sx, sy, sw, 20);
+  var q='omg lol', typed=q.slice(0, Math.min(q.length, Math.floor((t%4000)/180)));
+  x.font=F(10); x.textAlign='left'; x.fillStyle='#fff'; x.fillText('\u2315 '+typed+(Math.floor(t/400)%2?'_':''), sx+6, sy+14);
+  if(typed.length===q.length){
+    for(var j=0;j<4;j++){ var gx=sx+(j%2)*(sw/2+2), gy=sy+28+Math.floor(j/2)*((fh-24)/2+2);
+      x.fillStyle = j===0 ? '#00FFC6' : '#1c1c1c'; x.fillRect(gx, gy, sw/2-2, (fh-24)/2-2); }
   }
 };
 

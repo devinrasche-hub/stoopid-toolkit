@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="THE GIF PRESS — turn a STOOPID SHOW clip into a tagged GIF, ready for GIPHY and the 𝕏 GIF search. Runs on the page. Nothing uploads.">
+<title>THE GIF PRESS — THE STOOPID SHOW</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Crect x='5' y='9' width='22' height='14' rx='3' fill='none' stroke='%2300FFC6' stroke-width='2.5'/%3E%3Ctext x='16' y='20' font-family='monospace' font-size='8' font-weight='bold' fill='%2300FFC6' text-anchor='middle'%3EGIF%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500;
+    --pink:#FF40CD; --blue:#4aa8ff;
+    --line:#262626; --dim:#777; --dimmer:#444; --panel:#0a0a0a;
+  } /* SIGNAL palette v2 — locked */
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#000; color:#fff; font-family:'Courier New',monospace; min-height:100vh; overflow-x:hidden;}
+  body::after{content:""; pointer-events:none; position:fixed; inset:0; z-index:900;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);}
+  .wrap{max-width:1100px; margin:0 auto; padding:26px 16px 90px;}
+  a{color:var(--teal);}
+
+  header{margin-bottom:26px;}
+  .kick{font-size:11px; letter-spacing:5px; color:var(--dim); margin-bottom:10px;}
+  h1{font-size:clamp(38px, 8vw, 76px); line-height:.95; letter-spacing:.03em;}
+  h1 b{color:var(--teal);}
+  .sub{margin-top:14px; font-size:13px; line-height:1.7; color:#bbb; max-width:760px;}
+  .sub em{color:var(--teal); font-style:normal;}
+
+  .cols{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:18px; align-items:start;}
+  @media(max-width:860px){ .cols{display:flex; flex-direction:column; gap:0;} .cols > div{display:contents;} .p1{order:1;} .p2{order:2;} .p3{order:3;} .p4{order:4;} }
+
+  .panel{border:1px solid var(--line); background:var(--panel); padding:16px; margin-bottom:18px; position:relative;}
+  .panel h2{font-size:12px; letter-spacing:4px; color:var(--teal); margin-bottom:12px; display:flex; gap:10px; align-items:center;}
+  .panel h2 .no{color:#000; background:var(--teal); padding:1px 6px;}
+  .hint{font-size:11px; color:var(--dim); line-height:1.6; margin-top:8px;}
+  .hint b{color:#ddd;}
+
+  /* drop zone */
+  #drop{border:1px dashed #3a3a3a; padding:28px 14px; text-align:center; cursor:pointer;
+    font-size:13px; letter-spacing:2px; color:#aaa; transition:border-color .15s, color .15s;}
+  #drop:hover, #drop.over{border-color:var(--teal); color:#fff;}
+  #drop big{display:block; font-size:22px; color:#fff; margin-bottom:6px; letter-spacing:3px;}
+  #file{display:none;}
+
+  #stage{display:none;}
+  .screen{position:relative; background:#050505; border:1px solid var(--line);}
+  #preview{display:block; width:100%; height:auto; max-height:56vh; object-fit:contain; background:#050505;}
+  #vid{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;}
+
+  /* timeline */
+  .tl{position:relative; height:46px; margin-top:12px; touch-action:none; user-select:none; -webkit-user-select:none;}
+  .tl .rail{position:absolute; left:0; right:0; top:19px; height:8px; background:#1b1b1b;}
+  .tl .sel{position:absolute; top:15px; height:16px; background:rgba(0,255,198,.22); border-top:2px solid var(--teal); border-bottom:2px solid var(--teal);}
+  .tl .h{position:absolute; top:6px; width:14px; height:34px; margin-left:-7px; background:var(--teal); cursor:ew-resize;}
+  .tl .h::after{content:""; position:absolute; left:6px; top:8px; width:2px; height:18px; background:#000;}
+  .tl .ph{position:absolute; top:0; width:2px; height:46px; margin-left:-1px; background:#fff; pointer-events:none;}
+  .times{display:flex; justify-content:space-between; font-size:11px; color:var(--dim); letter-spacing:1px; margin-top:4px; flex-wrap:wrap; gap:6px;}
+  .times b{color:#fff;}
+  .times .len b{color:var(--teal);}
+  .times .len.warn b{color:var(--orange);}
+
+  .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  button, .btn{font-family:inherit; font-size:12px; letter-spacing:2px; background:#000; color:#fff;
+    border:1px solid #444; padding:9px 12px; cursor:pointer; text-decoration:none; display:inline-block;}
+  button:hover, .btn:hover{border-color:var(--teal); color:var(--teal);}
+  button.on{background:var(--teal); color:#000; border-color:var(--teal);}
+  button.big{font-size:16px; letter-spacing:4px; padding:14px 18px; width:100%; background:var(--teal); color:#000; border-color:var(--teal); font-weight:bold;}
+  button.big:hover{background:#fff; border-color:#fff; color:#000;}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+
+  /* controls */
+  .ctl{margin-bottom:14px;}
+  .ctl > label{display:block; font-size:10px; letter-spacing:3px; color:var(--dim); margin-bottom:6px;}
+  .seg{display:flex; flex-wrap:wrap; gap:0;}
+  .seg button{border-right-width:0; padding:8px 10px; font-size:11px; letter-spacing:1px;}
+  .seg button:last-child{border-right-width:1px;}
+  input[type=text], textarea{width:100%; font-family:inherit; font-size:14px; background:#000; color:#fff;
+    border:1px solid #3a3a3a; padding:10px; outline:none;}
+  input[type=text]:focus, textarea:focus{border-color:var(--teal);}
+  input[type=range]{width:100%; accent-color:var(--teal);}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  /* tags */
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .chip{font-size:11px; letter-spacing:1px; padding:5px 8px; border:1px solid #333; color:#bbb; cursor:pointer; background:#000; font-family:inherit;}
+  .chip:hover{border-color:var(--teal); color:var(--teal);}
+  .chip.mine{border-color:var(--teal); color:#000; background:var(--teal);}
+  .chip.brand{border-color:var(--pink); color:var(--pink);}
+  .tagcount{font-size:10px; letter-spacing:2px; color:var(--dim); margin-top:8px;}
+
+  /* output */
+  #prog{height:6px; background:#1b1b1b; margin-top:12px; display:none;}
+  #prog i{display:block; height:100%; width:0; background:var(--teal); transition:width .1s;}
+  #status{font-size:11px; letter-spacing:2px; color:var(--dim); margin-top:8px; min-height:14px;}
+  #out{display:none; margin-top:14px;}
+  #out img{display:block; max-width:100%; margin:0 auto; border:1px solid var(--line); background:repeating-conic-gradient(#111 0 25%, #000 0 50%) 0 0/16px 16px;}
+  .facts{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px;}
+  .fact{border:1px solid var(--line); padding:8px; text-align:center;}
+  .fact b{display:block; font-size:16px; color:#fff;}
+  .fact span{font-size:9px; letter-spacing:2px; color:var(--dim);}
+  .fact.ok b{color:var(--teal);} .fact.warn b{color:var(--orange);} .fact.bad b{color:var(--red);}
+
+  /* rack */
+  #rack{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
+  .slot{border:1px solid var(--line); background:#000; padding:6px; font-size:10px; color:#aaa; letter-spacing:1px;}
+  .slot img{width:100%; height:110px; object-fit:contain; background:#050505; display:block; margin-bottom:6px;}
+  .slot .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#ddd; margin-bottom:6px;}
+  .slot .row{margin-top:0; gap:4px;}
+  .slot button, .slot .btn{font-size:10px; padding:5px 6px; letter-spacing:1px;}
+  .empty{font-size:11px; color:var(--dimmer); letter-spacing:2px;}
+
+  /* guide */
+  .guide ol{list-style:none; counter-reset:g;}
+  .guide li{counter-increment:g; position:relative; padding:0 0 16px 46px; font-size:13px; line-height:1.65; color:#ccc;}
+  .guide li::before{content:counter(g, decimal-leading-zero); position:absolute; left:0; top:0; font-size:12px;
+    color:#000; background:var(--teal); padding:2px 6px; letter-spacing:1px;}
+  .guide li b{color:#fff;}
+  .guide .note{border-left:3px solid var(--orange); padding:8px 12px; font-size:12px; line-height:1.6; color:#bbb; margin-top:6px;}
+  .guide .note b{color:var(--orange);}
+
+  .toast{position:fixed; left:50%; bottom:40px; transform:translateX(-50%) translateY(20px); background:var(--teal); color:#000;
+    font-size:12px; letter-spacing:2px; padding:10px 16px; opacity:0; transition:.2s; z-index:999; pointer-events:none; font-weight:bold;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+
+<div class="wrap">
+  <header>
+    <div class="kick">ITEM No. 033 &middot; THE BROADCAST FLOOR</div>
+    <h1>THE <b>GIF</b> PRESS</h1>
+    <p class="sub">Drop in a clip. Trim the moment, slap a caption on it, tag it with the words people actually type
+      (<em>omg</em>, <em>lol</em>, <em>nope</em>), press it into a GIF. Then send it to GIPHY &mdash; the library behind the
+      <em>𝕏 GIF button</em>. Your video never leaves this page.</p>
+  </header>
+
+  <div class="cols">
+    <div>
+      <!-- 01 LOAD -->
+      <section class="panel p1">
+        <h2><span class="no">01</span> LOAD THE CLIP</h2>
+        <label id="drop" for="file">
+          <big>DROP A VIDEO</big>
+          or tap to pick one &middot; mp4 / mov / webm
+        </label>
+        <input type="file" id="file" accept="video/*">
+        <div id="stage">
+          <div class="screen"><canvas id="preview"></canvas></div>
+          <video id="vid" playsinline muted preload="auto"></video>
+          <div class="tl" id="tl">
+            <div class="rail"></div>
+            <div class="sel" id="sel"></div>
+            <div class="ph" id="ph"></div>
+            <div class="h" id="hin" title="start"></div>
+            <div class="h" id="hout" title="end"></div>
+          </div>
+          <div class="times">
+            <span>IN <b id="tin">0.00</b>s</span>
+            <span class="len" id="lenwrap">LENGTH <b id="tlen">0.00</b>s</span>
+            <span>OUT <b id="tout">0.00</b>s</span>
+          </div>
+          <div class="row">
+            <button id="play">&#9654; PLAY LOOP</button>
+            <button id="setin">[ SET IN HERE</button>
+            <button id="setout">SET OUT HERE ]</button>
+            <button id="newclip">NEW CLIP</button>
+          </div>
+          <p class="hint">Drag the teal handles or scrub the bar. <b>2&ndash;4 seconds</b> is the reaction-GIF sweet spot: one face, one beat, loops clean.</p>
+        </div>
+      </section>
+
+      <!-- 03 TAG -->
+      <section class="panel p3">
+        <h2><span class="no">03</span> TAG IT LIKE PEOPLE SEARCH</h2>
+        <input type="text" id="tagin" placeholder="type keywords, comma or enter between them — omg, lol, no way">
+        <div class="chips" id="mytags"></div>
+        <div class="tagcount" id="tagcount"></div>
+        <p class="hint">These are the words that make it show up when someone types into the GIF search. Think about what a person <b>feels</b> when they'd reach for this clip, not what's in it. Tap to add:</p>
+        <div class="chips" id="suggest"></div>
+        <div class="row">
+          <button id="copytags">COPY TAGS</button>
+        </div>
+      </section>
+    </div>
+
+    <div>
+      <!-- 02 SHAPE -->
+      <section class="panel p2">
+        <h2><span class="no">02</span> SHAPE IT</h2>
+        <div class="ctl"><label>CROP</label>
+          <div class="seg" data-k="crop">
+            <button data-v="orig">ORIGINAL</button><button data-v="1">SQUARE</button><button data-v="0.8">4:5</button><button data-v="1.7778">16:9</button><button data-v="0.5625">9:16</button>
+          </div>
+        </div>
+        <div class="ctl" id="panctl"><label>SLIDE THE CROP</label>
+          <input type="range" id="pan" min="0" max="100" value="50">
+        </div>
+        <div class="two">
+          <div class="ctl"><label>WIDTH</label>
+            <div class="seg" data-k="w"><button data-v="320">320</button><button data-v="480">480</button><button data-v="640">640</button></div>
+          </div>
+          <div class="ctl"><label>FRAMES / SEC</label>
+            <div class="seg" data-k="fps"><button data-v="10">10</button><button data-v="15">15</button><button data-v="20">20</button></div>
+          </div>
+        </div>
+        <div class="two">
+          <div class="ctl"><label>SPEED</label>
+            <div class="seg" data-k="speed"><button data-v="0.5">&frac12;&times;</button><button data-v="1">1&times;</button><button data-v="2">2&times;</button></div>
+          </div>
+          <div class="ctl"><label>LOOP</label>
+            <div class="seg" data-k="loop"><button data-v="fwd">FORWARD</button><button data-v="boom">BOOMERANG</button></div>
+          </div>
+        </div>
+        <div class="ctl"><label>CAPTION <span style="letter-spacing:1px">(optional — burned into the GIF)</span></label>
+          <input type="text" id="cap" placeholder="OMG LOL" maxlength="80">
+        </div>
+        <div class="two">
+          <div class="ctl"><label>CAPTION SPOT</label>
+            <div class="seg" data-k="capPos"><button data-v="top">TOP</button><button data-v="bottom">BOTTOM</button></div>
+          </div>
+          <div class="ctl"><label>CAPTION STYLE</label>
+            <div class="seg" data-k="capStyle"><button data-v="meme">CLASSIC</button><button data-v="signal">SIGNAL</button></div>
+          </div>
+        </div>
+        <div class="two">
+          <div class="ctl"><label>@STOOPIDSHOW BUG</label>
+            <div class="seg" data-k="bug"><button data-v="on">ON</button><button data-v="off">OFF</button></div>
+          </div>
+          <div class="ctl"><label>COLOR</label>
+            <div class="seg" data-k="dither"><button data-v="off">CLEAN</button><button data-v="on">SMOOTH</button></div>
+          </div>
+        </div>
+        <p class="hint"><b>CLEAN</b> = smaller file. <b>SMOOTH</b> = dithered, prettier gradients and skin, bigger file.</p>
+      </section>
+
+      <!-- 04 PRESS -->
+      <section class="panel p4">
+        <h2><span class="no">04</span> PRESS</h2>
+        <button class="big" id="press" disabled>PRESS THE GIF</button>
+        <div id="prog"><i></i></div>
+        <div id="status">LOAD A CLIP FIRST.</div>
+        <div id="out">
+          <img id="gifimg" alt="your GIF">
+          <div class="facts">
+            <div class="fact" id="fsize"><b>—</b><span>FILE SIZE</span></div>
+            <div class="fact"><b id="fdim">—</b><span>PIXELS</span></div>
+            <div class="fact"><b id="ffr">—</b><span>FRAMES</span></div>
+          </div>
+          <p class="hint" id="sizenote"></p>
+          <div class="row">
+            <a class="btn" id="dl" download="stoopidshow.gif">&#8681; DOWNLOAD GIF</a>
+            <button id="share" style="display:none">SHARE / SAVE</button>
+            <a class="btn" href="https://giphy.com/upload" target="_blank" rel="noopener">OPEN GIPHY UPLOAD &#8599;</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- RACK -->
+  <section class="panel">
+    <h2>THE RACK <span style="color:var(--dim); letter-spacing:2px; font-size:10px">— everything pressed this session</span></h2>
+    <div id="rack"><div class="empty">NOTHING PRESSED YET. THE RACK IS HUNGRY.</div></div>
+    <p class="hint">The rack lives in this tab only. Download what you want to keep before you close it.</p>
+  </section>
+
+  <!-- GUIDE -->
+  <section class="panel guide">
+    <h2>HOW A GIF GETS INTO THE 𝕏 SEARCH BAR</h2>
+    <ol>
+      <li><b>The 𝕏 GIF button searches GIPHY.</b> You can't upload into that search box directly &mdash; you put GIFs on GIPHY, and 𝕏 pulls from GIPHY's library.</li>
+      <li><b>Make a GIPHY account for the show.</b> Use the brand name and handle (<b>stoopidshow</b>), the show's avatar, a bio, and links to x.com/stoopidshow and the site.</li>
+      <li><b>Upload at least 5 GIFs</b> from this press at <a href="https://giphy.com/upload" target="_blank" rel="noopener">giphy.com/upload</a>. On each one paste the tags you copied in step 03, and set the <b>source URL</b> to the post or episode it came from.</li>
+      <li><b>Apply for a verified Brand (or Artist) Channel</b> from your GIPHY channel settings. GIPHY looks for 5+ GIFs, a website, and a real social following. Approval usually takes from a couple of days to two weeks; keep pressing and uploading while you wait.</li>
+      <li><b>Once verified, your GIFs become searchable</b> everywhere GIPHY is plugged in &mdash; including the 𝕏 GIF picker. Search your own tags to check. New uploads can take a while to get indexed, and ranking climbs as people use them.</li>
+    </ol>
+    <div class="note"><b>WHY STEP 4 MATTERS:</b> GIFs from regular, unverified GIPHY accounts generally don't appear in partner searches like 𝕏's. They still live on your GIPHY page and you can share their links &mdash; but the keyword search in the 𝕏 composer is the verified-channel club.</div>
+    <div class="note"><b>NEED IT TODAY?</b> Skip the search bar: attach the downloaded GIF to a post or reply like a photo (the image button, not the GIF button). 𝕏 accepts GIFs up to 15&nbsp;MB; keep it under about 5&nbsp;MB and it posts smoothly from a phone.</div>
+    <div class="note"><b>ONLY YOUR OWN STUFF:</b> Press clips the show owns or has permission to use. GIPHY removes GIFs that use someone else's footage or music video, and repeat strikes can sink the channel application.</div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ==================== STATE ==================== */
+var S = {
+  crop:'orig', w:480, fps:15, speed:1, loop:'fwd',
+  capPos:'bottom', capStyle:'meme', bug:'on', dither:'off',
+  tin:0, tout:0, dur:0, tags:[]
+};
+var MAX_LEN = 15;            // seconds of output, hard cap
+var BRAND = ['stoopidshow','the stoopid show','stoopid'];
+var SUGGEST = ['omg','lol','no','yes','nope','wow','bye','ok','what','why','same','mood','facepalm','eye roll',
+  'shocked','mind blown','laughing','crying','yikes','sus','side eye','deal with it','i cant','unbothered',
+  'thank you','congrats','good morning','good night','reaction','funny','signal received','no touchy for free'];
+
+var $ = function(id){ return document.getElementById(id); };
+var vid = $('vid'), pv = $('preview'), px = pv.getContext('2d');
+var fileName = 'clip', objURL = null, playing = false;
+
+function toast(msg){
+  var t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); }, 1600);
+}
+
+/* ==================== SEGMENTED CONTROLS ==================== */
+document.querySelectorAll('.seg').forEach(function(seg){
+  var k = seg.dataset.k;
+  function paint(){
+    seg.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('on', String(S[k]) === b.dataset.v);
+    });
+  }
+  seg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var v = b.dataset.v;
+    S[k] = (k==='w'||k==='fps'||k==='speed') ? Number(v) : v;
+    paint(); onShape();
+  });
+  paint();
+});
+$('pan').addEventListener('input', onShape);
+$('cap').addEventListener('input', onShape);
+
+function onShape(){
+  $('panctl').style.display = S.crop==='orig' ? 'none' : '';
+  updateLen();
+  drawPreview();
+}
+
+/* ==================== LOAD ==================== */
+var drop = $('drop');
+['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
+drop.addEventListener('drop', function(e){ var f=e.dataTransfer.files[0]; if(f) load(f); });
+$('file').addEventListener('change', function(e){ var f=e.target.files[0]; if(f) load(f); e.target.value=''; });
+$('newclip').addEventListener('click', function(){ $('file').click(); });
+
+function load(f){
+  if(!/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name)){ toast('THAT IS NOT A VIDEO'); return; }
+  stop();
+  if(objURL) URL.revokeObjectURL(objURL);
+  objURL = URL.createObjectURL(f);
+  fileName = f.name.replace(/\.[^.]+$/,'') || 'clip';
+  $('status').textContent = 'LOADING…';
+  vid.src = objURL;
+  vid.load();
+}
+vid.addEventListener('loadedmetadata', function(){
+  S.dur = vid.duration || 0;
+  if(!isFinite(S.dur)) S.dur = 0;
+  S.tin = 0; S.tout = Math.min(S.dur, 3);
+  drop.style.display='none'; $('stage').style.display='block';
+  $('press').disabled = false;
+  $('status').textContent = 'READY. TRIM IT, THEN PRESS.';
+  updateLen();
+  seek(S.tin).then(drawPreview);
+});
+vid.addEventListener('error', function(){
+  $('status').textContent = 'THIS BROWSER CAN’T READ THAT VIDEO. TRY AN MP4.';
+  toast('CAN’T READ THAT ONE');
+});
+
+/* ==================== TIMELINE ==================== */
+var tl = $('tl');
+function pct(t){ return S.dur ? (t/S.dur*100) : 0; }
+function updateLen(){
+  if(!S.dur) return;
+  $('hin').style.left = pct(S.tin)+'%';
+  $('hout').style.left = pct(S.tout)+'%';
+  $('sel').style.left = pct(S.tin)+'%';
+  $('sel').style.width = (pct(S.tout)-pct(S.tin))+'%';
+  $('tin').textContent = S.tin.toFixed(2);
+  $('tout').textContent = S.tout.toFixed(2);
+  var outLen = (S.tout-S.tin)/S.speed * (S.loop==='boom'?2:1);
+  $('tlen').textContent = outLen.toFixed(2);
+  $('lenwrap').classList.toggle('warn', outLen>6);
+  $('ph').style.left = pct(vid.currentTime)+'%';
+}
+function tFromX(clientX){
+  var r = tl.getBoundingClientRect();
+  return Math.max(0, Math.min(1, (clientX-r.left)/r.width)) * S.dur;
+}
+var drag = null;
+tl.addEventListener('pointerdown', function(e){
+  if(!S.dur) return;
+  stop();
+  if(e.target.id==='hin') drag='in';
+  else if(e.target.id==='hout') drag='out';
+  else { drag='scrub'; }
+  tl.setPointerCapture(e.pointerId);
+  moveDrag(e);
+});
+tl.addEventListener('pointermove', function(e){ if(drag) moveDrag(e); });
+tl.addEventListener('pointerup', function(){ drag=null; });
+tl.addEventListener('pointercancel', function(){ drag=null; });
+function moveDrag(e){
+  var t = tFromX(e.clientX), maxSrc = MAX_LEN*S.speed;
+  if(drag==='in'){ S.tin = Math.min(t, S.tout-0.1); if(S.tout-S.tin>maxSrc) S.tout=S.tin+maxSrc; seekDraw(S.tin); }
+  else if(drag==='out'){ S.tout = Math.max(t, S.tin+0.1); if(S.tout-S.tin>maxSrc) S.tin=S.tout-maxSrc; seekDraw(S.tout); }
+  else seekDraw(t);
+  S.tin=Math.max(0,S.tin); S.tout=Math.min(S.dur,S.tout);
+  updateLen();
+}
+$('setin').addEventListener('click', function(){
+  var t=vid.currentTime; S.tin=Math.min(t, S.dur-0.1);
+  if(S.tout<=S.tin+0.1) S.tout=Math.min(S.dur, S.tin+3);
+  if(S.tout-S.tin>MAX_LEN*S.speed) S.tout=S.tin+MAX_LEN*S.speed;
+  updateLen();
+});
+$('setout').addEventListener('click', function(){
+  var t=vid.currentTime; S.tout=Math.max(t, 0.1);
+  if(S.tin>=S.tout-0.1) S.tin=Math.max(0, S.tout-3);
+  if(S.tout-S.tin>MAX_LEN*S.speed) S.tin=S.tout-MAX_LEN*S.speed;
+  updateLen();
+});
+
+/* seeking — one at a time, latest wins */
+var seekBusy=false, seekNext=null;
+function seek(t){
+  return new Promise(function(res){
+    if(Math.abs(vid.currentTime - t) < 0.001 && vid.readyState>=2){ res(); return; }
+    var done=false;
+    function fin(){ if(done) return; done=true; vid.removeEventListener('seeked', fin); res(); }
+    vid.addEventListener('seeked', fin);
+    setTimeout(fin, 3000);
+    vid.currentTime = t;
+  });
+}
+function seekDraw(t){
+  seekNext=t;
+  if(seekBusy) return;
+  seekBusy=true;
+  (function go(){
+    var tt=seekNext; seekNext=null;
+    seek(tt).then(function(){
+      drawPreview(); updateLen();
+      if(seekNext!==null) go(); else seekBusy=false;
+    });
+  })();
+}
+
+/* loop playback between in/out */
+$('play').addEventListener('click', function(){ playing ? stop() : start(); });
+function start(){
+  if(!S.dur) return;
+  playing=true; $('play').innerHTML='&#10074;&#10074; STOP'; $('play').classList.add('on');
+  vid.playbackRate = S.speed;
+  seek(S.tin).then(function(){ vid.play().catch(function(){}); tick(); });
+}
+function stop(){
+  playing=false; $('play').innerHTML='&#9654; PLAY LOOP'; $('play').classList.remove('on');
+  vid.pause();
+}
+function tick(){
+  if(!playing) return;
+  if(vid.currentTime >= S.tout || vid.currentTime < S.tin-0.05 || vid.ended){
+    vid.currentTime = S.tin;
+    if(vid.paused) vid.play().catch(function(){});
+  }
+  drawPreview(); updateLen();
+  requestAnimationFrame(tick);
+}
+
+/* ==================== FRAME COMPOSER ==================== */
+// Source rect for the chosen crop, output size for the chosen width.
+function geometry(){
+  var vw=vid.videoWidth||16, vh=vid.videoHeight||9;
+  var sx=0, sy=0, sw=vw, sh=vh;
+  if(S.crop!=='orig'){
+    var ar=Number(S.crop), p=Number($('pan').value)/100;
+    if(vw/vh > ar){ sw=Math.round(vh*ar); sx=Math.round((vw-sw)*p); }
+    else { sh=Math.round(vw/ar); sy=Math.round((vh-sh)*p); }
+  }
+  var ow=Math.min(S.w, sw);
+  var oh=Math.round(ow*sh/sw);
+  ow-=ow%2; oh-=oh%2;
+  return {sx:sx, sy:sy, sw:sw, sh:sh, ow:Math.max(2,ow), oh:Math.max(2,oh)};
+}
+function compose(ctx, g){
+  ctx.drawImage(vid, g.sx, g.sy, g.sw, g.sh, 0, 0, g.ow, g.oh);
+  var cap = $('cap').value.trim();
+  if(cap) drawCaption(ctx, cap, g.ow, g.oh);
+  if(S.bug==='on') drawBug(ctx, g.ow, g.oh);
+}
+function wrapLines(ctx, text, maxW){
+  var words=text.split(/\s+/), lines=[], cur='';
+  words.forEach(function(w){
+    var t=cur?cur+' '+w:w;
+    if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t;
+  });
+  if(cur) lines.push(cur);
+  return lines;
+}
+function drawCaption(ctx, text, w, h){
+  var meme = S.capStyle==='meme';
+  var txt = meme ? text.toUpperCase() : text.toUpperCase();
+  var size = Math.round(Math.min(w,h) * (meme?0.13:0.085));
+  var font = meme ? '900 '+size+'px Impact, "Arial Black", "Helvetica Neue", sans-serif'
+                  : 'bold '+size+'px "Courier New", monospace';
+  ctx.font = font;
+  var lines = wrapLines(ctx, txt, w*0.92);
+  while(lines.length>3 && size>10){ size=Math.round(size*0.85); ctx.font=font.replace(/\d+px/, size+'px'); lines=wrapLines(ctx, txt, w*0.92); }
+  var lh = size*1.08, pad = Math.round(h*0.04);
+  var y0 = S.capPos==='top' ? pad + size*0.88 : h - pad - lh*(lines.length-1) - size*0.12;
+  ctx.textAlign='center'; ctx.lineJoin='round';
+  if(!meme){
+    var bw=0; lines.forEach(function(l){ bw=Math.max(bw, ctx.measureText(l).width); });
+    ctx.fillStyle='rgba(0,0,0,.82)';
+    ctx.fillRect(w/2-bw/2-size*0.4, y0-size*0.95, bw+size*0.8, lh*(lines.length-1)+size*1.3);
+  }
+  lines.forEach(function(l,i){
+    var y=y0+i*lh;
+    if(meme){
+      ctx.lineWidth=Math.max(2, size*0.16); ctx.strokeStyle='#000'; ctx.strokeText(l, w/2, y);
+      ctx.fillStyle='#fff'; ctx.fillText(l, w/2, y);
+    } else {
+      ctx.fillStyle='#00FFC6'; ctx.fillText(l, w/2, y);
+    }
+  });
+}
+function drawBug(ctx, w, h){
+  var size=Math.max(9, Math.round(Math.min(w,h)*0.045));
+  ctx.font='bold '+size+'px "Courier New", monospace';
+  var t='@stoopidshow', m=size*0.5;
+  var top = S.capPos==='top' && $('cap').value.trim();
+  var y = top ? h-m : m+size*0.8;
+  ctx.textAlign='right';
+  ctx.lineWidth=Math.max(2,size*0.28); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.lineJoin='round';
+  ctx.strokeText(t, w-m, y);
+  ctx.fillStyle='rgba(0,255,198,.9)'; ctx.fillText(t, w-m, y);
+}
+function drawPreview(){
+  if(!S.dur || vid.readyState<2) return;
+  var g=geometry();
+  if(pv.width!==g.ow || pv.height!==g.oh){ pv.width=g.ow; pv.height=g.oh; }
+  compose(px, g);
+}
+
+/* ==================== TAGS ==================== */
+function addTag(t){
+  t=t.toLowerCase().replace(/[#,]/g,' ').replace(/\s+/g,' ').trim();
+  if(!t || S.tags.indexOf(t)>=0) return;
+  if(S.tags.length>=20){ toast('20 TAGS IS PLENTY'); return; }
+  S.tags.push(t); paintTags();
+}
+function paintTags(){
+  var box=$('mytags'); box.innerHTML='';
+  S.tags.forEach(function(t){
+    var b=document.createElement('button'); b.className='chip mine'; b.textContent=t+' ✕';
+    b.title='remove'; b.onclick=function(){ S.tags.splice(S.tags.indexOf(t),1); paintTags(); };
+    box.appendChild(b);
+  });
+  $('tagcount').textContent = S.tags.length ? S.tags.length+' / 20 TAGS' : 'NO TAGS YET — THE SHOW TAGS BELOW GO ON EVERY ONE.';
+  var sg=$('suggest'); sg.innerHTML='';
+  BRAND.concat(SUGGEST).forEach(function(t){
+    if(S.tags.indexOf(t)>=0) return;
+    var b=document.createElement('button'); b.className='chip'+(BRAND.indexOf(t)>=0?' brand':''); b.textContent='+ '+t;
+    b.onclick=function(){ addTag(t); }; sg.appendChild(b);
+  });
+}
+$('tagin').addEventListener('keydown', function(e){
+  if(e.key==='Enter' || e.key===','){ e.preventDefault(); this.value.split(',').forEach(addTag); this.value=''; }
+});
+$('tagin').addEventListener('blur', function(){ if(this.value.trim()){ this.value.split(',').forEach(addTag); this.value=''; } });
+// seed with the show's own tags
+BRAND.forEach(function(t){ S.tags.push(t); });
+paintTags();
+
+function tagString(tags){ return tags.join(', '); }
+function copyText(txt){
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject())
+    .then(function(){ toast('TAGS COPIED'); })
+    .catch(function(){
+      var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); toast('TAGS COPIED'); }catch(e){ prompt('Copy these tags:', txt); }
+      ta.remove();
+    });
+}
+$('copytags').addEventListener('click', function(){
+  var pending=$('tagin').value.trim(); if(pending){ pending.split(',').forEach(addTag); $('tagin').value=''; }
+  copyText(tagString(S.tags));
+});
+function slugName(){
+  var words = S.tags.filter(function(t){ return BRAND.indexOf(t)<0; }).slice(0,3);
+  var base = ['stoopidshow'].concat(words.length?words:[fileName]).join('-');
+  return base.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60) + '.gif';
+}
+
+/* ==================== GIF ENCODER ==================== */
+// Global palette (median cut, 255 colors + 1 transparent slot), frame-to-frame
+// transparency for unchanged pixels, LZW. Written for this page; no libraries.
+var TRANSP = 255;
+
+function buildPalette(frames, n){
+  // 15-bit histogram with real-color sums so the palette keeps true averages
+  var cnt=new Uint32Array(32768), sr=new Float64Array(32768), sg=new Float64Array(32768), sb=new Float64Array(32768);
+  var total=0; frames.forEach(function(f){ total+=f.length/4; });
+  var step=Math.max(1, Math.floor(total/400000));
+  frames.forEach(function(d){
+    for(var i=0;i<d.length;i+=4*step){
+      var r=d[i], g=d[i+1], b=d[i+2], k=((r>>3)<<10)|((g>>3)<<5)|(b>>3);
+      cnt[k]++; sr[k]+=r; sg[k]+=g; sb[k]+=b;
+    }
+  });
+  var bins=[];
+  for(var k=0;k<32768;k++) if(cnt[k]) bins.push(k);
+  function box(list){
+    var b={list:list, n:0, rmin:31,rmax:0,gmin:31,gmax:0,bmin:31,bmax:0};
+    list.forEach(function(k){
+      var r=k>>10, g=(k>>5)&31, bb=k&31;
+      b.n+=cnt[k];
+      if(r<b.rmin)b.rmin=r; if(r>b.rmax)b.rmax=r;
+      if(g<b.gmin)b.gmin=g; if(g>b.gmax)b.gmax=g;
+      if(bb<b.bmin)b.bmin=bb; if(bb>b.bmax)b.bmax=bb;
+    });
+    return b;
+  }
+  var boxes=[box(bins)];
+  while(boxes.length<n){
+    // split the box with the most (pixels x spread); fall back to spread alone
+    var best=-1, bi=-1;
+    boxes.forEach(function(b,i){
+      if(b.list.length<2) return;
+      var spread=Math.max(b.rmax-b.rmin, b.gmax-b.gmin, b.bmax-b.bmin);
+      var score = boxes.length < n*0.6 ? b.n*spread : spread*spread*Math.sqrt(b.n);
+      if(score>best){ best=score; bi=i; }
+    });
+    if(bi<0) break;
+    var b=boxes[bi], rr=b.rmax-b.rmin, gr=b.gmax-b.gmin, br=b.bmax-b.bmin;
+    var ch = gr>=rr && gr>=br ? 1 : (rr>=br ? 0 : 2);
+    var val = ch===0 ? function(k){return k>>10;} : ch===1 ? function(k){return (k>>5)&31;} : function(k){return k&31;};
+    b.list.sort(function(a,c){ return val(a)-val(c); });
+    var half=b.n/2, acc=0, cut=1;
+    for(var j=0;j<b.list.length-1;j++){ acc+=cnt[b.list[j]]; if(acc>=half){ cut=j+1; break; } cut=j+1; }
+    boxes.splice(bi,1, box(b.list.slice(0,cut)), box(b.list.slice(cut)));
+  }
+  var pal=new Uint8Array(256*3);
+  boxes.forEach(function(b,i){
+    var R=0,G=0,B=0,N=0;
+    b.list.forEach(function(k){ R+=sr[k]; G+=sg[k]; B+=sb[k]; N+=cnt[k]; });
+    pal[i*3]=Math.round(R/N); pal[i*3+1]=Math.round(G/N); pal[i*3+2]=Math.round(B/N);
+  });
+  return {pal:pal, size:boxes.length};
+}
+
+function makeMapper(P){
+  var cache=new Int16Array(32768).fill(-1), pal=P.pal, n=P.size;
+  return function(r,g,b){
+    var k=((r>>3)<<10)|((g>>3)<<5)|(b>>3), c=cache[k];
+    if(c>=0) return c;
+    // nearest to the bin center
+    var cr=(r&0xF8)|4, cg=(g&0xF8)|4, cb=(b&0xF8)|4, bd=1e9, bi=0;
+    for(var i=0;i<n;i++){
+      var dr=pal[i*3]-cr, dg=pal[i*3+1]-cg, db=pal[i*3+2]-cb;
+      var d=dr*dr*3+dg*dg*4+db*db*2;
+      if(d<bd){ bd=d; bi=i; }
+    }
+    cache[k]=bi; return bi;
+  };
+}
+
+function indexFrame(d, w, h, map, pal, dither){
+  var out=new Uint8Array(w*h);
+  if(!dither){
+    for(var i=0,p=0;i<out.length;i++,p+=4) out[i]=map(d[p],d[p+1],d[p+2]);
+    return out;
+  }
+  // Floyd-Steinberg, serpentine-free, error carried in two row buffers
+  var er=new Float32Array((w+2)*2), eg=new Float32Array((w+2)*2), eb=new Float32Array((w+2)*2);
+  for(var y=0;y<h;y++){
+    var cur=(y&1)*(w+2), nxt=((y+1)&1)*(w+2);
+    for(var z=0;z<w+2;z++){ er[nxt+z]=0; eg[nxt+z]=0; eb[nxt+z]=0; }
+    for(var x=0;x<w;x++){
+      var p=(y*w+x)*4, c=cur+x+1;
+      var r=d[p]+er[c], g=d[p+1]+eg[c], b=d[p+2]+eb[c];
+      r=r<0?0:r>255?255:r; g=g<0?0:g>255?255:g; b=b<0?0:b>255?255:b;
+      var ix=map(r|0,g|0,b|0); out[y*w+x]=ix;
+      var qr=r-pal[ix*3], qg=g-pal[ix*3+1], qb=b-pal[ix*3+2];
+      er[c+1]+=qr*0.4375; eg[c+1]+=qg*0.4375; eb[c+1]+=qb*0.4375;
+      var n0=nxt+x+1;
+      er[n0-1]+=qr*0.1875; eg[n0-1]+=qg*0.1875; eb[n0-1]+=qb*0.1875;
+      er[n0]  +=qr*0.3125; eg[n0]  +=qg*0.3125; eb[n0]  +=qb*0.3125;
+      er[n0+1]+=qr*0.0625; eg[n0+1]+=qg*0.0625; eb[n0+1]+=qb*0.0625;
+    }
+  }
+  return out;
+}
+
+function ByteOut(){ this.a=new Uint8Array(1<<20); this.n=0; }
+ByteOut.prototype.grow=function(k){
+  if(this.n+k<=this.a.length) return;
+  var b=new Uint8Array(Math.max(this.a.length*2, this.n+k)); b.set(this.a.subarray(0,this.n)); this.a=b;
+};
+ByteOut.prototype.byte=function(v){ this.grow(1); this.a[this.n++]=v; };
+ByteOut.prototype.word=function(v){ this.byte(v&255); this.byte((v>>8)&255); };
+ByteOut.prototype.str=function(s){ for(var i=0;i<s.length;i++) this.byte(s.charCodeAt(i)); };
+ByteOut.prototype.bytes=function(arr){ this.grow(arr.length); this.a.set(arr, this.n); this.n+=arr.length; };
+ByteOut.prototype.done=function(){ return this.a.slice(0,this.n); };
+
+function lzw(ix, out){
+  var MIN=8, CLEAR=256, EOI=257;
+  out.byte(MIN);
+  var data=new ByteOut(), acc=0, nb=0, size=MIN+1, next=EOI+1, dict=new Map();
+  function emit(code){
+    if(next-1 >= (1<<size) && size<12) size++;
+    acc |= code<<nb; nb+=size;
+    while(nb>=8){ data.byte(acc&255); acc>>>=8; nb-=8; }
+  }
+  emit(CLEAR);
+  var prefix=ix[0];
+  for(var i=1;i<ix.length;i++){
+    var k=ix[i], key=(prefix<<8)|k, c=dict.get(key);
+    if(c!==undefined){ prefix=c; continue; }
+    emit(prefix);
+    if(next<4096){ dict.set(key, next++); }
+    else { emit(CLEAR); dict=new Map(); next=EOI+1; size=MIN+1; }
+    prefix=k;
+  }
+  emit(prefix); emit(EOI);
+  if(nb>0) data.byte(acc&255);
+  var bytes=data.done();
+  for(var p=0;p<bytes.length;p+=255){
+    var len=Math.min(255, bytes.length-p);
+    out.byte(len); out.bytes(bytes.subarray(p,p+len));
+  }
+  out.byte(0);
+}
+
+/* ==================== PRESS ==================== */
+var pressing=false, rack=[];
+$('press').addEventListener('click', press);
+
+function setProg(f, msg){
+  $('prog').style.display='block';
+  $('prog').firstElementChild.style.width=(f*100).toFixed(1)+'%';
+  if(msg) $('status').textContent=msg;
+}
+function nap(){ return new Promise(function(r){ setTimeout(r,0); }); }
+
+function press(){
+  if(pressing || !S.dur) return;
+  stop();
+  var pending=$('tagin').value.trim(); if(pending){ pending.split(',').forEach(addTag); $('tagin').value=''; }
+  pressing=true; $('press').disabled=true; $('press').textContent='PRESSING…';
+  var g=geometry(), W=g.ow, H=g.oh;
+  var c=document.createElement('canvas'); c.width=W; c.height=H;
+  var cx=c.getContext('2d', {willReadFrequently:true});
+  var step=S.speed/S.fps, times=[];
+  for(var t=S.tin; t<S.tout-1e-6 && times.length<MAX_LEN*20; t+=step) times.push(t);
+  if(!times.length) times.push(S.tin);
+  var frames=[];
+  var i=0;
+
+  function grab(){
+    if(i>=times.length) return Promise.resolve();
+    return seek(times[i]).then(function(){
+      cx.clearRect(0,0,W,H); compose(cx, g);
+      frames.push(cx.getImageData(0,0,W,H).data);
+      i++; setProg(0.55*i/times.length, 'GRABBING FRAMES '+i+' / '+times.length);
+      return grab();
+    });
+  }
+
+  grab().then(function(){
+    setProg(0.58, 'MIXING THE PALETTE…');
+    return nap();
+  }).then(function(){
+    var P=buildPalette(frames, 255);
+    var map=makeMapper(P), dither=S.dither==='on';
+    var order=frames.map(function(_,k){ return k; });
+    if(S.loop==='boom' && frames.length>2){
+      for(var k=frames.length-2;k>0;k--) order.push(k);
+    }
+    var out=new ByteOut();
+    out.str('GIF89a'); out.word(W); out.word(H);
+    out.byte(0xF7); out.byte(0); out.byte(0);   // global table, 256 entries
+    out.bytes(P.pal);
+    out.byte(0x21); out.byte(0xFF); out.byte(11); out.str('NETSCAPE2.0'); out.byte(3); out.byte(1); out.word(0); out.byte(0);
+    var indexed=new Array(frames.length), prev=null, clock=0, n=0;
+
+    function frame(){
+      if(n>=order.length) return Promise.resolve();
+      var fi=order[n];
+      if(!indexed[fi]) indexed[fi]=indexFrame(frames[fi], W, H, map, P.pal, dither);
+      var ix=indexed[fi], put=ix, useT=0;
+      if(prev){
+        put=new Uint8Array(ix.length);
+        var same=0;
+        for(var q=0;q<ix.length;q++){ if(ix[q]===prev[q]){ put[q]=TRANSP; same++; } else put[q]=ix[q]; }
+        useT = same>0 ? 1 : 0;
+        if(!useT) put=ix;
+      }
+      // delays in 1/100 s, carried so 15fps averages out right
+      var want=Math.round((n+1)*100/S.fps), delay=Math.max(2, want-clock); clock+=delay;
+      out.byte(0x21); out.byte(0xF9); out.byte(4);
+      out.byte((1<<2)|useT); out.word(delay); out.byte(TRANSP); out.byte(0);
+      out.byte(0x2C); out.word(0); out.word(0); out.word(W); out.word(H); out.byte(0);
+      lzw(put, out);
+      prev=ix; n++;
+      setProg(0.6+0.4*n/order.length, 'PRESSING FRAME '+n+' / '+order.length);
+      return nap().then(frame);
+    }
+    return frame().then(function(){
+      out.byte(0x3B);
+      return {bytes:out.done(), W:W, H:H, count:order.length};
+    });
+  }).then(function(res){
+    finish(res);
+  }).catch(function(err){
+    console.error(err);
+    $('status').textContent='THE PRESS JAMMED: '+(err && err.message || err);
+  }).then(function(){
+    pressing=false; $('press').disabled=false; $('press').textContent='PRESS THE GIF';
+  });
+}
+
+function fmtSize(b){ return b>=1048576 ? (b/1048576).toFixed(2)+' MB' : Math.round(b/1024)+' KB'; }
+
+function finish(res){
+  var blob=new Blob([res.bytes], {type:'image/gif'});
+  var url=URL.createObjectURL(blob), name=slugName();
+  $('out').style.display='block';
+  $('gifimg').src=url;
+  $('dl').href=url; $('dl').download=name;
+  var mb=blob.size/1048576, fs=$('fsize');
+  fs.querySelector('b').textContent=fmtSize(blob.size);
+  fs.className='fact '+(mb<=5?'ok':mb<=15?'warn':'bad');
+  $('fdim').textContent=res.W+'×'+res.H;
+  $('ffr').textContent=res.count;
+  $('sizenote').innerHTML = mb<=5 ? '<b>GOOD TO GO.</b> Fine for GIPHY and for attaching straight to an 𝕏 post.'
+    : mb<=15 ? '<b>A LITTLE HEAVY.</b> GIPHY takes it; for posting from a phone, try 320 wide, 10 fps, or a shorter trim.'
+    : '<b>TOO BIG FOR 𝕏 ATTACHMENTS (15 MB).</b> GIPHY still takes it, but trim it, drop to 320 wide or 10 fps.';
+  setProg(1, 'PRESSED. '+fmtSize(blob.size)+' · '+name);
+  var file = null;
+  try{ file=new File([blob], name, {type:'image/gif'}); }catch(e){}
+  var sh=$('share');
+  if(file && navigator.canShare && navigator.canShare({files:[file]})){
+    sh.style.display=''; sh.onclick=function(){ navigator.share({files:[file]}).catch(function(){}); };
+  } else sh.style.display='none';
+  addToRack({url:url, name:name, tags:S.tags.slice(), size:blob.size});
+  $('out').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function addToRack(item){
+  rack.unshift(item);
+  var box=$('rack'); box.innerHTML='';
+  rack.forEach(function(it){
+    var d=document.createElement('div'); d.className='slot';
+    var im=document.createElement('img'); im.src=it.url; im.alt=it.name; d.appendChild(im);
+    var t=document.createElement('div'); t.className='t'; t.textContent=it.name+' · '+fmtSize(it.size); d.appendChild(t);
+    var r=document.createElement('div'); r.className='row';
+    var a=document.createElement('a'); a.className='btn'; a.href=it.url; a.download=it.name; a.textContent='⇩ GIF'; r.appendChild(a);
+    var b=document.createElement('button'); b.textContent='TAGS'; b.onclick=function(){ copyText(tagString(it.tags)); }; r.appendChild(b);
+    d.appendChild(r); box.appendChild(d);
+  });
+}
+
+onShape();
+})();
+</script>
+</body>
+</html>
