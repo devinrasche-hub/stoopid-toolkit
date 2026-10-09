@@ -354,6 +354,20 @@ function load(f){
   vid.load();
 }
 vid.addEventListener('loadedmetadata', function(){
+  // Recorded webm often reports an Infinity duration until it is seeked to the end.
+  if(vid.duration===Infinity){
+    var fix=function(){
+      if(!isFinite(vid.duration)) return;
+      vid.removeEventListener('durationchange', fix);
+      vid.currentTime=0; clipReady();
+    };
+    vid.addEventListener('durationchange', fix);
+    vid.currentTime=1e9;
+    return;
+  }
+  clipReady();
+});
+function clipReady(){
   S.dur = vid.duration || 0;
   if(!isFinite(S.dur)) S.dur = 0;
   S.tin = 0; S.tout = Math.min(S.dur, 3);
@@ -362,7 +376,7 @@ vid.addEventListener('loadedmetadata', function(){
   $('status').textContent = 'READY. TRIM IT, THEN PRESS.';
   updateLen();
   seek(S.tin).then(drawPreview);
-});
+}
 vid.addEventListener('error', function(){
   $('status').textContent = 'THIS BROWSER CAN’T READ THAT VIDEO. TRY AN MP4.';
   toast('CAN’T READ THAT ONE');
