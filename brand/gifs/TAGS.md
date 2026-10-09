@@ -32,3 +32,5 @@ Source URL: the episode's post on x.com/stoopidshow.
 | stoopidshow_what_was_the_question.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, what was the question, what, confused, lost, huh, i forgot, wait |
 | stoopidshow_im_going_crazy.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, going crazy, losing it, stressed, overwhelmed, i cant, meltdown, too much |
 | stoopidshow_thats_weird.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, thats weird, weird, awkward, sorry, uncomfortable, odd, cringe |
+| stoopidshow_gonna_bite.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, dont touch me, i bite, back off, personal space, monster, grumpy, touch me and see |
+| stoopidshow_without_touching_me.gif | stoopidshow, xstoopidshow, the stoopid show, stoopid, dont touch me, no touching, hands off, personal space, monster, keep your distance, no touchy |
