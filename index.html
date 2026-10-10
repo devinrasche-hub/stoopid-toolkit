@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 33 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 34 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="33">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="34">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">33 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">34 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -395,6 +395,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_map_to_the_future.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 034</span><span class="cls">EXPLAINER</span></div>
+      <canvas class="viz" data-viz="map"></canvas>
+      <div class="body"><h3>A MAP TO THE FUTURE</h3>
+      <p>150 seconds on the ideas of Dr. Joe Dispenza. The loop you wake up in, the wall the analytical mind builds, rehearsing a future until the brain rewires, and the arrow that turns around.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>REHEARSING</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -1060,6 +1069,25 @@ VIZ.here = function(x,w,h,t){
   x.textAlign='center'; x.font=F(9);
   x.fillStyle = p<0.62 ? '#5d6b66' : '#ffd6a2';
   x.fillText(p<0.62 ? 'AUTOPLAY STARTING…' : 'STILL HERE', cx, h-12);
+};
+
+/* 034 — a map to the future: a red loop that keeps closing, until it opens into a teal path */
+VIZ.map = function(x,w,h,t){
+  var cyc=8000, p=(t%cyc)/cyc, cx=w*0.36, cy=h/2-4, r=Math.min(h*0.3,40);
+  x.fillStyle='#030305'; x.fillRect(0,0,w,h);
+  var open=Math.min(1,Math.max(0,(p-0.55)/0.3));
+  var a=t/1000*(2.2+p*6);
+  x.lineWidth=2; x.lineCap='round';
+  x.strokeStyle='rgba(255,45,45,'+(0.9-0.6*open)+')';
+  x.beginPath(); x.arc(cx,cy,r,-Math.PI/2+open*Math.PI*1.9, Math.PI*1.5); x.stroke();
+  if(open<1){ x.fillStyle='#fff'; x.beginPath(); x.arc(cx+Math.sin(a)*r, cy-Math.cos(a)*r, 3, 0, 6.283); x.fill(); }
+  if(open>0){
+    x.strokeStyle='#00FFC6'; x.beginPath(); x.moveTo(cx, cy-r); x.lineTo(cx+(w*0.6)*open, cy-r); x.stroke();
+    x.fillStyle='#00FFC6'; x.beginPath(); x.arc(cx+(w*0.6)*open, cy-r, 3, 0, 6.283); x.fill();
+  }
+  x.textAlign='center'; x.font=F(9);
+  x.fillStyle = open>0.5 ? '#00FFC6' : '#ff6b5e';
+  x.fillText(open>0.5 ? 'A MAP TO THE FUTURE' : 'A RECORD OF THE PAST', w/2, h-12);
 };
 
 /* 014 — flip finder */
