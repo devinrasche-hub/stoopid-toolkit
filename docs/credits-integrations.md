@@ -49,6 +49,6 @@ Provider-specific code is isolated: Beans in `credits-api/src/beans.js`; imports
 | `ADMIN_TOKEN` | Worker secret (from repo secret `CREDITS_ADMIN_TOKEN`) | Admin sign-in. 32+ random characters. Rotate by changing the repo secret and re-running the deploy workflow. |
 | `IP_SALT` | Worker secret (repo secret `IP_SALT`, shared with Ask Dev) | Salts the hashed IPs used for rate limiting (kept ~48 h). Raw IPs are never stored. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Worker secrets (repo secrets `CREDITS_GOOGLE_CLIENT_ID` / `_SECRET`) | Optional: “Verify with YouTube”. Also signs the short-lived OAuth state. |
-| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub repo secrets | Deploying. Already used by Ask Dev. |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub repo secrets | Deploying (the Ask Dev deploy uses the same two). |
 
 Nothing secret is in the repository or the browser bundle (a browser test scans `credits/` for token patterns).

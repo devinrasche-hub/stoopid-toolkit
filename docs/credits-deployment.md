@@ -15,7 +15,9 @@ No new paid services. Workers free tier: 100k requests/day. D1 free tier: 5 GB.
 
 ## Go live (once)
 
-1. **Repo secrets** (github.com → stoopid-toolkit → Settings → Secrets and variables → Actions). `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` already exist for Ask Dev. Add:
+1. **Repo secrets** (github.com → stoopid-toolkit → Settings → Secrets and variables → Actions → **Repository secrets**). Names must match exactly; a typo (e.g. `CLOUDFARE_…`) reaches the workflow as an empty value.
+   - `CLOUDFLARE_API_TOKEN`: dash.cloudflare.com → My Profile → API Tokens → Create Token → template **Edit Cloudflare Workers**, plus **Account · D1 · Edit**. Ask Dev's deploy uses the same secret.
+   - `CLOUDFLARE_ACCOUNT_ID`: the 32-character ID in your dashboard URL (`dash.cloudflare.com/<account id>/…`), also shown under Workers & Pages. A wrong value fails with Cloudflare error 7003 ("Could not route…").
    - `CREDITS_ADMIN_TOKEN`: a long random string. On a computer: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Or use a password manager's generator (40+ characters). Keep it in your password manager; it's your admin sign-in.
    - `IP_SALT` (optional, may already exist from Ask Dev).
    - **Not needed:** a GitHub personal access token. Nothing here uses one.
