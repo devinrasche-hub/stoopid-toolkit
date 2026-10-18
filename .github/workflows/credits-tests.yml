@@ -1,0 +1,58 @@
+name: Credits tests
+
+# Runs the Credits Department tests on every PR and push that touches them:
+# API + engine (node:test, real migration on node:sqlite) and browser tests (Chrome + FFmpeg),
+# including regression checks that the arcade games still load.
+
+on:
+  pull_request:
+    paths:
+      - "credits/**"
+      - "credits-api/**"
+      - "credits-render/**"
+      - "stoopid_*.html"
+      - ".github/workflows/credits-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "credits/**"
+      - "credits-api/**"
+      - "credits-render/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: credits-api
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Install
+        working-directory: credits-render
+        run: npm ci
+      - name: Browser tests
+        working-directory: credits-render
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm test

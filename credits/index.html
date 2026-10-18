@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE HALL OF STOOPID</title>
+<meta name="description" content="The people who helped make the nonsense possible. Supporters, creators, Bean legends and the full end-credits archive of THE STOOPID SHOW.">
+<meta property="og:title" content="THE HALL OF STOOPID">
+<meta property="og:description" content="The people who helped make the nonsense possible.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%23FFB347'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header id="chrome"></header>
+  <main id="main">
+    <div class="kick">STOOPIDTV · OFFICIAL DEPARTMENT OF UNNECESSARY APPRECIATION</div>
+    <h1 class="mast">THE HALL<br>OF <b>STOOPID</b></h1>
+    <p class="thesis">The people who helped make the nonsense possible. <em>Nobody made this alone.</em></p>
+    <p class="sub">Money, time, attention, art, encouragement, an evening in the arcade. All of it counts here. None of it is measured in dollars.</p>
+
+    <div class="stats" id="stats" aria-live="polite">
+      <div class="stat"><div class="n" id="s-people">—</div><div class="l">PEOPLE ON RECORD</div></div>
+      <div class="stat"><div class="n" id="s-beans">—</div><div class="l">BEANS IN THE ARCADE</div></div>
+      <div class="stat"><div class="n" id="s-creators">—</div><div class="l">CREATORS TO DISCOVER</div></div>
+      <div class="stat"><div class="n" id="s-eps">—</div><div class="l">EPISODES CREDITED</div></div>
+    </div>
+
+    <section class="panel" aria-labelledby="h-spot">
+      <div class="sechead"><span class="no">[ 01 ]</span><h2 id="h-spot">FEATURED COMMUNITY MEMBER</h2><span class="rule"></span><span class="tag">ROTATES WEEKLY</span></div>
+      <div id="spotlight"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-sup">
+      <div class="sechead"><span class="no">[ 02 ]</span><h2 id="h-sup">COMMUNITY SUPPORTERS</h2><span class="rule"></span><span class="tag">CONSENT ON FILE · ORDER ROTATES</span></div>
+      <div id="supporters"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-cre">
+      <div class="sechead"><span class="no">[ 03 ]</span><h2 id="h-cre">CREATOR DISCOVERY</h2><span class="rule"></span><a class="tag" href="creators/">FULL DIRECTORY ▸</a></div>
+      <p class="sub" style="margin:-6px 0 14px">People this show pays to watch. Go find them. (Appreciation, not sponsorship.)</p>
+      <div id="creators"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-beans">
+      <div class="sechead"><span class="no">[ 04 ]</span><h2 id="h-beans">BEAN LEGENDS</h2><span class="rule"></span><span class="tag" id="beans-asof"></span></div>
+      <div class="tabs" role="tablist" aria-label="Ranking period">
+        <button role="tab" aria-selected="true" data-p="all">ALL-TIME</button>
+        <button role="tab" aria-selected="false" data-p="week">THIS WEEK</button>
+        <button role="tab" aria-selected="false" data-p="month">THIS MONTH</button>
+      </div>
+      <div id="beans" role="tabpanel"></div>
+      <p class="sub">Real Beans from the <a href="https://www.stoopidtv.com/arcade" rel="noopener">STOOPIDTV arcade</a>. Beans are never awarded for paying.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-eps">
+      <div class="sechead"><span class="no">[ 05 ]</span><h2 id="h-eps">EPISODE CREDITS ARCHIVE</h2><span class="rule"></span><a class="tag" href="episodes/">SEARCH ALL ▸</a></div>
+      <form id="search" action="episodes/" method="get" role="search" style="display:flex;gap:8px;margin-bottom:14px">
+        <label for="q" class="sr">Search the credits</label>
+        <input id="q" name="q" placeholder="Search a name or an episode…" autocomplete="off">
+        <button class="btn" type="submit">SEARCH</button>
+      </form>
+      <div id="episodes"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-fame">
+      <div class="sechead"><span class="no">[ 06 ]</span><h2 id="h-fame">HALL OF FAME</h2><span class="rule"></span><a class="tag" href="hall-of-fame/">ALL ENTRIES ▸</a></div>
+      <div id="fame"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-inv" id="involved">
+      <div class="sechead"><span class="no">[ 07 ]</span><h2 id="h-inv">GET INVOLVED</h2><span class="rule"></span><span class="tag">MOST OF THIS IS FREE</span></div>
+      <div class="involve" id="involve"></div>
+      <p class="sub" style="margin-top:14px">Want your name in the credits? <a href="join/">Ask the department</a>. It reviews every request by hand and only lists you if you say yes.</p>
+    </section>
+  </main>
+  <footer class="legal" id="legal"></footer>
+</div>
+<script type="module">
+import { h, ext, api, offline, loading, chrome, fmtDate, rawFeed, beansTable, REDUCED } from './assets/site.js';
+chrome('hall', 0);
+const $ = (id) => document.getElementById(id);
+['spotlight', 'supporters', 'creators', 'beans', 'episodes', 'fame'].forEach((id) => loading($(id)));
+
+const LABEL = { financially_irresponsible: 'FINANCIALLY IRRESPONSIBLE', voluntary_witnesses: 'VOLUNTARY WITNESS', emotional_support: 'EMOTIONAL SUPPORT', human_resources: 'HUMAN RESOURCES' };
+let links = { youtube: 'https://youtube.com/@STOOPIDshow', x: 'https://x.com/STOOPIDshow', arcade: 'https://www.stoopidtv.com/arcade', episodes: 'https://www.stoopidtv.com/episodes' };
+
+function involve() {
+  const step = (cost, title, text, href, label) => h('div', { class: 'step' },
+    h('div', { class: 'cost' + (cost === 'OPTIONAL · $' ? ' paid' : '') }, cost), h('h3', {}, title), h('p', {}, text, ' ', href ? ext(href, label) : null));
+  $('involve').replaceChildren(
+    step('FREE', 'WATCH AN EPISODE', 'The whole point. Your time is the most expensive thing anyone gives us.', links.episodes, 'Episodes ▸'),
+    step('FREE', 'SUBSCRIBE ON YOUTUBE', 'Free. Then ask to be credited as a Voluntary Witness if you like.', links.youtube, 'YouTube ▸'),
+    step('FREE', 'PLAY THE ARCADE', 'Earn Beans. The top of the board rolls in the end credits.', links.arcade, 'Arcade ▸'),
+    step('FREE', 'SHARE AN EPISODE', 'Tell one person. That is a contribution and it is noticed.', null),
+    step('FREE', 'MAKE SOMETHING', 'Art, music, edits, ideas. Real contributions get real credits on the episode they helped.', 'join/', 'Tell us ▸'),
+    step('FREE', 'JOIN THE CONVERSATION', 'Replies, feedback, encouragement. The Department of Emotional Support is curated by hand.', links.x, '𝕏 ▸'),
+    step('OPTIONAL · $', 'SUBSCRIBE ON 𝕏', 'Two dollars a month, for people who want to. Never required to be appreciated.', links.x, '@STOOPIDshow ▸'));
+}
+involve();
+
+let beansCache = {};
+async function showBeans(p) {
+  document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.p === p)));
+  loading($('beans'));
+  try {
+    const r = beansCache[p] || (beansCache[p] = await api('/public/beans?period=' + p));
+    if (!r.available) {
+      $('beans').replaceChildren(h('div', { class: 'empty' }, p === 'all' ? 'THE ARCADE FEED IS UNREACHABLE RIGHT NOW.' :
+        `NOT ENOUGH HISTORY YET. THE DEPARTMENT STARTED KEEPING DAILY RECORDS ${r.collectingSince ? 'ON ' + r.collectingSince : 'RECENTLY'} AND REFUSES TO INVENT THE PAST.`));
+      return;
+    }
+    $('beans-asof').textContent = p === 'all' ? `AS OF ${r.asof}` : `${r.from} → ${r.to}`;
+    $('beans').replaceChildren(beansTable(r.leaders));
+  } catch {
+    if (p !== 'all') return offline($('beans'), 'period rankings');
+    try { const f = await rawFeed(); $('beans-asof').textContent = `AS OF ${f.asof} · DIRECT FROM THE FEED`; $('beans').replaceChildren(beansTable(f.leaders)); }
+    catch { offline($('beans'), 'the leaderboard'); }
+  }
+}
+document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => showBeans(b.dataset.p)));
+showBeans('all');
+
+function supporters(list, total, anon) {
+  if (!list.length && !anon) return $('supporters').replaceChildren(h('div', { class: 'empty' }, 'THIS DEPARTMENT IS CURRENTLY ACCEPTING APPLICANTS. ', h('a', { href: 'join/' }, 'Be the first.')));
+  const grid = h('div', { class: 'grid rotor', 'aria-live': 'off' });
+  const per = 12; let page = 0;
+  const draw = () => {
+    const slice = list.slice(page * per, page * per + per);
+    grid.replaceChildren(...slice.map((s) => h('div', { class: 'name-card' },
+      h('div', { class: 'nm' }, s.link ? ext(s.link, s.name) : s.name),
+      h('div', { class: 'meta' }, s.categories.map((c) => h('span', { class: 'badge ' + (c === 'financially_irresponsible' ? 'gold' : 'teal') }, LABEL[c] || c)),
+        s.selfReported ? h('span', { class: 'badge', title: 'Self-reported, not verified' }, 'SELF-REPORTED') : null))));
+  };
+  draw();
+  const foot = h('p', { class: 'sub' }, `${total} named on record${anon ? ` · plus ${anon} who asked to stay anonymous` : ''}. Shown in a different order every day.`);
+  $('supporters').replaceChildren(grid, foot);
+  if (list.length > per && !REDUCED) setInterval(() => { grid.classList.add('fade'); setTimeout(() => { page = (page + 1) % Math.ceil(list.length / per); draw(); grid.classList.remove('fade'); }, 400); }, 9000);
+}
+
+function creatorCards(list) {
+  if (!list.length) return h('div', { class: 'empty' }, 'NO FEATURED CREATORS YET.');
+  return h('div', { class: 'grid' }, list.map((c) => h('article', { class: 'creator' },
+    h('div', { class: 'nm' }, c.name),
+    c.work ? h('div', { class: 'work' }, c.work) : null,
+    c.reason ? h('div', { class: 'why' }, c.reason) : (c.bio ? h('div', { class: 'why' }, c.bio) : null),
+    h('div', { class: 'links' }, c.xUrl ? ext(c.xUrl, '@' + c.handle) : null, c.link ? ext(c.link, 'Their work ▸') : null))));
+}
+
+try {
+  const d = await api('/public/hall');
+  if (d.links) { links = { ...links, ...d.links }; involve(); }
+  $('s-people').textContent = d.supporterCount + d.anonymousCount;
+  $('s-beans').textContent = d.beans && d.beans.totalBeans != null ? d.beans.totalBeans.toLocaleString('en-US') : '—';
+  $('s-creators').textContent = d.creators.length;
+  $('s-eps').textContent = d.episodes.length;
+  $('spotlight').replaceChildren(d.spotlight ? h('div', { class: 'box ac', style: '--ac:var(--gold)' },
+    h('span', { class: 'c tl' }), h('span', { class: 'c tr' }), h('span', { class: 'c bl' }), h('span', { class: 'c br' }),
+    h('div', { class: 'spot' }, h('div', { class: 'seal', 'aria-hidden': 'true' }, 'OFFICIALLY', h('br'), 'NOTICED'),
+      h('div', {}, h('div', { class: 'who' }, d.spotlight.link ? ext(d.spotlight.link, d.spotlight.name) : d.spotlight.name),
+        h('div', { class: 'head' }, d.spotlight.headline), d.spotlight.body ? h('p', { class: 'sub' }, d.spotlight.body) : null)))
+    : h('div', { class: 'empty' }, 'THE SPOTLIGHT IS WARMING UP. IT HAS NOT DECIDED WHO TO LOOK AT.'));
+  supporters(d.supporters, d.supporterCount, d.anonymousCount);
+  $('creators').replaceChildren(creatorCards(d.creators));
+  $('episodes').replaceChildren(d.episodes.length ? h('table', { class: 'term' },
+    h('thead', {}, h('tr', {}, h('th', {}, 'EP'), h('th', {}, 'TITLE'), h('th', {}, 'FINALISED'))),
+    h('tbody', {}, d.episodes.map((e) => h('tr', {}, h('td', {}, String(e.number).padStart(3, '0')),
+      h('td', {}, h('a', { href: `episodes/?ep=${e.number}` }, e.label || e.title)), h('td', {}, fmtDate(e.publishedOn || e.finalizedAt))))))
+    : h('div', { class: 'empty' }, 'NO EPISODE CREDITS HAVE BEEN FILED YET.'));
+  $('fame').replaceChildren(d.hallOfFame.length ? h('div', { class: 'grid' }, d.hallOfFame.map((f) => h('div', { class: 'name-card' },
+    h('div', {}, h('div', { class: 'meta' }, f.season ? `SEASON ${f.season}` : 'ALL-TIME', f.achievedOn ? ' · ' + f.achievedOn : ''), h('div', { class: 'nm', style: 'color:var(--gold)' }, f.title)),
+    h('div', {}, f.honoree), f.description ? h('div', { class: 'meta' }, f.description) : null)))
+    : h('div', { class: 'empty' }, 'THE HALL OF FAME IS EMPTY. HISTORY IS STILL BEING MADE.'));
+} catch (e) {
+  for (const id of ['spotlight', 'supporters', 'creators', 'episodes', 'fame']) offline($(id));
+}
+</script>
+</body>
+</html>

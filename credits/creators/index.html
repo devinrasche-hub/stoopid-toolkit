@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Directory · THE HALL OF STOOPID</title>
+<meta name="description" content="MUTUAL ENABLERS: creators THE STOOPID SHOW pays to watch. Go find them.">
+<meta property="og:title" content="MUTUAL ENABLERS — creators worth your time">
+<meta property="og:description" content="Creators THE STOOPID SHOW pays to watch. Appreciation, not sponsorship.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%23FFB347'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header id="chrome"></header>
+  <main id="main">
+    <div class="kick">CREATOR DIRECTORY · MUTUAL ENABLERS</div>
+    <h1 class="mast" style="font-size:clamp(30px,6vw,60px)">GO FIND <b>THEM</b></h1>
+    <p class="thesis">Creators this show pays to watch, because their work is worth it.</p>
+    <p class="sub">Listing here is appreciation. It is not a sponsorship, partnership or endorsement, and nobody paid to be on it.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:24px 0 18px">
+      <div style="flex:2;min-width:200px"><label for="q">SEARCH</label><input id="q" placeholder="Name, handle or kind of work"></div>
+      <div style="flex:1;min-width:160px"><label for="work">KIND OF WORK</label><select id="work"><option value="">Everything</option></select></div>
+    </div>
+    <div id="list" aria-live="polite"></div>
+  </main>
+  <footer class="legal" id="legal"></footer>
+</div>
+<script type="module">
+import { h, ext, api, offline, loading, chrome } from '../assets/site.js';
+chrome('creators', 1);
+const $ = (id) => document.getElementById(id);
+loading($('list'));
+let all = [];
+function draw() {
+  const q = $('q').value.trim().toLowerCase(), w = $('work').value;
+  const rows = all.filter((c) => (!w || c.work === w) && (!q || [c.name, c.handle, c.work, c.bio].join(' ').toLowerCase().includes(q)));
+  if (!rows.length) return $('list').replaceChildren(h('div', { class: 'empty' }, all.length ? 'NOBODY MATCHES. TRY FEWER WORDS.' : 'THE DIRECTORY IS BEING ASSEMBLED.'));
+  $('list').replaceChildren(h('div', { class: 'grid' }, rows.map((c) => h('article', { class: 'creator' },
+    c.featured ? h('span', { class: 'badge gold', style: 'align-self:flex-start' }, 'FEATURED') : null,
+    h('h2', { class: 'nm' }, c.name),
+    c.work ? h('div', { class: 'work' }, c.work) : null,
+    c.bio ? h('p', { style: 'font-size:13px' }, c.bio) : null,
+    c.reason ? h('div', { class: 'why' }, 'WHY WE WATCH: ', c.reason) : null,
+    c.episodes.length ? h('div', { class: 'hint' }, 'CREDITED IN ', c.episodes.map((n, i) => [i ? ', ' : '', h('a', { href: `../episodes/?ep=${n}` }, 'EP ' + n)])) : null,
+    h('div', { class: 'links' }, c.xUrl ? ext(c.xUrl, '@' + c.handle) : null, c.link ? ext(c.link, 'Their work ▸') : null)))));
+}
+try {
+  all = (await api('/public/creators')).creators;
+  for (const w of [...new Set(all.map((c) => c.work).filter(Boolean))].sort()) $('work').append(h('option', { value: w }, w));
+  draw();
+  $('q').addEventListener('input', draw); $('work').addEventListener('change', draw);
+} catch { offline($('list'), 'the creator directory'); }
+</script>
+</body>
+</html>

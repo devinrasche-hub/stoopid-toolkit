@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Credited · THE HALL OF STOOPID</title>
+<meta name="description" content="Ask to be recognised in THE STOOPID SHOW credits. Free. Reviewed by a human. Withdraw any time.">
+<meta property="og:title" content="GET CREDITED — THE STOOPID SHOW">
+<meta property="og:description" content="Ask to be recognised in the end credits. Free, reviewed by hand, withdraw any time.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%23FFB347'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+  .form{max-width:680px;}
+  fieldset{border:1px solid var(--line); padding:6px 16px 16px; margin-top:18px;}
+  legend{font-size:11px; letter-spacing:2px; color:var(--teal); padding:0 6px;}
+  .hp{position:absolute; left:-5000px; width:1px; height:1px; overflow:hidden;}
+  .receipt{border:2px dashed var(--gold); padding:18px; margin-top:18px;}
+  .receipt code{font-size:20px; color:var(--gold); letter-spacing:2px; word-break:break-all;}
+  .err{color:#ff8f8f; font-size:12px; margin-top:4px;}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header id="chrome"></header>
+  <main id="main" class="form">
+    <div class="kick">FORM CR-1 · REQUEST FOR UNNECESSARY APPRECIATION</div>
+    <h1 class="mast" style="font-size:clamp(30px,6vw,56px)">GET <b>CREDITED</b></h1>
+    <p class="thesis">Free. Reviewed by a human. Withdraw any time.</p>
+    <p class="sub">The department asks for as little as possible: a name to put on screen and, if you want, where people can find you. No email. No account. Nothing is published until it’s reviewed.</p>
+
+    <form id="join" novalidate>
+      <fieldset>
+        <legend>WHO TO CREDIT</legend>
+        <label for="display_name">CREDIT NAME *</label>
+        <input id="display_name" name="display_name" maxlength="60" required autocomplete="nickname" aria-describedby="dn-h">
+        <div class="hint" id="dn-h">Exactly as you’d like it on screen. Nicknames welcome. Long names may be shortened in the video (never in the archive).</div>
+        <label for="contribution">WHAT YOU DO FOR THE SHOW *</label>
+        <select id="contribution" name="contribution" required>
+          <option value="">Choose one…</option>
+          <option value="youtube_witness">I subscribe on YouTube (free)</option>
+          <option value="arcade">I play the STOOPIDTV arcade</option>
+          <option value="creative">I made something (art, music, edits, ideas…)</option>
+          <option value="emotional_support">I cheer the show on / give feedback</option>
+          <option value="x_supporter">I pay for the 𝕏 subscription</option>
+          <option value="other">Something else</option>
+        </select>
+        <div class="hint">Self-reported answers are labelled as self-reported. That’s fine. Nobody is checking your receipts.</div>
+      </fieldset>
+
+      <fieldset>
+        <legend>WHERE PEOPLE CAN FIND YOU (OPTIONAL)</legend>
+        <label for="platform">PLATFORM</label>
+        <select id="platform" name="platform"><option value="">None</option><option value="youtube">YouTube</option><option value="x">𝕏</option><option value="web">Website</option><option value="other">Other</option></select>
+        <label for="handle">HANDLE</label>
+        <input id="handle" name="handle" maxlength="60" placeholder="@yourname" autocomplete="off">
+        <div class="hint">Arcade players: use the 𝕏 handle you play with, so your Beans and your credit are the same person.</div>
+        <label for="profile_url">PROFILE OR WORK LINK</label>
+        <input id="profile_url" name="profile_url" type="url" inputmode="url" placeholder="https://…">
+      </fieldset>
+
+      <fieldset>
+        <legend>PERMISSIONS</legend>
+        <label class="inline"><input type="checkbox" id="consent_public" name="consent_public" checked> <span>Show my credit name publicly (end credits and the Hall). Unticked: you’re counted as “anonymous”, never named.</span></label>
+        <label class="inline"><input type="checkbox" id="consent_link" name="consent_link"> <span>Link my name to the profile above.</span></label>
+        <label class="inline"><input type="checkbox" id="age_ok" name="age_ok" required> <span>I’m 13 or older. (Younger? Please ask a parent or guardian to contact the show instead.)</span></label>
+      </fieldset>
+
+      <label for="note">A NOTE TO THE DEPARTMENT (OPTIONAL)</label>
+      <textarea id="note" name="note" maxlength="280" placeholder="Not published. 280 characters."></textarea>
+      <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      <div id="form-err" class="err" role="alert"></div>
+      <p style="margin-top:18px"><button class="btn gold" type="submit" id="submit">FILE MY REQUEST</button></p>
+    </form>
+    <div id="receipt" aria-live="polite"></div>
+
+    <section class="panel" id="withdraw" aria-labelledby="h-wd">
+      <div class="sechead"><h2 id="h-wd">CHECK, UPDATE OR WITHDRAW</h2><span class="rule"></span></div>
+      <p class="sub">Use the reference and key from your receipt. Withdrawal is immediate: your name comes off the Hall and every archived episode. Updates go back through review.</p>
+      <form id="manage" novalidate>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px"><label for="m-ref">REFERENCE</label><input id="m-ref" placeholder="CR-XXXXXXXX" autocomplete="off"></div>
+          <div style="flex:2;min-width:200px"><label for="m-key">KEY</label><input id="m-key" autocomplete="off"></div>
+        </div>
+        <label for="m-name">NEW CREDIT NAME (FOR UPDATES)</label><input id="m-name" maxlength="60">
+        <label for="m-url">NEW LINK (FOR UPDATES)</label><input id="m-url" type="url" placeholder="https://…">
+        <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" type="button" data-act="status">CHECK STATUS</button>
+          <button class="btn" type="button" data-act="update">SEND UPDATE</button>
+          <button class="btn red" type="button" data-act="withdraw">WITHDRAW MY CREDIT</button>
+        </p>
+        <div id="m-out" role="status"></div>
+      </form>
+    </section>
+  </main>
+  <footer class="legal" id="legal"></footer>
+</div>
+<script type="module">
+import { h, api, chrome } from '../assets/site.js';
+chrome('join', 1);
+const $ = (id) => document.getElementById(id);
+const opened = Date.now();
+const clientKey = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)) ;
+
+$('join').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('form-err').textContent = '';
+  const f = new FormData(e.target);
+  const body = Object.fromEntries(f.entries());
+  for (const k of ['consent_public', 'consent_link', 'age_ok']) body[k] = $(k).checked;
+  if (!body.display_name.trim()) return fieldErr('display_name', 'A credit name is required.');
+  if (!body.contribution) return fieldErr('contribution', 'Choose what you do for the show.');
+  if (!body.age_ok) return fieldErr('age_ok', 'Please confirm you are 13 or older.');
+  if (body.profile_url && !/^https:\/\//i.test(body.profile_url)) return fieldErr('profile_url', 'Links must start with https://');
+  body.elapsed_ms = Date.now() - opened; body.client_key = clientKey;
+  $('submit').disabled = true; $('submit').textContent = 'FILING…';
+  try {
+    const r = await api('/public/join', { method: 'POST', body: JSON.stringify(body) });
+    $('join').hidden = true;
+    $('receipt').replaceChildren(h('div', { class: 'receipt' },
+      h('div', { class: 'kick' }, 'REQUEST FILED · PENDING HUMAN REVIEW'),
+      h('p', {}, 'REFERENCE: ', h('code', {}, r.ref)),
+      r.key ? h('p', {}, 'KEY: ', h('code', {}, r.key)) : null,
+      h('p', { class: 'sub' }, r.key ? 'Save both. They’re the only way to check, update or withdraw this request, and the department can’t show the key again. Thank you for existing in our general vicinity.' : 'This request was already on file.')));
+    $('receipt').focus?.();
+  } catch (err) {
+    $('form-err').textContent = err.data?.error || 'The department could not file this right now. Please try again later.';
+    if (err.data?.field) $(err.data.field)?.focus();
+  } finally { $('submit').disabled = false; $('submit').textContent = 'FILE MY REQUEST'; }
+});
+function fieldErr(id, msg) { $('form-err').textContent = msg; $(id).focus(); }
+
+document.querySelectorAll('#manage button').forEach((b) => b.addEventListener('click', async () => {
+  const act = b.dataset.act, ref = $('m-ref').value.trim(), key = $('m-key').value.trim();
+  if (!ref || !key) return ($('m-out').replaceChildren(h('div', { class: 'notice err' }, 'Enter your reference and key.')));
+  if (act === 'withdraw' && !confirm('Withdraw your credit everywhere? This happens immediately.')) return;
+  const body = { ref, key };
+  if (act === 'update') { if ($('m-name').value.trim()) body.display_name = $('m-name').value; if ($('m-url').value.trim()) body.profile_url = $('m-url').value; }
+  try {
+    const r = await api('/public/' + act, { method: 'POST', body: JSON.stringify(body) });
+    const msg = act === 'status' ? `Request ${r.ref} for “${r.displayName}”: ${r.status.toUpperCase()}.` : act === 'update' ? 'Update filed. It will be reviewed.' : 'Withdrawn. Your name has been removed from public pages and archived credits.';
+    $('m-out').replaceChildren(h('div', { class: 'notice ok' }, msg));
+  } catch (err) { $('m-out').replaceChildren(h('div', { class: 'notice err' }, err.data?.error || 'Could not reach the department.')); }
+}));
+</script>
+</body>
+</html>

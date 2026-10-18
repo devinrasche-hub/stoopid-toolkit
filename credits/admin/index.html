@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Credits Department · Admin</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%2300FFC6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to content</a>
+<!-- This page holds no data and no secrets. Every action is checked by the Credits API with your admin token. -->
+<div id="gate" class="gate">
+  <form id="signin" class="box ac" autocomplete="off">
+    <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+    <div class="kick">RESTRICTED · DEPARTMENT PERSONNEL ONLY</div>
+    <h1 class="mast" style="font-size:clamp(28px,6vw,46px)">CREDITS <b>DEPT.</b></h1>
+    <p class="sub">Official Department of Unnecessary Appreciation. Please present your credentials. The Beans at the front desk are watching.</p>
+    <label for="token">ADMIN TOKEN</label>
+    <input id="token" type="password" autocomplete="current-password" required>
+    <label for="who">YOUR NAME (FOR THE AUDIT LOG)</label>
+    <input id="who" value="Devin" maxlength="40">
+    <label class="inline"><input type="checkbox" id="remember"> <span>Remember on this device (otherwise forgotten when the tab closes)</span></label>
+    <div id="gate-err" class="notice err" hidden role="alert"></div>
+    <p style="margin-top:16px"><button class="btn gold" type="submit">ENTER THE DEPARTMENT</button></p>
+    <p class="hint" style="margin-top:14px">API: <span id="api-host"></span></p>
+  </form>
+</div>
+<div id="app" class="app" hidden>
+  <aside class="side">
+    <div class="brand">CREDITS<br><b>DEPT.</b></div>
+    <nav id="menu" aria-label="Departments"></nav>
+    <div class="side-foot"><span id="actor"></span><br><button class="linkbtn" id="signout" type="button">SIGN OUT</button></div>
+  </aside>
+  <main id="view" class="main" tabindex="-1"></main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script type="module" src="admin.js"></script>
+</body>
+</html>

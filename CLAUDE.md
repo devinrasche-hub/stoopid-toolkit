@@ -11,3 +11,7 @@ Public brand tools for THE STOOPID SHOW, served by GitHub Pages from `main`.
 Browser films (Three.js + Web Audio) live in `cinematic/<slug>/` and build into a root `stoopid_<slug>.html`.
 
 **Before building or changing any cinematic, read `cinematic/PLAYBOOK.md`.** It has the brief template, the engine reuse map, the render-and-look checking loop, and the lessons from PLEASE REMAIN SEEN. Start new films by copying the latest film's folder (currently `cinematic/still-here/`).
+
+## The Credits Department
+
+`credits/` (static pages + shared engine), `credits-api/` (Worker + D1) and `credits-render/` (local video export). Read `docs/credits-system-architecture.md` first. Rules: never write Beans (read `STOOPIDshow/beans-feed` only); public output only shows people with `visibility='public'` and consent; published `credit_versions` are immutable (corrections add a revision); preview and export must keep using the same `credits/engine/` code. Run `npm test` in `credits-api/` and `credits-render/` before pushing.
