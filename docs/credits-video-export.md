@@ -12,11 +12,12 @@ Every export draws from **one sequence JSON** with **one renderer** (`credits/en
 | **PNG cards (opaque)** | admin *PNG CARDS* or `--formats cards` | ✅ one full-res PNG per page, plus `sequence.json`, ZIP verified |
 | **PNG cards (transparent)** | admin *TRANSPARENT CARDS* or `--formats alpha-cards` | ✅ RGBA PNGs (colour type 6); ~92% fully transparent pixels on a names page |
 | **ProRes 4444 + alpha (.mov)** | `--formats prores` | ✅ `prores` profile 4444, `yuva444p12le`; alpha plane decoded and measured (92% transparent / 2% opaque) |
+| **QuickTime Animation + alpha (.mov)** | `--formats animation` | ✅ `qtrle`, `argb`, lossless; alpha measured (92% transparent); ~80 MB for 56 s (ProRes: ~935 MB) |
 | **VP9 WebM + alpha** | `--formats webm-alpha` | ✅ `alpha_mode=1`; decoded with libvpx to RGBA, alpha measured |
 | **Real-time browser recording** | admin *RECORD VIDEO* | ✅ in Chromium it produced `video/mp4` at 1920×1080. Other browsers fall back to WebM. Timing depends on the machine; use the render command for frame-exact output |
 | 24 / 60 fps | `--fps` or episode setting | Rendering at any of 24/30/60 is the same code path. The full-length render was verified at 30 fps |
 
-Not done: transparent **MP4** (H.264 has no alpha) and ProRes inside CapCut on Windows (CapCut's alpha support varies by version, so use transparent PNG cards there).
+Not possible: transparent **MP4** (H.264 has no alpha). **Not yet confirmed: transparency inside CapCut.** CapCut can't run in the build environment, and its alpha support varies by version and platform. See *CapCut transparency test* below.
 
 ## The render command (frame-exact)
 
@@ -27,7 +28,7 @@ cd stoopid-toolkit/credits-render
 npm install
 node render.mjs --episode 23                                   # published episode, from the public API
 node render.mjs --sequence stoopid_ep023_credits_terminal_sequence.json   # a draft (download SEQUENCE.JSON in Produce)
-node render.mjs --episode 23 --formats mp4,cards,alpha-cards,prores,webm-alpha --fps 60 --workers 6
+node render.mjs --episode 23 --formats mp4,cards,alpha-cards,prores,animation,webm-alpha --fps 60 --workers 6
 ```
 
 Output goes to `./out/stoopid_ep023_credits_<theme>/`: the files, `sequence.json` (exactly what was rendered), and `manifest.json` (ffprobe results and any text-fit warnings).
@@ -38,12 +39,17 @@ Speed: frames render in parallel headless tabs (`--workers`, default half your C
 
 1. **Easiest:** import `…_1080p30.mp4` and drop it at the end of the timeline. Done.
 2. **Over your own footage:** use **transparent PNG cards** (`cards_alpha/`). Import, place on an overlay track, and set each card's duration to match the page times in `sequence.json` (`segments[].duration ÷ pages`).
-3. The soundtrack is mixed into the MP4. `…_audio.wav` is provided separately if you want it on its own track. Untick *Soundtrack* in Produce for silent exports.
+3. **Transparent video** (once the test below tells us which format your CapCut accepts): `--formats animation` (QuickTime Animation .mov, smallest lossless option) or `--formats prores`.
+4. The soundtrack is mixed into the MP4. `…_audio.wav` is provided separately if you want it on its own track. Untick *Soundtrack* in Produce for silent exports.
+
+### CapCut transparency test (2 minutes, once)
+
+Import each file from the test pack (`A_prores4444.mov`, `B_quicktime_animation.mov`, `C_vp9_alpha.webm`, `D_transparent_card.png`) onto an overlay track above any clip. Note which ones show **the clip underneath through the black areas** and which show solid black. Whichever works becomes your default overlay format (`export_formats` in Settings). The PNG card is the fallback that works everywhere.
 
 ## DaVinci Resolve
 
 1. **Opaque:** import the MP4 (H.264 High 4:2:0, Rec.709) into the media pool. It conforms to a 1080p timeline at the same frame rate.
-2. **Overlay with alpha:** import `…_overlay_prores4444.mov`. Resolve reads the alpha automatically. If not: clip attributes → *Alpha mode: Straight*. Put it on V2 above your footage.
+2. **Overlay with alpha:** import `…_overlay_prores4444.mov` (or the smaller `…_overlay_animation.mov`). Resolve reads the alpha automatically. If not: clip attributes → *Alpha mode: Straight*. Put it on V2 above your footage.
 3. Match the project frame rate to the export (`--fps 24|30|60`).
 
 ## Customising themes

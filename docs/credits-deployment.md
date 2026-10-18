@@ -18,12 +18,14 @@ No new paid services. Workers free tier: 100k requests/day. D1 free tier: 5 GB.
 1. **Repo secrets** (github.com → stoopid-toolkit → Settings → Secrets and variables → Actions). `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` already exist for Ask Dev. Add:
    - `CREDITS_ADMIN_TOKEN`: a long random string. On a computer: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Or use a password manager's generator (40+ characters). Keep it in your password manager; it's your admin sign-in.
    - `IP_SALT` (optional, may already exist from Ask Dev).
-2. **Merge** this branch into `main`. Pages redeploys and the *Deploy Credits API* workflow creates the database, applies `migrations/0001_credits_init.sql`, deploys, sets secrets and smoke-tests:
+   - **Not needed:** a GitHub personal access token. Nothing here uses one.
+2. **Merge** this branch into `main`. Pages redeploys and the *Deploy Credits API* workflow runs the tests, creates the database, applies the migrations (`0001`, `0002`), deploys, sets secrets and smoke-tests:
    - `GET /public/health` → 200
    - `GET /admin/overview` without a token → 401 (or 503 if the token secret is missing)
 3. **Sign in** at `https://devinrasche-hub.github.io/stoopid-toolkit/credits/admin/`.
-4. **Arcade → IMPORT FEED GIT HISTORY** to load the Beans history that already exists.
-5. **Add people** (Contributors / Creators / Import), then make your first episode in **Produce**.
+4. Beans history fills itself in: the nightly job imports the feed's git history in batches (**Arcade → IMPORT FEED GIT HISTORY** does it right away if you're impatient).
+5. *(Optional)* switch on “Verify with YouTube”: `credits-integrations.md` → *Switching on Verify with YouTube*.
+6. **Add people** (Contributors / Creators / Import), then make your first episode in **Produce**.
 
 ## Putting it on stoopidtv.com (Wix, manual)
 
@@ -49,8 +51,8 @@ python3 -m http.server 8080 --directory ..   # pages at http://localhost:8080/cr
 ## Tests
 
 ```
-cd credits-api && npm test       # 48 API + engine tests (real migration on node:sqlite)
-cd credits-render && npm test    # 13 browser tests (Chromium + FFmpeg): pages, admin, parity, legibility, a real MP4 render, arcade regression
+cd credits-api && npm test       # 56 API + engine tests (real migrations on node:sqlite)
+cd credits-render && npm test    # 14 browser tests (Chromium + FFmpeg): pages, admin, parity, legibility, YouTube flow, a real MP4 render, arcade regression
 ```
 
 Both run in CI (`.github/workflows/credits-tests.yml`) on every PR touching the credits or the games.
@@ -58,7 +60,7 @@ Both run in CI (`.github/workflows/credits-tests.yml`) on every PR touching the 
 ## Database changes
 
 - Migrations: `credits-api/migrations/NNNN_name.sql`, applied in order by `wrangler d1 migrations apply` (the deploy workflow). Add new files; never edit an applied one.
-- Rollback for 0001: `credits-api/rollback/0001_credits_init.down.sql` (drops only credits tables; take **Settings → FULL BACKUP** first).
+- Rollbacks, newest first: `credits-api/rollback/0002_backfill_and_youtube.down.sql`, then `0001_credits_init.down.sql` (drops only credits tables; take **Settings → FULL BACKUP** first). Both were run against a local D1.
 - Backups: **Settings → FULL BACKUP (JSON)** (do this before risky changes), or Cloudflare D1 Time Travel point-in-time restore (retention depends on your Cloudflare plan): `npx wrangler d1 time-travel restore stoopid_credits --timestamp …`.
 
 ## Turning it off

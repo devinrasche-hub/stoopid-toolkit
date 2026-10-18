@@ -5,13 +5,14 @@
 //
 //   node render.mjs --sequence sequence.json
 //   node render.mjs --api https://stoopid-credits.stoopidshow.workers.dev --episode 23
-//   options: --out DIR  --formats mp4,cards,alpha-cards,prores,webm-alpha  --no-audio  --fps 24|30|60  --workers N
+//   options: --out DIR  --formats mp4,cards,alpha-cards,prores,animation,webm-alpha  --no-audio  --fps 24|30|60  --workers N
 //
 // Outputs (see docs/credits-video-export.md):
 //   mp4         H.264 High, yuv420p, BT.709, AAC 48 kHz — CapCut / DaVinci Resolve / anywhere
 //   cards       full-res opaque PNG per page
 //   alpha-cards full-res transparent PNG per page (overlay over your own footage)
 //   prores      ProRes 4444 .mov with alpha — DaVinci Resolve overlay track
+//   animation   QuickTime Animation (qtrle) .mov with alpha — lossless, much smaller than ProRes; widely accepted by editors
 //   webm-alpha  VP9 .webm with alpha — browsers / OBS / web overlays
 
 import http from 'node:http';
@@ -34,7 +35,7 @@ if (flag('help') || (!opt('sequence') && !opt('episode'))) {
   process.exit(flag('help') ? 0 : 1);
 }
 const formats = new Set(String(opt('formats', 'mp4,cards')).split(',').map((s) => s.trim()).filter(Boolean));
-const known = ['mp4', 'cards', 'alpha-cards', 'prores', 'webm-alpha'];
+const known = ['mp4', 'cards', 'alpha-cards', 'prores', 'animation', 'webm-alpha'];
 for (const f of formats) if (!known.includes(f)) die(`unknown format "${f}" (choose from ${known.join(', ')})`);
 
 function die(msg) { console.error('✖ ' + msg); process.exit(1); }
@@ -173,12 +174,17 @@ try {
     await done; outputs.push(f); log('mp4 →', path.basename(f));
   }
 
-  if (formats.has('prores') || formats.has('webm-alpha')) {
+  if (formats.has('prores') || formats.has('animation') || formats.has('webm-alpha')) {
     const outs = [];
     if (formats.has('prores')) {
       const f = path.join(outDir, `${slug}_overlay_prores4444.mov`);
       outs.push('-map', '0:v', ...(wav ? ['-map', '1:a', '-c:a', 'pcm_s16le'] : []),
         '-c:v', 'prores_ks', '-profile:v', '4444', '-pix_fmt', 'yuva444p10le', '-alpha_bits', '16', '-vendor', 'apl0', f);
+      outputs.push(f);
+    }
+    if (formats.has('animation')) {
+      const f = path.join(outDir, `${slug}_overlay_animation.mov`);
+      outs.push('-map', '0:v', ...(wav ? ['-map', '1:a', '-c:a', 'pcm_s16le'] : []), '-c:v', 'qtrle', '-pix_fmt', 'argb', f);
       outputs.push(f);
     }
     if (formats.has('webm-alpha')) {

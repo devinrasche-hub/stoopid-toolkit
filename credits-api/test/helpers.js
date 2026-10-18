@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { handle, scheduled } from '../src/index.js';
 import { DEFAULT_FEED_URL } from '../src/beans.js';
 
-const MIGRATION = fs.readFileSync(fileURLToPath(new URL('../migrations/0001_credits_init.sql', import.meta.url)), 'utf8');
+const MIGRATIONS = fs.readdirSync(fileURLToPath(new URL('../migrations/', import.meta.url))).filter((f) => f.endsWith('.sql')).sort()
+  .map((f) => fs.readFileSync(fileURLToPath(new URL('../migrations/' + f, import.meta.url)), 'utf8'));
 const conv = (v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v);
 
 class Stmt {
@@ -22,7 +23,7 @@ class Stmt {
 export function makeD1() {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys = ON;');
-  db.exec(MIGRATION);
+  for (const m of MIGRATIONS) db.exec(m);
   return {
     raw: db,
     prepare: (sql) => new Stmt(db, sql),
@@ -41,13 +42,15 @@ export function world(feedDoc) {
   const env = { DB: makeD1(), ADMIN_TOKEN: TOKEN, ALLOWED_ORIGINS: ORIGIN, IP_SALT: 'test' };
   const state = { feed: structuredClone(feedDoc), feedStatus: 200, feedHits: 0, ip: '203.0.113.7', routes: new Map() };
   const realFetch = globalThis.fetch;
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, init) => {
     if (String(url) === DEFAULT_FEED_URL) {
       state.feedHits++;
       if (state.feedStatus !== 200) return new Response('nope', { status: state.feedStatus });
       return new Response(typeof state.feed === 'string' ? state.feed : JSON.stringify(state.feed), { status: 200 });
     }
-    if (state.routes.has(String(url))) return state.routes.get(String(url))();
+    const key = String(url).split('?')[0];
+    if (state.routes.has(String(url))) return state.routes.get(String(url))(url, init);
+    if (state.routes.has(key)) return state.routes.get(key)(url, init);
     throw new Error(`unexpected network call in test: ${url}`);
   };
   const call = async (method, path, body, { token = TOKEN, origin = ORIGIN, headers = {} } = {}) => {

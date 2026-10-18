@@ -71,6 +71,8 @@ Viewers ask at `/credits/join/`. Their requests arrive in **Requests**:
 
 Self-reported subscriptions are labelled *SELF-REPORTED* everywhere they're shown.
 
+If “Verify with YouTube” is switched on (`credits-integrations.md`), viewers can confirm their subscription with Google from their receipt. The request then shows **VERIFIED WITH GOOGLE** and approval defaults to *Verified*. If they verify after you approved, their credit upgrades automatically.
+
 ## 6. The Fair Recognition Engine (the rules)
 
 In this order, per episode:
@@ -89,7 +91,7 @@ No likes, reposts, view counts or AI are used anywhere.
 **Arcade** shows the live feed with moderation:
 - **EXCLUDE** a name (with a reason) to keep it out of credits and the Hall. Positions are never renumbered.
 - Names matching **Settings → Name filter** are *flagged* and held until you **APPROVE** them.
-- **RECORD NOW** saves today's feed copy. A daily job does this anyway. **IMPORT FEED GIT HISTORY** adds every past version of the feed from GitHub.
+- **RECORD NOW** saves today's feed copy. A daily job does this anyway, and also imports the feed's past versions from GitHub a batch at a time. **IMPORT FEED GIT HISTORY** runs those batches now.
 - Weekly and monthly leaders only appear once the department has a real copy from 7 / 30 days earlier. They are never estimated.
 
 ## 8. Spotlight, Hall of Fame, Humor Engine

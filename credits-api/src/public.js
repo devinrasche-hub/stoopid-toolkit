@@ -3,6 +3,7 @@
 import { cleanText, normalizeHandle, safeUrl, shuffle, graphemes } from '../../credits/engine/util.js';
 import { json, fail, readJson, bool, oneOf, now, ipHash, rateLimit, randomToken, sha256hex, getSettings, audit } from './lib.js';
 import { moderatedLive, periodLeaders } from './beans.js';
+import { enabled as ytEnabled } from './youtube.js';
 import { publicIdSet, redactSequence, publicCredits, withdrawnHandles, sampleFilter, WITHDRAWN } from './data.js';
 
 const PUBLIC_CACHE = { 'cache-control': 'public, max-age=60' };
@@ -206,11 +207,11 @@ export async function join(req, env) {
   const ref = 'CR-' + randomToken(8), key = randomToken(20);
   await env.DB.prepare(`INSERT INTO submissions (ref, kind, display_name, platform, handle, profile_url, contribution, consent_public, consent_link, note, key_hash, client_key, iph, created_at)
     VALUES (?, 'join', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(ref, name, platform, handle, profileUrl, contribution, bool(b.consent_public), bool(b.consent_link), note || null, await sha256hex(ref + ':' + key), clientKey, iph, now()).run();
+    .bind(ref, name, platform, handle, profileUrl, contribution, bool(b.consent_public), bool(b.consent_link), note || null, await sha256hex(ref + ':' + key), clientKey, '', now()).run();   // IP hash used for rate limiting only, not stored with the request
   return json({ ok: true, ref, key }, 201);
 }
 
-async function verifyKey(env, ref, key) {
+export async function verifyKey(env, ref, key) {
   ref = String(ref || '').trim().toUpperCase(); key = String(key || '').trim().toUpperCase();
   const s = await env.DB.prepare('SELECT * FROM submissions WHERE ref = ?').bind(ref).first();
   if (!s || s.key_hash !== (await sha256hex(ref + ':' + key))) fail(404, 'That reference and key don’t match a request.');
@@ -249,7 +250,7 @@ export async function update(req, env) {
   await env.DB.prepare(`INSERT INTO submissions (ref, kind, display_name, platform, handle, profile_url, contribution, consent_public, consent_link, note, key_hash, parent_ref, contributor_id, iph, created_at)
     VALUES (?, 'update', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(ref, name, s.platform, s.handle, profileUrl, s.contribution, b.consent_public == null ? s.consent_public : bool(b.consent_public),
-      b.consent_link == null ? s.consent_link : bool(b.consent_link), cleanText(b.note || '', 280) || null, s.key_hash, s.ref, s.contributor_id, await ipHash(req, env), now()).run();
+      b.consent_link == null ? s.consent_link : bool(b.consent_link), cleanText(b.note || '', 280) || null, s.key_hash, s.ref, s.contributor_id, '', now()).run();
   return json({ ok: true, ref: s.ref, updateRef: ref, status: 'pending review' }, 201);
 }
 
@@ -257,5 +258,10 @@ export async function status(req, env) {
   const b = await readJson(req);
   if (!(await rateLimit(env, 'status', await ipHash(req, env), 20))) fail(429, 'Too many attempts this hour.');
   const s = await verifyKey(env, b.ref, b.key);
-  return json({ ok: true, ref: s.ref, status: s.status, displayName: s.display_name, submittedAt: s.created_at });
+  return json({ ok: true, ref: s.ref, status: s.status, displayName: s.display_name, submittedAt: s.created_at, youtube: s.yt_status || null });
+}
+
+export async function config(env) {
+  const settings = await getSettings(env);
+  return json({ joinOpen: !!settings.join_open, youtubeVerify: ytEnabled(env) }, 200, PUBLIC_CACHE);
 }

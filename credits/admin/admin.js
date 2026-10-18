@@ -258,7 +258,7 @@ R.produce = async (main, arg) => {
       }, (r) => `Recorded ${r.type.split(';')[0]}.`))),
       h('span', { class: 'shrink' }, btn('SEQUENCE.JSON', () => download(sequenceBlob(current.sequence), slugFor(current.sequence) + '_sequence.json')))),
     prog, h('p', { class: 'hint', style: 'margin-top:8px' }, `This browser records: ${pickRecorderType() || 'nothing (no MediaRecorder)'}`),
-    h('h3', {}, 'FRAME-EXACT RENDER (MP4 · PNG · PRORES 4444 ALPHA)'),
+    h('h3', {}, 'FRAME-EXACT RENDER (MP4 · PNG · PRORES 4444 / ANIMATION ALPHA)'),
     h('pre', { class: 'cmd' }, `cd stoopid-toolkit/credits-render\nnpm install\nnode render.mjs --episode ${ep.number} --formats mp4,cards,alpha-cards,prores\n# or, for an unpublished draft: --sequence path/to/${slugFor({ episode: ep, theme: T().theme || ep.theme })}_sequence.json`));
 
   // 10: publish
@@ -513,7 +513,15 @@ R.arcade = async (main) => {
       h('div', { class: 'stack' },
         h('div', { class: 'card' }, h('h2', {}, 'DAILY HISTORY'), h('p', { class: 'hint' }, b.history.n ? `${b.history.n} daily copies, ${b.history.first} → ${b.history.last}.` : 'No copies yet.', ' A daily job records the feed; weekly/monthly views only use these real copies.'),
           h('p', { class: 'row' }, h('span', { class: 'shrink' }, btn('RECORD NOW', (e) => act(e.target, () => api('/admin/beans/record', { method: 'POST' }), (r) => r.added ? `Recorded ${r.asof}.` : `${r.asof} was already on file.`).then(route))),
-            h('span', { class: 'shrink' }, btn('IMPORT FEED GIT HISTORY', (e) => act(e.target, () => api('/admin/beans/backfill', { method: 'POST' }), (r) => `Checked ${r.commits} commits, added ${r.added}.${r.errors.length ? ' Errors: ' + r.errors.length : ''}`).then(route))))),
+            h('span', { class: 'shrink' }, btn('IMPORT FEED GIT HISTORY', (e) => act(e.target, async () => {
+              const t = { added: 0, imported: 0, errors: [], remaining: 1, commits: 0 };
+              for (let i = 0; i < 15 && t.remaining > 0; i++) {           // batches of ~40, to stay inside Cloudflare's per-request limit
+                const r = await api('/admin/beans/backfill', { method: 'POST' });
+                t.added += r.added; t.imported += r.imported; t.errors.push(...r.errors); t.remaining = r.remaining; t.commits = r.commits;
+                e.target.textContent = `IMPORTED ${t.imported}…`;
+              }
+              return t;
+            }, (r) => `Checked ${r.commits} commits · ${r.added} new days on file${r.remaining ? ` · ${r.remaining} still waiting (the nightly job continues)` : ''}${r.errors.length ? ` · ${r.errors.length} errors` : ''}.`).then(route))))),
         period('WEEKLY LEADERS', b.week), period('MONTHLY LEADERS', b.month))),
     h('div', { class: 'card', style: 'margin-top:16px' }, h('h2', {}, 'SNAPSHOT HISTORY'), h('div', { class: 'scroll' }, h('table', { class: 'admin' },
       h('thead', {}, h('tr', {}, h('th', {}, 'ID'), h('th', {}, 'EP'), h('th', {}, 'FEED AS OF'), h('th', {}, 'TOP N'), h('th', {}, 'BY'), h('th', {}, 'NOTES'))),
@@ -531,7 +539,7 @@ R.requests = async (main, arg) => {
   const tabs = h('div', { class: 'tabs', role: 'tablist' }, ['pending', 'approved', 'rejected', 'withdrawn', 'all'].map((s) => h('button', { role: 'tab', 'aria-selected': String(s === status), onclick: () => { location.hash = 'requests/' + s; } }, s.toUpperCase())));
   const cards = subs.map((s) => {
     const cat = sel([['', '— no category (e.g. arcade: Beans link via handle) —'], ...cats.filter((c) => c.kind !== 'leaderboard').map((c) => [c.key, c.name])], MAP[s.contribution] ?? '');
-    const ver = sel([['self_reported', 'Self-reported'], ['manual', 'Confirmed by me'], ['verified', 'Verified']], 'self_reported');
+    const ver = sel([['self_reported', 'Self-reported'], ['manual', 'Confirmed by me'], ['verified', 'Verified']], s.yt_status === 'subscribed' ? 'verified' : 'self_reported');
     const attach = s.possibleMatch ? chk(`Same person as #${s.possibleMatch.id} ${s.possibleMatch.display_name} — attach instead of creating`, true) : null;
     const link = s.profile_url ? chk('Link reviewed & approved', false) : null;
     return h('div', { class: 'card', style: 'margin-bottom:12px' },
@@ -540,6 +548,7 @@ R.requests = async (main, arg) => {
       h('dl', { class: 'kv', style: 'margin-top:8px' }, h('dt', {}, 'CONTRIBUTION'), h('dd', {}, s.contribution.replace(/_/g, ' ')),
         h('dt', {}, 'ACCOUNT'), h('dd', {}, s.handle ? `${s.platform || '?'}: ${s.handle}` : '—'), h('dt', {}, 'LINK'), h('dd', {}, s.profile_url ? ext(s.profile_url, s.profile_url) : '—'),
         h('dt', {}, 'PERMISSIONS'), h('dd', {}, s.consent_public ? pill('NAME PUBLIC', 'ok') : pill('ANONYMOUS', 'gold'), s.consent_link ? pill('LINK OK', 'ok') : pill('NO LINK')),
+        h('dt', {}, 'YOUTUBE CHECK'), h('dd', {}, s.yt_status === 'subscribed' ? pill('VERIFIED WITH GOOGLE', 'ok') : s.yt_status === 'not_subscribed' ? pill('NOT SUBSCRIBED (WHEN CHECKED)', 'warn') : '—', s.yt_checked_at ? h('span', { class: 'hint' }, ' ' + s.yt_checked_at.slice(0, 16).replace('T', ' ')) : null),
         h('dt', {}, 'NOTE'), h('dd', {}, s.note || '—')),
       s.status === 'pending' ? h('div', {}, h('div', { class: 'row', style: 'margin-top:8px' }, field('CATEGORY', cat), field('VERIFICATION', ver)), attach?.el, link?.el,
         h('p', { class: 'row', style: 'margin-top:10px' }, h('span', { class: 'shrink' }, btn('APPROVE', (e) => act(e.target, () => api(`/admin/submissions/${s.id}/approve`, { method: 'POST',
@@ -666,7 +675,7 @@ R.settings = async (main) => {
       h('div', { class: 'card' }, h('h2', {}, 'CREDITS DEFAULTS'), h('div', { class: 'row' }, field('THEME', g.theme), field('FPS', g.fps), field('END CARD', g.endCard)),
         h('div', { class: 'row' }, field('IDENT S', g.identSeconds), field('FINAL S', g.finalSeconds), field('MIN PAGE S', g.minPageSeconds)),
         h('div', { class: 'row' }, field('TOO MANY NAMES', g.overflow), field('EMPTY CATEGORY', g.emptyCategories)), field('ARCHIVE URL ON SCREEN', g.archiveUrl), g.audio.el,
-        field('EPISODE NAMING', g.title, 'Tokens: {number}, {title}'), field('DEFAULT EXPORT FORMATS', g.formats, 'mp4, cards, alpha-cards, prores, webm-alpha')),
+        field('EPISODE NAMING', g.title, 'Tokens: {number}, {title}'), field('DEFAULT EXPORT FORMATS', g.formats, 'mp4, cards, alpha-cards, prores, animation, webm-alpha')),
       h('div', { class: 'card' }, h('h2', {}, 'RECOGNITION RULES'), field('ARCADE TOP N', g.top), g.dedupe.el, field('SUPPORTERS SHOWN ON THE HALL', g.shown), g.auto.el, field('NAME FILTER (COMMA-SEPARATED)', g.block, 'Flagged names are held for review, not published.'),
         g.joinOpen.el, g.archive.el, h('h3', {}, 'PUBLIC LINKS'), ...Object.entries(g.links).map(([k, v]) => field(k.toUpperCase(), v)))),
     h('p', { style: 'margin-top:14px' }, h('button', { class: 'btn gold', type: 'button', onclick: save }, 'SAVE SETTINGS')),

@@ -10,6 +10,8 @@ crons = ["17 6 * * *"]
 [vars]
 # Pages allowed to submit forms and use the admin. Add your Wix domain if you embed with a custom origin.
 ALLOWED_ORIGINS = "https://devinrasche-hub.github.io,https://www.stoopidtv.com,https://stoopidtv.com"
+# youtube.com/@STOOPIDshow — used only by the optional "Verify with YouTube" check.
+YOUTUBE_CHANNEL_ID = "UC9vFe9XBT7lrvJ-uU4zjqtw"
 
 [[d1_databases]]
 binding = "DB"
@@ -17,4 +19,5 @@ database_name = "stoopid_credits"
 database_id = "00000000-0000-0000-0000-000000000000"   # filled in by .github/workflows/deploy-credits-api.yml
 migrations_dir = "migrations"
 
-# Secrets (never in this file): ADMIN_TOKEN (required, 32+ random chars), IP_SALT (recommended).
+# Secrets (never in this file): ADMIN_TOKEN (required, 32+ random chars), IP_SALT (recommended),
+# GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (optional: switch on "Verify with YouTube").

@@ -57,7 +57,7 @@ export function chrome(active, depth = 1) {
   document.getElementById('chrome').replaceChildren(top, nav);
   document.getElementById('legal').replaceChildren(
     h('p', {}, h('b', {}, 'LEGAL-ISH DISCLAIMER. '), 'Recognition here is voluntary, consent-based and can be withdrawn at any time at ', h('a', { href: up + 'join/#withdraw' }, 'GET CREDITED → WITHDRAW'), '. Listing a creator is appreciation, not a sponsorship, partnership or endorsement. Subscriptions marked self-reported have not been verified. Beans come from the STOOPIDTV arcade and are never awarded for paying.'),
-    h('p', {}, 'Nobody made this alone. Unfortunately, you’re all implicated. · END TRANSMISSION. AS IS.'));
+    h('p', {}, h('a', { href: up + 'privacy/' }, 'PRIVACY'), ' · Nobody made this alone. Unfortunately, you’re all implicated. · END TRANSMISSION. AS IS.'));
   const clock = document.getElementById('clock');
   const tick = () => { clock.textContent = new Date().toTimeString().slice(0, 8); };
   tick(); if (!REDUCED) setInterval(tick, 1000);

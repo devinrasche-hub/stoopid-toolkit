@@ -2,7 +2,8 @@ name: Deploy Credits API
 
 # Deploys credits-api/ (Cloudflare Worker + D1 database) — THE CREDITS DEPARTMENT backend.
 # Uses the same CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID repo secrets as Ask Dev.
-# Also needs CREDITS_ADMIN_TOKEN (32+ random characters) for the admin. Optional: IP_SALT.
+# Also needs CREDITS_ADMIN_TOKEN (32+ random characters) for the admin. Optional: IP_SALT, and
+# CREDITS_GOOGLE_CLIENT_ID + CREDITS_GOOGLE_CLIENT_SECRET to switch on "Verify with YouTube".
 # Migrations are forward-only and additive; rollback SQL is in credits-api/rollback/.
 
 on:
@@ -83,8 +84,10 @@ jobs:
         env:
           ADMIN_TOKEN: ${{ secrets.CREDITS_ADMIN_TOKEN }}
           IP_SALT: ${{ secrets.IP_SALT }}
+          GOOGLE_CLIENT_ID: ${{ secrets.CREDITS_GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.CREDITS_GOOGLE_CLIENT_SECRET }}
         run: |
-          for name in ADMIN_TOKEN IP_SALT; do
+          for name in ADMIN_TOKEN IP_SALT GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
             value="${!name}"
             if [ -n "$value" ]; then printf '%s' "$value" | npx wrangler secret put "$name" >/dev/null; echo "set $name"; fi
           done

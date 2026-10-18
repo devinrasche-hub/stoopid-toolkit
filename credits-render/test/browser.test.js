@@ -70,7 +70,7 @@ async function open(url, viewport = { width: 1280, height: 900 }) {
 }
 
 test('14. public pages load without errors and fit a 375px phone', async () => {
-  for (const p of ['/credits/', '/credits/episodes/', '/credits/episodes/?ep=7', '/credits/creators/', '/credits/hall-of-fame/', '/credits/join/', '/credits/admin/']) {
+  for (const p of ['/credits/', '/credits/episodes/', '/credits/episodes/?ep=7', '/credits/creators/', '/credits/hall-of-fame/', '/credits/join/', '/credits/privacy/', '/credits/admin/']) {
     const { page, errors } = await open(web + p, { width: 375, height: 800 });
     await page.waitForTimeout(400);
     const sw = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -294,4 +294,30 @@ test('in-browser exports: PNG-card ZIP and realtime recording produce valid file
   console.log(`# realtime recorder produced ${r.type}`);
   await fsp.rm(dir, { recursive: true, force: true });
   await page.close();
+});
+
+test('join page: “Verify with YouTube” appears only when switched on, goes to Google, reports back', { timeout: 60_000 }, async () => {
+  w.env.GOOGLE_CLIENT_ID = 'client-123.apps.googleusercontent.com'; w.env.GOOGLE_CLIENT_SECRET = 'test-secret';
+  try {
+    const page = await browser.newPage();
+    let googleUrl = null;
+    await page.route('https://accounts.google.com/**', (r) => { googleUrl = r.request().url(); r.fulfill({ status: 200, body: 'google' }); });
+    await page.goto(web + '/credits/join/', { waitUntil: 'networkidle' });
+    assert.equal(await page.isVisible('#m-yt'), true);
+    await page.fill('#display_name', 'Tube Tester');
+    await page.selectOption('#contribution', 'youtube_witness');
+    await page.check('#age_ok');
+    await page.waitForTimeout(3100);
+    await page.click('#submit');
+    await page.waitForSelector('text=VERIFY WITH YOUTUBE');
+    await page.click('#yt-offer button');
+    await page.waitForURL(/accounts\.google\.com/);
+    const u = new URL(googleUrl);
+    assert.equal(u.searchParams.get('client_id'), 'client-123.apps.googleusercontent.com');
+    assert.equal(u.searchParams.get('scope'), 'https://www.googleapis.com/auth/youtube.readonly');
+    await page.goto(web + '/credits/join/#yt=verified', { waitUntil: 'networkidle' });
+    assert.match(await page.textContent('#yt-result'), /VERIFIED/);
+    assert.equal(await page.isVisible('.receipt'), true, 'receipt restored after the round trip');
+    await page.close();
+  } finally { delete w.env.GOOGLE_CLIENT_ID; delete w.env.GOOGLE_CLIENT_SECRET; }
 });

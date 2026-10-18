@@ -23,7 +23,7 @@ This document records what the investigation found before anything was built, th
 | **Existing credits tools** | `stoopid_credits_roll.html` (THE CREDITS MACHINE, paste names → roll) and `stoopid_signal_ack.html` (subscriber shout-out). Both are paste-in toys with no data model; they stay as they are. |
 | **Jobs/integrations** | GitHub Actions (Pages deploy, Ask Dev deploy). Cloudflare Cron Triggers are available on Workers. No scheduled jobs exist yet. |
 | **𝕏 API** | Pay-per-use API. **No documented endpoint lists a creator's paid subscribers or the creators an account pays for.** → manual entry + CSV import. |
-| **YouTube Data API** | Channel subscriber lists are not generally available (`mySubscribers` returns only public subscriptions, capped). A *viewer* can prove their own subscription via OAuth (`subscriptions.list?mine=true&forChannelId=…`, sensitive scope `youtube.readonly`, requires a verified Google OAuth app). → voluntary self-reported enrollment now, OAuth verification as a documented adapter slot. |
+| **YouTube Data API** | Channel subscriber lists are not generally available (`mySubscribers` returns only public subscriptions, capped). A *viewer* can prove their own subscription via OAuth (`subscriptions.list?mine=true&forChannelId=…`, sensitive scope `youtube.readonly`). → voluntary enrollment, plus an optional “Verify with YouTube” check (`src/youtube.js`) that is off until a Google OAuth client is configured. |
 
 ## 2. Decisions that follow
 
@@ -62,7 +62,7 @@ This document records what the investigation found before anything was built, th
 
 ## 4. Data model (D1 / SQLite)
 
-All tables are in `credits-api/migrations/0001_credits_init.sql`; rollback is `credits-api/rollback/0001_credits_init.down.sql`.
+Tables are in `credits-api/migrations/0001_credits_init.sql` and `0002_backfill_and_youtube.sql` (resumable history import + YouTube check result); rollbacks are in `credits-api/rollback/`.
 
 | Table | Purpose |
 |---|---|

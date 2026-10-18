@@ -9,7 +9,9 @@ import { json, corsHeaders, HttpError, fail, readJson, int } from './lib.js';
 import { requireAdmin } from './auth.js';
 import * as P from './public.js';
 import * as A from './admin.js';
-import { liveFeed, recordHistory } from './beans.js';
+import * as Y from './youtube.js';
+import { liveFeed, recordHistory, backfillHistory } from './beans.js';
+import { setIntegration } from './lib.js';
 
 const routes = [];
 const on = (method, pattern, handler, opts = {}) => routes.push({ method, re: new RegExp('^' + pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$'), handler, ...opts });
@@ -17,6 +19,9 @@ const on = (method, pattern, handler, opts = {}) => routes.push({ method, re: ne
 // public
 on('GET', '/public/health', async (c) => json({ ok: true, service: 'stoopid-credits', db: !!(await c.env.DB.prepare('SELECT 1 AS x').first()) }));
 on('GET', '/public/hall', (c) => P.hall(c.env));
+on('GET', '/public/config', (c) => P.config(c.env));
+on('POST', '/public/youtube/start', (c) => Y.start(c.req, c.env, c.url, P.verifyKey), { origin: true });
+on('GET', '/public/youtube/callback', (c) => Y.callback(c.env, c.url));
 on('GET', '/public/creators', (c) => P.creators(c.env));
 on('GET', '/public/hall-of-fame', (c) => P.hallOfFame(c.env));
 on('GET', '/public/episodes', (c) => P.episodes(c.env, c.url));
@@ -112,6 +117,11 @@ export async function handle(req, env) {
 export async function scheduled(env) {
   const r = await liveFeed(env);
   if (r) await recordHistory(env, r.feed, r.raw, 'cron');
+  // Keep importing the feed's git history in small batches until it's complete; failures are visible in Integrations.
+  try {
+    const b = await backfillHistory(env, { maxFetches: 30 });
+    await setIntegration(env, 'beans_history', true, `${b.commits} commits on GitHub · ${b.imported} imported this run · ${b.remaining} waiting`);
+  } catch (e) { await setIntegration(env, 'beans_history', false, e.message); }
   await env.DB.prepare('DELETE FROM rate_limits WHERE hour < ?').bind(Math.floor(Date.now() / 3_600_000) - 48).run();
   return !!r;
 }

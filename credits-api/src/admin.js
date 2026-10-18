@@ -3,7 +3,7 @@
 import { cleanText, normalizeHandle, safeUrl, slugify } from '../../credits/engine/util.js';
 import { creditedPeople, END_CARDS, THEME_META } from '../../credits/engine/sequence.js';
 import { parseCsv, guessMapping, toCsv } from '../../credits/engine/csv.js';
-import { json, fail, readJson, bool, int, oneOf, isoDate, now, audit, getSettings, DEFAULT_SETTINGS } from './lib.js';
+import { json, fail, readJson, bool, int, oneOf, isoDate, now, audit, getSettings, setIntegration, DEFAULT_SETTINGS } from './lib.js';
 import { moderatedLive, takeSnapshot, backfillHistory, recordHistory, liveFeed, periodLeaders } from './beans.js';
 import { buildForEpisode, categories, parseDraft } from './data.js';
 
@@ -289,7 +289,7 @@ const SETTING_RULES = {
   episode_title_format: (v) => cleanText(v, 80) || DEFAULT_SETTINGS.episode_title_format,
   archive_public: (v) => !!v,
   join_open: (v) => !!v,
-  export_formats: (v) => (Array.isArray(v) ? v : []).filter((f) => ['mp4', 'cards', 'alpha-cards', 'prores', 'webm-alpha'].includes(f)),
+  export_formats: (v) => (Array.isArray(v) ? v : []).filter((f) => ['mp4', 'cards', 'alpha-cards', 'prores', 'animation', 'webm-alpha'].includes(f)),
   links: (v) => Object.fromEntries(Object.entries(v || {}).slice(0, 12).map(([k, u]) => [slugify(k), safeUrl(u)]).filter(([, u]) => u)),
 };
 function clampN(v, lo, hi, integer = false) { let n = Number(v); if (!Number.isFinite(n)) n = lo; n = Math.max(lo, Math.min(hi, n)); return integer ? Math.round(n) : n; }
@@ -482,8 +482,11 @@ export async function deleteBeansRule(env, handle, actor) {
   return ok({ ok: true });
 }
 export async function backfill(env, actor) {
-  const r = await backfillHistory(env);
-  await audit(env, actor, 'backfill', 'beans_history', null, r);
+  let r;
+  try { r = await backfillHistory(env); }
+  catch (e) { await setIntegration(env, 'beans_history', false, e.message); throw e; }
+  await setIntegration(env, 'beans_history', true, `${r.commits} commits on GitHub · ${r.remaining} waiting`);
+  await audit(env, actor, 'backfill', 'beans_history', null, { added: r.added, imported: r.imported, remaining: r.remaining, errors: r.errors.length });
   return ok(r);
 }
 export async function recordNow(env, actor) {
@@ -499,7 +502,7 @@ const CONTRIB_CATEGORY = { x_supporter: 'financially_irresponsible', youtube_wit
 
 export async function listSubmissions(env, url) {
   const status = oneOf(url.searchParams.get('status') || 'pending', ['pending', 'approved', 'rejected', 'withdrawn', 'all'], 'pending');
-  const { results } = await env.DB.prepare(`SELECT id, ref, kind, display_name, platform, handle, profile_url, contribution, consent_public, consent_link, note, status, parent_ref, contributor_id, reviewed_by, reviewed_at, created_at
+  const { results } = await env.DB.prepare(`SELECT id, ref, kind, display_name, platform, handle, profile_url, contribution, consent_public, consent_link, note, status, parent_ref, contributor_id, reviewed_by, reviewed_at, created_at, yt_status, yt_checked_at
     FROM submissions ${status === 'all' ? '' : 'WHERE status = ?'} ORDER BY created_at DESC LIMIT 300`).bind(...(status === 'all' ? [] : [status])).all();
   for (const s of results || []) {                            // duplicate hints
     const byHandle = s.handle ? await env.DB.prepare('SELECT c.id, c.display_name FROM external_accounts a JOIN contributors c ON c.id = a.contributor_id WHERE a.handle = ? AND c.merged_into IS NULL LIMIT 1').bind(s.handle).first() : null;
@@ -533,7 +536,7 @@ export async function approveSubmission(env, id, b, actor) {
     try { await addAccount(env, cid, { provider: s.platform, handle: s.handle, verification: 'self_reported' }, 'join_form', actor); }
     catch (e) { if (e.status !== 409) throw e; }              // already someone's — admin sees the duplicate hint
   }
-  if (category) await upsertMembership(env, cid, { category_key: category, verification: b.verification || 'self_reported' }, 'join_form', actor);
+  if (category) await upsertMembership(env, cid, { category_key: category, verification: b.verification || (s.yt_status === 'subscribed' ? 'verified' : 'self_reported') }, 'join_form', actor);
   await env.DB.prepare("UPDATE submissions SET status = 'approved', contributor_id = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?").bind(cid, actor, t, id).run();
   if (s.parent_ref) await env.DB.prepare('UPDATE submissions SET contributor_id = ? WHERE ref = ?').bind(cid, s.parent_ref).run();
   await audit(env, actor, 'approve', 'submission', s.ref, { contributor: cid, category });
@@ -688,7 +691,9 @@ export async function integrations(env) {
     beans_feed: 'AUTOMATIC — reads the public feed; daily history copy by cron.',
     x_supporters: 'MANUAL — no official X API endpoint lists paid subscribers. Add people or import a CSV.',
     x_creators: 'MANUAL — no official X API endpoint lists who you subscribe to. Curate in Creators.',
-    youtube: 'VOLUNTARY — viewers opt in at /credits/join; labelled self-reported. OAuth verification is not enabled.',
+    youtube: env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? 'VOLUNTARY + OPTIONAL VERIFICATION — viewers opt in at /credits/join and may confirm their subscription with Google; unconfirmed ones stay labelled self-reported.'
+      : 'VOLUNTARY — viewers opt in at /credits/join; labelled self-reported. “Verify with YouTube” is off until GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are set.',
   } });
 }
 export async function checkIntegration(env, provider) {

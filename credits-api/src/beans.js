@@ -90,23 +90,45 @@ export async function recordHistory(env, feed, raw, source) {
   return (r.meta?.changes || 0) > 0;
 }
 
-/** Import every past version of the feed from its public git history. */
-export async function backfillHistory(env) {
-  const res = await fetch(GH_COMMITS, { headers: { 'user-agent': 'stoopid-credits', accept: 'application/vnd.github+json' } });
-  if (!res.ok) fail(502, `GitHub returned HTTP ${res.status} listing feed history.`);
-  const commits = await res.json();
-  let added = 0, seen = 0;
-  const errors = [];
-  for (const c of commits) {
-    seen++;
-    try {
-      const r = await fetch(GH_RAW(c.sha), { headers: { 'user-agent': 'stoopid-credits' } });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const raw = await r.json();
-      if (await recordHistory(env, parseFeed(raw), raw, `backfill:${c.sha.slice(0, 7)}`)) added++;
-    } catch (e) { errors.push(`${c.sha.slice(0, 7)}: ${e.message}`); }
+/**
+ * Import past versions of the feed from its public git history, resumably.
+ * Cloudflare's free plan allows 50 outbound requests per invocation, so each call fetches at most
+ * `maxFetches` (commit-list pages + file versions) and remembers finished commits in
+ * beans_backfill_seen. Call again (or let the nightly cron) until `remaining` is 0.
+ */
+export async function backfillHistory(env, { maxFetches = 40 } = {}) {
+  const { results } = await env.DB.prepare('SELECT sha FROM beans_backfill_seen').all();
+  const seen = new Set((results || []).map((r) => r.sha));
+  const out = { commits: 0, added: 0, imported: 0, remaining: 0, errors: [] };
+  let fetches = 0;
+  for (let page = 1; page <= 20; page++) {
+    if (fetches >= maxFetches) { out.remaining++; break; }
+    const res = await fetch(`${GH_COMMITS}&page=${page}`, { headers: { 'user-agent': 'stoopid-credits', accept: 'application/vnd.github+json' } });
+    fetches++;
+    if (res.status === 403 || res.status === 429) fail(502, 'GitHub is rate-limiting history requests (60 an hour without a token). Try again in an hour; the nightly job will also keep going.');
+    if (!res.ok) fail(502, `GitHub returned HTTP ${res.status} listing feed history.`);
+    const commits = await res.json().catch(() => null);
+    if (!Array.isArray(commits)) fail(502, 'GitHub sent an unexpected response listing feed history.');
+    for (const c of commits) {
+      const sha = c && typeof c.sha === 'string' && /^[0-9a-f]{40}$/.test(c.sha) ? c.sha : null;
+      if (!sha) continue;
+      out.commits++;
+      if (seen.has(sha)) continue;
+      if (fetches >= maxFetches) { out.remaining++; continue; }
+      fetches++;
+      try {
+        const r = await fetch(GH_RAW(sha), { headers: { 'user-agent': 'stoopid-credits' } });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const raw = await r.json();
+        const feed = parseFeed(raw);
+        if (await recordHistory(env, feed, raw, `backfill:${sha.slice(0, 7)}`)) out.added++;
+        await env.DB.prepare('INSERT OR IGNORE INTO beans_backfill_seen (sha, asof, imported_at) VALUES (?, ?, ?)').bind(sha, feed.asof, now()).run();
+        seen.add(sha); out.imported++;
+      } catch (e) { out.errors.push(`${sha.slice(0, 7)}: ${e.message}`); }
+    }
+    if (commits.length < 100) break;
   }
-  return { commits: seen, added, errors };
+  return out;
 }
 
 /** Freeze the current moderated leaderboard. Immutable once written; corrections supersede. */

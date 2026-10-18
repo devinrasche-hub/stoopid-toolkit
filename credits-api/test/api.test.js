@@ -379,8 +379,8 @@ describe('Beans history backfill (real feed versions)', () => {
     const fs = await import('node:fs');
     const dir = new URL('./feed-history/', import.meta.url);
     const commits = fs.readFileSync(new URL('commits.txt', dir), 'utf8').trim().split('\n').map((l) => l.split(' '));
-    w.state.routes.set('https://api.github.com/repos/STOOPIDshow/beans-feed/commits?path=beans-leaderboard.json&per_page=100',
-      () => new Response(JSON.stringify(commits.map(([, sha]) => ({ sha })))));
+    w.state.routes.set('https://api.github.com/repos/STOOPIDshow/beans-feed/commits',
+      () => new Response(JSON.stringify(commits.map(([, sha]) => ({ sha, commit: { author: { date: '2026-10-16T00:00:00Z' } } })))));
     for (const [short, sha] of commits) {
       w.state.routes.set(`https://raw.githubusercontent.com/STOOPIDshow/beans-feed/${sha}/beans-leaderboard.json`, () => new Response(fs.readFileSync(new URL(`${short}.json`, dir))));
     }
@@ -395,4 +395,140 @@ describe('Beans history backfill (real feed versions)', () => {
     assert.equal(week.collectingSince, '2026-10-11');
     assert.equal((await w.call('POST', '/admin/beans/backfill')).data.added, 0, 're-running adds nothing');
   });
+});
+
+describe('Beans history backfill at scale', () => {
+  const GH = 'https://api.github.com/repos/STOOPIDshow/beans-feed/commits';
+  const sha = (i) => i.toString(16).padStart(40, '0');
+  function fakeHistory(n) {
+    const lists = [];
+    w.state.routes.set(GH, (url) => {
+      const page = Number(new URL(url).searchParams.get('page'));
+      lists.push(page);
+      const all = Array.from({ length: n }, (_, i) => ({ sha: sha(n - i) }));      // newest first, like GitHub
+      return new Response(JSON.stringify(all.slice((page - 1) * 100, page * 100)));
+    });
+    for (let i = 1; i <= n; i++) {
+      const day = new Date(Date.UTC(2026, 9, 11) + (i - 1) * 86400000).toISOString().slice(0, 10);
+      const doc = { ...FEED_2026_10_16, asof: day };
+      w.state.routes.set(`https://raw.githubusercontent.com/STOOPIDshow/beans-feed/${sha(i)}/beans-leaderboard.json`, () => new Response(JSON.stringify(doc)));
+    }
+    return lists;
+  }
+  test('150 nightly commits: paginates, stays under the per-request limit, resumes until complete', async () => {
+    const lists = fakeHistory(150);
+    let r = (await w.call('POST', '/admin/beans/backfill')).data;
+    assert.ok(r.imported <= 39, 'one call never exceeds ~40 outbound requests');
+    assert.ok(r.remaining > 0);
+    let calls = 1;
+    while (r.remaining > 0 && calls < 10) { r = (await w.call('POST', '/admin/beans/backfill')).data; calls++; }
+    assert.equal(r.remaining, 0);
+    assert.ok(lists.includes(2), 'second page of commits was read');
+    const b = (await w.call('GET', '/admin/beans')).data;
+    assert.equal(b.history.n, 150);
+    assert.equal(b.history.first, '2026-10-11');
+    const week = (await w.call('GET', '/public/beans?period=week', undefined, { token: null })).data;
+    assert.equal(week.available, true, 'with real history older than 7 days, the weekly view opens');
+  });
+  test('the nightly job imports history on its own and reports health', async () => {
+    fakeHistory(12);
+    await w.scheduled();
+    const integ = (await w.call('GET', '/admin/integrations')).data.integrations.find((i) => i.provider === 'beans_history');
+    assert.equal(integ.status, 'ok');
+    assert.equal((await w.call('GET', '/admin/beans')).data.history.n, 12);
+  });
+  test('GitHub rate limiting is reported plainly and nothing breaks', async () => {
+    w.state.routes.set(GH, () => new Response('{"message":"API rate limit exceeded"}', { status: 403 }));
+    const r = await w.call('POST', '/admin/beans/backfill');
+    assert.equal(r.status, 502);
+    assert.match(r.data.error, /rate-limiting/);
+    await w.scheduled();
+    const integ = (await w.call('GET', '/admin/integrations')).data.integrations.find((i) => i.provider === 'beans_history');
+    assert.equal(integ.status, 'error');
+    assert.equal((await w.call('GET', '/public/beans', undefined, { token: null })).data.available, true, 'live board unaffected');
+  });
+});
+
+describe('YouTube verification (optional, mocked Google)', () => {
+  const join = async () => (await w.call('POST', '/public/join', { display_name: 'Tube Tess', contribution: 'youtube_witness', consent_public: true, age_ok: true, elapsed_ms: 4000 }, { token: null })).data;
+  const google = (subscribed, calls) => {
+    w.state.routes.set('https://oauth2.googleapis.com/token', (url, init) => { calls.token = String(init.body); return new Response(JSON.stringify({ access_token: 'ya29.test-token' })); });
+    w.state.routes.set('https://www.googleapis.com/youtube/v3/subscriptions', (url, init) => { calls.subs = String(url); calls.auth = init.headers.authorization; return new Response(JSON.stringify({ items: subscribed ? [{ id: 'sub1' }] : [] })); });
+    w.state.routes.set('https://oauth2.googleapis.com/revoke', (url, init) => { calls.revoked = String(init.body); return new Response(''); });
+  };
+  const enable = () => { w.env.GOOGLE_CLIENT_ID = 'client-123.apps.googleusercontent.com'; w.env.GOOGLE_CLIENT_SECRET = 'shh-secret'; };
+
+  test('off by default: no button, start refuses', async () => {
+    assert.equal((await w.call('GET', '/public/config', undefined, { token: null })).data.youtubeVerify, false);
+    const j = await join();
+    assert.equal((await w.call('POST', '/public/youtube/start', { ref: j.ref, key: j.key }, { token: null })).status, 404);
+  });
+
+  test('subscribed: verified on the request, carried into approval; token revoked, nothing from Google stored', async () => {
+    enable();
+    assert.equal((await w.call('GET', '/public/config', undefined, { token: null })).data.youtubeVerify, true);
+    const j = await join();
+    assert.equal((await w.call('POST', '/public/youtube/start', { ref: j.ref, key: 'WRONG' }, { token: null })).status, 404, 'needs the receipt key');
+    const s = (await w.call('POST', '/public/youtube/start', { ref: j.ref, key: j.key, return: 'https://devinrasche-hub.github.io/stoopid-toolkit/credits/join/' }, { token: null })).data;
+    const u = new URL(s.url);
+    assert.equal(u.origin + u.pathname, 'https://accounts.google.com/o/oauth2/v2/auth');
+    assert.equal(u.searchParams.get('scope'), 'https://www.googleapis.com/auth/youtube.readonly');
+    assert.equal(u.searchParams.get('redirect_uri'), 'https://credits.test/public/youtube/callback');
+    const calls = {}; google(true, calls);
+    const cb = await w.call('GET', `/public/youtube/callback?code=abc&state=${encodeURIComponent(u.searchParams.get('state'))}`, undefined, { token: null, origin: null });
+    assert.equal(cb.status, 302);
+    assert.equal(cb.headers.get('location'), 'https://devinrasche-hub.github.io/stoopid-toolkit/credits/join/#yt=verified');
+    assert.match(calls.subs, /mine=true/); assert.match(calls.subs, /forChannelId=UC9vFe9XBT7lrvJ-uU4zjqtw/);
+    assert.equal(calls.auth, 'Bearer ya29.test-token');
+    assert.match(calls.token, /client_secret=shh-secret/);
+    assert.match(calls.revoked, /token=ya29.test-token/, 'access handed back to Google');
+    const dump = JSON.stringify((await w.call('GET', '/admin/export')).data);
+    assert.ok(!dump.includes('ya29'), 'no Google token stored');
+    const sub = (await w.call('GET', '/admin/submissions')).data.submissions[0];
+    assert.equal(sub.yt_status, 'subscribed');
+    const ap = (await w.call('POST', `/admin/submissions/${sub.id}/approve`, {})).data;
+    const c = (await w.call('GET', `/admin/contributors/${ap.contributorId}`)).data;
+    assert.equal(c.memberships.find((m) => m.category_key === 'voluntary_witnesses').verification, 'verified');
+  });
+
+  test('verifying after approval upgrades the existing credit', async () => {
+    enable();
+    const j = await join();
+    const sub = (await w.call('GET', '/admin/submissions')).data.submissions[0];
+    const ap = (await w.call('POST', `/admin/submissions/${sub.id}/approve`, {})).data;
+    const s = (await w.call('POST', '/public/youtube/start', { ref: j.ref, key: j.key }, { token: null })).data;
+    google(true, {});
+    await w.call('GET', `/public/youtube/callback?code=abc&state=${encodeURIComponent(new URL(s.url).searchParams.get('state'))}`, undefined, { token: null, origin: null });
+    const c = (await w.call('GET', `/admin/contributors/${ap.contributorId}`)).data;
+    assert.equal(c.memberships[0].verification, 'verified');
+  });
+
+  test('not subscribed, cancelled, tampered or foreign return URLs', async () => {
+    enable();
+    const j = await join();
+    const start = async (ret) => new URL((await w.call('POST', '/public/youtube/start', { ref: j.ref, key: j.key, return: ret }, { token: null })).data.url).searchParams.get('state');
+    google(false, {});
+    let st = await start('https://devinrasche-hub.github.io/stoopid-toolkit/credits/join/');
+    let cb = await w.call('GET', `/public/youtube/callback?code=x&state=${encodeURIComponent(st)}`, undefined, { token: null, origin: null });
+    assert.match(cb.headers.get('location'), /#yt=not-subscribed$/);
+    assert.equal((await w.call('GET', '/admin/submissions')).data.submissions[0].yt_status, 'not_subscribed');
+    cb = await w.call('GET', `/public/youtube/callback?error=access_denied&state=${encodeURIComponent(st)}`, undefined, { token: null, origin: null });
+    assert.match(cb.headers.get('location'), /#yt=cancelled$/);
+    const forged = st.replace(/.$/, (ch) => (ch === 'A' ? 'B' : 'A'));
+    cb = await w.call('GET', `/public/youtube/callback?code=x&state=${encodeURIComponent(forged)}`, undefined, { token: null, origin: null });
+    assert.match(cb.headers.get('location'), /#yt=expired$/);
+    st = await start('https://evil.example/phish');
+    cb = await w.call('GET', `/public/youtube/callback?error=access_denied&state=${encodeURIComponent(st)}`, undefined, { token: null, origin: null });
+    assert.ok(cb.headers.get('location').startsWith('https://devinrasche-hub.github.io/'), 'never redirects off allowed origins');
+    w.state.routes.set('https://oauth2.googleapis.com/token', () => new Response('bad', { status: 400 }));
+    st = await start('');
+    cb = await w.call('GET', `/public/youtube/callback?code=x&state=${encodeURIComponent(st)}`, undefined, { token: null, origin: null });
+    assert.match(cb.headers.get('location'), /#yt=error$/);
+  });
+});
+
+test('join requests do not store IP hashes (rate limiting only)', async () => {
+  await w.call('POST', '/public/join', { display_name: 'No Trace', contribution: 'arcade', consent_public: true, age_ok: true, elapsed_ms: 4000 }, { token: null });
+  const row = w.env.DB.raw.prepare("SELECT iph FROM submissions WHERE display_name = 'No Trace'").get();
+  assert.equal(row.iph, '');
 });
