@@ -99,9 +99,22 @@ jobs:
         name: Smoke test (reads only)
         run: |
           base=https://stoopid-credits.stoopidshow.workers.dev
-          code=$(curl -s -o /dev/null -w '%{http_code}' $base/public/health)
+          # Each `wrangler secret put` above rolls out a new Worker version, so the first requests
+          # can briefly hit one mid-rollout and get a 5xx. Retry 5xx/no-answer for up to ~60 s.
+          probe() {
+            for i in $(seq 1 12); do
+              code=$(curl -s -o /dev/null --max-time 10 -w '%{http_code}' "$1")
+              case "$code" in 5*|000) sleep 5 ;; *) break ;; esac
+            done
+            echo "$code"
+          }
+          code=$(probe $base/public/health)
           echo "GET /public/health -> $code (expected 200)"
-          [ "$code" = "200" ] || { echo "::error::Worker isn't answering at $base."; exit 1; }
-          code=$(curl -s -o /dev/null -w '%{http_code}' $base/admin/overview)
+          [ "$code" = "200" ] || { echo "::error::Worker isn't answering at $base (HTTP $code)."; exit 1; }
+          code=$(probe $base/admin/overview)
           echo "GET /admin/overview without a token -> $code (expected 401 or 503)"
-          [ "$code" = "401" ] || [ "$code" = "503" ] || { echo "::error::Admin answered without a token!"; exit 1; }
+          case "$code" in
+            401|503) ;;
+            2*|3*) echo "::error::Admin answered without a token!"; exit 1 ;;
+            *) echo "::error::Admin returned HTTP $code instead of refusing (401). Check the Worker logs."; exit 1 ;;
+          esac

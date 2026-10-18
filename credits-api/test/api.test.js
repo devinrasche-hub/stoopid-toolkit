@@ -378,7 +378,7 @@ describe('Beans history backfill (real feed versions)', () => {
   test('imports every real historical version and never invents a week it does not have', async () => {
     const fs = await import('node:fs');
     const dir = new URL('./feed-history/', import.meta.url);
-    const commits = fs.readFileSync(new URL('commits.txt', dir), 'utf8').trim().split('\n').map((l) => l.split(' '));
+    const commits = fs.readFileSync(new URL('commits.txt', dir), 'utf8').trim().split(/\r?\n/).map((l) => l.split(' '));   // CRLF on Windows checkouts
     w.state.routes.set('https://api.github.com/repos/STOOPIDshow/beans-feed/commits',
       () => new Response(JSON.stringify(commits.map(([, sha]) => ({ sha, commit: { author: { date: '2026-10-16T00:00:00Z' } } })))));
     for (const [short, sha] of commits) {
