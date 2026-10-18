@@ -12,7 +12,8 @@ function equalHex(a, b) {
 }
 
 export async function requireAdmin(req, env) {
-  const secret = env.ADMIN_TOKEN || '';
+  // Trim: a secret set through a pipe (e.g. PowerShell 5.1 → gh secret set) can carry a trailing line break.
+  const secret = (env.ADMIN_TOKEN || '').trim();
   if (secret.length < 32) fail(503, 'Admin is not configured: set the ADMIN_TOKEN secret (32+ random characters).');
   const m = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') || '');
   const given = m ? m[1].trim() : '';

@@ -28,6 +28,11 @@ describe('9. authorisation', () => {
     w.env.ADMIN_TOKEN = 'short';
     assert.equal((await w.call('GET', '/admin/overview')).status, 503);
   });
+  test('a stored secret with a stray line break still matches the clean token', async () => {
+    w.env.ADMIN_TOKEN = TOKEN + '\r\n';
+    assert.equal((await w.call('GET', '/admin/me')).status, 200);
+    assert.equal((await w.call('GET', '/admin/me', undefined, { token: TOKEN + 'x' })).status, 401);
+  });
   test('repeated failures are rate limited', async () => {
     let last;
     for (let i = 0; i < 22; i++) last = await w.call('GET', '/admin/me', undefined, { token: 'nope' });
@@ -514,9 +519,15 @@ describe('YouTube verification (optional, mocked Google)', () => {
     assert.equal((await w.call('GET', '/admin/submissions')).data.submissions[0].yt_status, 'not_subscribed');
     cb = await w.call('GET', `/public/youtube/callback?error=access_denied&state=${encodeURIComponent(st)}`, undefined, { token: null, origin: null });
     assert.match(cb.headers.get('location'), /#yt=cancelled$/);
-    const forged = st.replace(/.$/, (ch) => (ch === 'A' ? 'B' : 'A'));
-    cb = await w.call('GET', `/public/youtube/callback?code=x&state=${encodeURIComponent(forged)}`, undefined, { token: null, origin: null });
-    assert.match(cb.headers.get('location'), /#yt=expired$/);
+    // Tampering anywhere is refused, including the last char's spare bits (decodes to the same bytes: must still be rejected).
+    const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const spare = st.replace(/.$/, (ch) => B64[B64.indexOf(ch) ^ 1]);
+    const mid = st.length - 10;
+    const flipped = st.slice(0, mid) + (st[mid] === 'A' ? 'B' : 'A') + st.slice(mid + 1);
+    for (const forged of [spare, flipped]) {
+      cb = await w.call('GET', `/public/youtube/callback?code=x&state=${encodeURIComponent(forged)}`, undefined, { token: null, origin: null });
+      assert.match(cb.headers.get('location'), /#yt=expired$/, forged === spare ? 'spare-bit edit' : 'signature edit');
+    }
     st = await start('https://evil.example/phish');
     cb = await w.call('GET', `/public/youtube/callback?error=access_denied&state=${encodeURIComponent(st)}`, undefined, { token: null, origin: null });
     assert.ok(cb.headers.get('location').startsWith('https://devinrasche-hub.github.io/'), 'never redirects off allowed origins');
