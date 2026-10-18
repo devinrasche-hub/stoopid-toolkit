@@ -33,7 +33,8 @@ async function readState(env, state) {
   const [body, sig] = String(state || '').split('.');
   if (!body || !sig) return null;
   let ok = false;
-  try { ok = await crypto.subtle.verify('HMAC', await hmacKey(env), unb64u(sig), new TextEncoder().encode(body)); } catch { return null; }
+  // Only the canonical encoding counts: the last base64url char has spare bits, so edits there could still decode to a valid sig.
+  try { const raw = unb64u(sig); if (b64u(raw) !== sig) return null; ok = await crypto.subtle.verify('HMAC', await hmacKey(env), raw, new TextEncoder().encode(body)); } catch { return null; }
   if (!ok) return null;
   try { const p = JSON.parse(new TextDecoder().decode(unb64u(body))); return p.exp > Date.now() ? p : null; } catch { return null; }
 }
