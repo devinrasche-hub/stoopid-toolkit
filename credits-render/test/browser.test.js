@@ -248,7 +248,8 @@ test('1. arcade games still load and run without errors', async () => {
 });
 
 test('1/2. no arcade, Beans or existing tool file was modified by the credits work', () => {
-  const r = spawnSync('git', ['-C', ROOT, 'diff', '--name-only', 'origin/main', '--', 'stoopid_*.html', 'registry', 'ask-dev', 'ask-dev-api', 'brand', 'cinematic'], { encoding: 'utf8' });
+  // --diff-filter=a: new tools may be added; existing ones must not change or disappear
+  const r = spawnSync('git', ['-C', ROOT, 'diff', '--name-only', '--diff-filter=a', 'origin/main', '--', 'stoopid_*.html', 'registry', 'ask-dev', 'ask-dev-api', 'brand', 'cinematic'], { encoding: 'utf8' });
   if (r.status !== 0) return;                                                  // no git history available (e.g. tarball); skip
   assert.equal(r.stdout.trim(), '', 'changed: ' + r.stdout);
 });

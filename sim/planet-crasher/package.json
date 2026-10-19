@@ -1,0 +1,22 @@
+{
+  "name": "planet-crasher",
+  "version": "1.0.0",
+  "description": "PLANET CRASHER — GPU particle planet collision simulator (Three.js + Web Audio)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/publish.mjs",
+    "snapshot": "node scripts/snapshot.mjs",
+    "e2e": "node scripts/e2e.mjs"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1",
+    "vite": "^8.3.2",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "private": true,
+  "type": "module"
+}

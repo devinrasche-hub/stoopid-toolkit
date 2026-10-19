@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLANET CRASHER — THE STOOPID SHOW</title>
+<meta name="description" content="Crash planets into planets. A GPU particle simulation: every particle pulls on every other one, and the glow is the heat the impact actually made.">
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<canvas id="stage"></canvas>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+
+<header id="brand" class="ui">
+  <h1>PLANET <span>CRASHER</span></h1>
+  <div class="sub">every particle pulls on every other particle &middot; the glow is real heat</div>
+</header>
+
+<aside id="panel" class="ui">
+  <button id="panelToggle" class="ptoggle" aria-expanded="true">CONTROLS &#9662;</button>
+  <div class="pbody">
+    <div class="grp">
+      <div class="lab">QUICK CRASHES</div>
+      <div class="chips" id="scenarios">
+        <button data-scn="moon">MAKE THE MOON</button>
+        <button data-scn="hitrun">HIT-AND-RUN</button>
+        <button data-scn="dino">DINO DAY</button>
+        <button data-scn="bully">MARS GETS BULLIED</button>
+        <button data-scn="oblit">OBLITERATE</button>
+        <button data-scn="splash">OCEAN SPLASH</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="lab">TARGET</div>
+      <div class="seg" data-key="target">
+        <button data-v="earth">EARTH</button><button data-v="mars">MARS</button><button data-v="ocean">OCEAN WORLD</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="lab">IMPACTOR <em id="qOut"></em></div>
+      <div class="seg" data-key="impactor">
+        <button data-v="asteroid">ASTEROID</button><button data-v="moon">MOON</button><button data-v="theia">THEIA</button><button data-v="twin">TWIN</button><button data-v="bully">BULLY</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="lab">MADE OF</div>
+      <div class="seg" data-key="material">
+        <button data-v="rock">ROCK</button><button data-v="iron">IRON</button><button data-v="ice">ICE</button>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="lab">IMPACT SPEED <em id="speedOut"></em></div>
+      <input type="range" id="speed" min="1" max="6" step="0.05" value="1.1">
+    </div>
+    <div class="grp">
+      <div class="lab">IMPACT ANGLE <em id="angleOut"></em></div>
+      <input type="range" id="angle" min="0" max="80" step="1" value="45">
+    </div>
+    <div class="grp row2">
+      <div>
+        <div class="lab">PARTICLES</div>
+        <div class="seg" data-key="quality">
+          <button data-v="2048">2K</button><button data-v="4096">4K</button><button data-v="8192">8K</button><button data-v="16384">16K</button>
+        </div>
+      </div>
+      <div>
+        <div class="lab">SIM SPEED <em id="subOut"></em></div>
+        <input type="range" id="substeps" min="1" max="16" step="1" value="8">
+      </div>
+    </div>
+    <div class="acts">
+      <button id="launch" class="big">LAUNCH</button>
+      <button id="reset">RESET</button>
+    </div>
+    <div class="note" id="note"></div>
+  </div>
+</aside>
+
+<section id="hud" class="ui" aria-live="off">
+  <div class="clock"><span>T+</span><b id="hClock">00:00:00</b></div>
+  <div class="st" id="hState">AIMING</div>
+  <dl>
+    <dt>IMPACT SPEED</dt><dd id="hSpeed">—</dd>
+    <dt>IMPACT ENERGY</dt><dd id="hEnergy">—</dd>
+    <dt>LARGEST REMNANT</dt><dd id="hLargest">—</dd>
+    <dt>ORBITING DEBRIS</dt><dd id="hDisk">—</dd>
+    <dt>ESCAPING SPACE</dt><dd id="hEscape">—</dd>
+    <dt>PEAK TEMPERATURE</dt><dd id="hTemp">—</dd>
+  </dl>
+  <div class="outcome"><span>OUTCOME</span><b id="hOutcome">PENDING</b></div>
+  <div class="perf" id="hPerf"></div>
+</section>
+
+<div id="verdict" hidden>
+  <div class="card">
+    <div class="vk">THE COURT OF PHYSICS RULES</div>
+    <h2 id="vKind">PERFECT MERGER</h2>
+    <div class="stamp" id="vStamp">STOOPID</div>
+    <p id="vLine"></p>
+    <div class="vstats" id="vStats"></div>
+    <div class="vacts"><button id="vAgain" class="big">CRASH AGAIN</button><button id="vWatch">KEEP WATCHING</button></div>
+  </div>
+</div>
+
+<footer id="bar" class="ui">
+  <span class="keys">DRAG ORBIT &middot; SCROLL ZOOM &middot; <b>SPACE</b> LAUNCH/PAUSE &middot; <b>R</b> RESET &middot; <b>H</b> HIDE UI</span>
+  <span class="seg cam" data-key="cam"><button data-v="orbit">ORBIT</button><button data-v="follow">FOLLOW</button><button data-v="free">FREE</button></span>
+  <button id="launchM" class="mob">LAUNCH</button>
+  <button id="snap">SNAP</button>
+  <button id="rec">&#9679; REC</button>
+  <button id="sound">SOUND ON</button>
+</footer>
+
+<div id="busy" hidden><div>ASSEMBLING PLANETS&hellip;</div></div>
+<div id="nogl" hidden><div><b>THIS DEVICE CAN&rsquo;T RUN THE PHYSICS.</b><br>Planet Crasher needs WebGL2 with floating-point render targets. Try a desktop browser.</div></div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
