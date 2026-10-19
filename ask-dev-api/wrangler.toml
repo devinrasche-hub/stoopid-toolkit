@@ -5,7 +5,7 @@ workers_dev = true
 
 # The page itself, served at https://ask.stoopidtv.com/ (stoopidtv.com's DNS is on Cloudflare).
 # Cloudflare creates the DNS record and certificate on deploy. The GitHub Pages copy keeps working too.
-routes = [{ pattern = "ask.stoopidtv.com", custom_domain = true }]
+routes = [{ pattern = "ask.stoopidtv.com", custom_domain = true, zone_name = "stoopidtv.com" }]
 
 [assets]
 directory = "../ask-dev"
