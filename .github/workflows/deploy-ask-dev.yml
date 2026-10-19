@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - "ask-dev-api/**"
+      - "ask-dev/**"
       - ".github/workflows/deploy-ask-dev.yml"
 
 permissions:
@@ -106,3 +107,16 @@ jobs:
             sleep 5
           done
           [ "$code" = "422" ] || { echo "::error::Worker isn't answering at ask-dev.stoopidshow.workers.dev — check the workers.dev subdomain in the Cloudflare dashboard."; exit 1; }
+
+      - if: steps.gate.outputs.ok == 'true'
+        name: Check ask.stoopidtv.com
+        working-directory: .
+        run: |
+          # The certificate for a new custom domain can take a few minutes; don't fail the deploy over it.
+          for attempt in $(seq 1 18); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://ask.stoopidtv.com/ || true)
+            echo "Attempt $attempt: GET https://ask.stoopidtv.com/ -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::ask.stoopidtv.com isn't answering yet. Certificates can take up to ~15 minutes; check again later. The GitHub Pages link still works."
