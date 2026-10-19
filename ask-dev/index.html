@@ -305,9 +305,12 @@
 (() => {
   "use strict";
 
-  // Where requests are saved (Cloudflare Worker in ask-dev-api/). Local testing talks to `wrangler dev`.
-  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  const ENDPOINT = LOCAL ? "http://127.0.0.1:8787/request" : "https://ask-dev.stoopidshow.workers.dev/request";
+  // Where requests are saved (Cloudflare Worker in ask-dev-api/). On ask.stoopidtv.com the Worker serves this
+  // page too, so it's same-origin; the GitHub Pages copy calls the Worker; local testing talks to `wrangler dev`.
+  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port !== "8787";
+  const ENDPOINT = LOCAL ? "http://127.0.0.1:8787/request"
+    : location.hostname.endsWith("github.io") ? "https://ask-dev.stoopidshow.workers.dev/request"
+    : "/request";
   const DRAFT_KEY = "askdev.draft.v1";
 
   const $ = id => document.getElementById(id);

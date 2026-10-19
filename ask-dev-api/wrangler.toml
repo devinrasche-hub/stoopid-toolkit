@@ -3,9 +3,16 @@ main = "src/index.js"
 compatibility_date = "2026-07-01"
 workers_dev = true
 
+# The page itself, served at https://ask.stoopidtv.com/ (stoopidtv.com's DNS is on Cloudflare).
+# Cloudflare creates the DNS record and certificate on deploy. The GitHub Pages copy keeps working too.
+routes = [{ pattern = "ask.stoopidtv.com", custom_domain = true }]
+
+[assets]
+directory = "../ask-dev"
+
 [vars]
 # Only pages on these origins may submit. Comma-separated.
-ALLOWED_ORIGINS = "https://devinrasche-hub.github.io"
+ALLOWED_ORIGINS = "https://ask.stoopidtv.com,https://devinrasche-hub.github.io"
 
 [[d1_databases]]
 binding = "DB"

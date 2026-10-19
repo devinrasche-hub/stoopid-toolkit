@@ -69,8 +69,10 @@ async function ipHash(ip, salt) {
 function cors(req, env) {
   const allowed = String(env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
   const origin = req.headers.get("origin") || "";
+  // The page served by this Worker itself (ask.stoopidtv.com) is same-origin and always allowed.
+  if (origin) allowed.push(new URL(req.url).origin);
   return {
-    ok: allowed.includes(origin),
+    ok: !!origin && allowed.includes(origin),
     headers: {
       "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : allowed[0] || "null",
       "Access-Control-Allow-Methods": "POST,OPTIONS",
