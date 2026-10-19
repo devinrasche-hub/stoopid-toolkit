@@ -97,7 +97,12 @@ jobs:
       - if: steps.gate.outputs.ok == 'true'
         name: Smoke test (no data saved)
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://ask-dev.stoopidshow.workers.dev/request \
-            -H 'origin: https://devinrasche-hub.github.io' -H 'content-type: application/json' -d '{}')
-          echo "POST /request with an empty body -> HTTP $code (expected 422)"
+          # A brand-new workers.dev address can take a few seconds to start answering.
+          for attempt in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://ask-dev.stoopidshow.workers.dev/request \
+              -H 'origin: https://devinrasche-hub.github.io' -H 'content-type: application/json' -d '{}')
+            echo "Attempt $attempt: POST /request with an empty body -> HTTP $code (expected 422)"
+            [ "$code" = "422" ] && break
+            sleep 5
+          done
           [ "$code" = "422" ] || { echo "::error::Worker isn't answering at ask-dev.stoopidshow.workers.dev — check the workers.dev subdomain in the Cloudflare dashboard."; exit 1; }
