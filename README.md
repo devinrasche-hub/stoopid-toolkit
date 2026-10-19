@@ -27,7 +27,8 @@ The landing page is **THE STOOPID STUDIO** — a boot sequence, a glitch wordmar
 | 032 | [Still Here](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_still_here.html) | STOOPID AFTER HOURS 03 — 120 seconds. Autoplay finds the viewer a home staged for a camera; three knocks from behind a wall with no door lead back to a real child's room. Captions and title cards are burned into recordings; optional voice slots, no synthesized voices. Source in `cinematic/still-here/` |
 | 034 | [A Map to the Future](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_map_to_the_future.html) | A 150-second explainer of Dr. Joe Dispenza's ideas (Three.js + Web Audio): the morning phone loop, the analytical mind as a wall that meditation gets past, mental rehearsal rewiring a brain from a record of the past into a map to the future, and victim → creator. Captions and diagram labels are burned into recordings; optional voice slots. Not affiliated with Dispenza. Source in `cinematic/map-to-the-future/` |
 | 033 | [The GIF Press](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_gif_press.html) | Video → tagged GIF in the browser: trim, crop, caption, @stoopidshow bug, boomerang. Built for GIPHY, the library behind the 𝕏 GIF search, with the step-by-step for getting verified so the show's GIFs come up when people type keywords |
-| 035 | [Planet Crasher](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_planet_crasher.html) | Throw a planet at a planet — a GPU particle simulation (Three.js) where every particle pulls on every other one and the glow is the heat the impact really made. Quick crashes (Make the Moon, Hit-and-Run, Obliterate…), live remnant / debris / temperature readouts, a verdict from the Court of Physics, PNG snap and WebM recording. Source in `sim/planet-crasher/` |
+| 035 | [The Hall of STOOPID](https://devinrasche-hub.github.io/stoopid-toolkit/credits/) | THE CREDITS DEPARTMENT: the community appreciation hall (supporters, creator directory, Bean legends from the real arcade feed, searchable episode-credits archive, Hall of Fame, opt-in form) plus an admin console that turns it all into end-credit sequences, exported as MP4 / PNG / ProRes 4444 alpha. Source in `credits/`, `credits-api/`, `credits-render/`; docs in `docs/credits-*.md` |
+| 036 | [Planet Crasher](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_planet_crasher.html) | Throw a planet at a planet — a GPU particle simulation (Three.js) where every particle pulls on every other one and the glow is the heat the impact really made. Quick crashes (Make the Moon, Hit-and-Run, Obliterate…), live remnant / debris / temperature readouts, a verdict from the Court of Physics, PNG snap and WebM recording. Source in `sim/planet-crasher/` |
 | 015 | [Flip Finder](https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_flip_finder.html) | Paste a script, find the flip candidates (Hook → Escalation → Flip → Release) |
 
 Everything is a single self-contained HTML file. (The Halloween cinematic is built from source with Vite into one self-contained HTML file — see `cinematic/please-remain-seen/README.md`.) No server, no accounts, no tracking, no API keys — safe to publish.
@@ -35,6 +36,14 @@ Everything is a single self-contained HTML file. (The Halloween cinematic is bui
 ## Also hosted here: Ask Dev
 
 [**Ask Dev**](https://devinrasche-hub.github.io/stoopid-toolkit/ask-dev/) — the request-for-quote intake page for Dev's Magic Errands (`ask-dev/index.html`). Not a STOOPID SHOW tool, so it isn't in THE VAULT. It's the one exception to "no server": submissions go to a private, write-only Cloudflare Worker + D1 database in `ask-dev-api/` (setup, deploy and how to read requests: `ask-dev-api/README.md`). No keys live in this repo — they're GitHub/Cloudflare secrets.
+
+## Also hosted here: The Credits Department
+
+[**The Hall of STOOPID**](https://devinrasche-hub.github.io/stoopid-toolkit/credits/) (VAULT 035) is the second exception to "no server". Its pages are static like everything else, but the people, consent records and episode credits live in a Cloudflare Worker + D1 database (`credits-api/`), and the producer's console at `credits/admin/` needs an admin token. It reads Beans from the public `STOOPIDshow/beans-feed` and never writes them. Nothing private is in this repo: sample people exist only in local-dev seed files and are marked `SAMPLE`.
+
+- How it works: `docs/credits-system-architecture.md`
+- Running it: `docs/credits-admin-guide.md` · exporting video: `docs/credits-video-export.md`
+- Integrations (𝕏, YouTube, Beans): `docs/credits-integrations.md` · going live: `docs/credits-deployment.md`
 
 ## How this repo works
 

@@ -1,6 +1,6 @@
 # PLANET CRASHER — source
 
-VAULT item 035. Published as `../../stoopid_planet_crasher.html` (one self-contained file, three.js inlined, nothing loads from a CDN).
+VAULT item 036. Published as `../../stoopid_planet_crasher.html` (one self-contained file, three.js inlined, nothing loads from a CDN).
 
 ```
 npm install
