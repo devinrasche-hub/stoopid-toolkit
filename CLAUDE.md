@@ -12,6 +12,10 @@ Browser films (Three.js + Web Audio) live in `cinematic/<slug>/` and build into 
 
 **Before building or changing any cinematic, read `cinematic/PLAYBOOK.md`.** It has the brief template, the engine reuse map, the render-and-look checking loop, and the lessons from PLEASE REMAIN SEEN. Start new films by copying the latest film's folder (currently `cinematic/still-here/`).
 
+## Stoopid Chess
+
+`chess/` builds into the root `stoopid_chess.html` (`npm run build` in `chess/`). Never edit the built page by hand. Read `chess/BRIEF.md` first: it has the decisions, the phases, and the plan for online play. `core/rules.js` is shared with the future server referee, so keep it free of DOM code. Run `npm test` in `chess/` before pushing; the perft counts must match exactly.
+
 ## The Credits Department
 
 `credits/` (static pages + shared engine), `credits-api/` (Worker + D1) and `credits-render/` (local video export). Read `docs/credits-system-architecture.md` first. Rules: never write Beans (read `STOOPIDshow/beans-feed` only); public output only shows people with `visibility='public'` and consent; published `credit_versions` are immutable (corrections add a revision); preview and export must keep using the same `credits/engine/` code. Run `npm test` in `credits-api/` and `credits-render/` before pushing.
