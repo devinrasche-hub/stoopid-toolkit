@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 35 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 36 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="35">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="36">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">35 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">36 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -307,6 +307,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>THE STOOPID MINE</h3>
       <p>Eat the coin. Re-mint the coin. Generate value from belief. Proof of Work is out; Proof of Stoopid is in. Blockchain not included.</p></div>
       <div class="foot"><span class="st">STATUS: <em>MINTING</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_chess.html" style="--ac:var(--purple)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 036</span><span class="cls">GAME</span></div>
+      <canvas class="viz" data-viz="chess"></canvas>
+      <div class="body"><h3>STOOPID CHESS</h3>
+      <p>Real chess, every rule, STOOPID skin. Play THE HOUSE at five levels (or one that learns you), pass-and-play a friend, get coached move by move, leave with a verdict.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>YOUR MOVE</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -1114,6 +1123,33 @@ VIZ.hall = function(x,w,h,t){
   x.textAlign='right'; x.fillStyle='#FFB347'; x.font=F(16); x.fillText(String(n).padStart(3,'0'), w-14, h/2+6);
   x.beginPath(); x.ellipse(w-14-48, h/2+1, 7, 5, 0.4, 0, 6.283); x.fill();
   x.fillStyle='#666'; x.font=F(8); x.fillText('BEANS', w-14, h/2+20);
+};
+
+/* 036 — chess: a knight hops the purple and teal board, legal dots ahead of it */
+VIZ.chess = function(x,w,h,t){
+  var n=8, cs=Math.floor(Math.min((h-26)/n, (w-40)/n)), bx=Math.floor((w-cs*n)/2), by=8;
+  var tour=[[1,7],[2,5],[4,4],[6,5],[5,3],[3,2],[1,3],[2,1],[4,0],[5,2],[7,3],[6,1],[4,2],[3,4],[1,5],[0,7]];
+  var step=Math.floor(t/700)%tour.length, k=(t%700)/700, e=k<.55?0:Math.min(1,(k-.55)/.3);
+  e=e*e*(3-2*e);
+  var a=tour[step], b=tour[(step+1)%tour.length];
+  for(var r=0;r<n;r++) for(var c=0;c<n;c++){
+    x.fillStyle=(r+c)%2 ? '#6D3FB0' : '#A6EEDC';
+    x.fillRect(bx+c*cs, by+r*cs, cs-1, cs-1);
+  }
+  x.fillStyle='rgba(255,64,205,.45)'; x.fillRect(bx+a[0]*cs, by+a[1]*cs, cs-1, cs-1);
+  var hops=[[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]];
+  if(k<.55){
+    x.fillStyle='rgba(10,0,25,.35)';
+    for(var i=0;i<8;i++){ var cx=a[0]+hops[i][0], cy=a[1]+hops[i][1];
+      if(cx<0||cy<0||cx>7||cy>7) continue;
+      x.beginPath(); x.arc(bx+(cx+.5)*cs, by+(cy+.5)*cs, cs*.15, 0, 6.283); x.fill(); }
+  }
+  var px=bx+(a[0]+(b[0]-a[0])*e+.5)*cs, py=by+(a[1]+(b[1]-a[1])*e+.5)*cs-Math.sin(e*Math.PI)*cs*.6;
+  x.textAlign='center'; x.textBaseline='middle'; x.font=Math.floor(cs*.9)+'px serif';
+  x.fillStyle='#000'; x.fillText('\u265E', px, py+1);
+  x.textBaseline='alphabetic';
+  x.strokeStyle='#00FFC6'; x.strokeRect(bx-3.5, by-3.5, cs*n+6, cs*n+6);
+  x.font=F(9); x.fillStyle='#8A2BE2'; x.fillText('THE HOUSE IS OPEN', w/2, h-5);
 };
 
 /* 014 — flip finder */
