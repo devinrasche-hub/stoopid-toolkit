@@ -248,6 +248,10 @@ test('1. arcade games still load and run without errors', async () => {
 });
 
 test('1/2. no arcade, Beans or existing tool file was modified by the credits work', () => {
+  // Only a branch that changes the credits code is credits work; a new tool or film PR (even one
+  // that touches these tests) is not.
+  const credits = spawnSync('git', ['-C', ROOT, 'diff', '--name-only', 'origin/main', '--', 'credits', 'credits-api', 'credits-render', ':(exclude)credits-render/test', ':(exclude)credits-api/test'], { encoding: 'utf8' });
+  if (credits.status === 0 && credits.stdout.trim() === '') return;           // not credits work: nothing to guard
   const r = spawnSync('git', ['-C', ROOT, 'diff', '--name-only', 'origin/main', '--', 'stoopid_*.html', 'registry', 'ask-dev', 'ask-dev-api', 'brand', 'cinematic'], { encoding: 'utf8' });
   if (r.status !== 0) return;                                                  // no git history available (e.g. tarball); skip
   assert.equal(r.stdout.trim(), '', 'changed: ' + r.stdout);
