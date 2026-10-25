@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 35 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 36 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="35">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="36">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">35 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">36 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -395,6 +395,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_signal_received.html" style="--ac:var(--orange)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 036</span><span class="cls">AFTER HOURS 04</span></div>
+      <canvas class="viz" data-viz="signal"></canvas>
+      <div class="body"><h3>SIGNAL RECEIVED</h3>
+      <p>STOOPID AFTER HOURS 04. The last one. Somebody was watching the whole time. They were just very far away. Two minutes. Watch 01&ndash;03 first.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>40 YRS OUT</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_map_to_the_future.html" style="--ac:var(--teal)">
@@ -1059,6 +1068,32 @@ VIZ.hold = function(x,w,h,t){
   x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
   x.textAlign='center'; x.font=F(9);
   x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
+};
+
+/* 036 — signal received: rows of watchers with bowl cuts, one screen, his orange */
+VIZ.signal = function(x,w,h,t){
+  var cyc=9000, p=(t%cyc)/cyc, cx=w/2;
+  x.fillStyle='#030605'; x.fillRect(0,0,w,h);
+  var on = p>0.3 && p<0.78, lost = p>=0.78;
+  // the set
+  var sw=Math.min(54,w*0.2), sh=sw*0.75, sy=h*0.3;
+  x.fillStyle = on ? '#cc5500' : (lost ? '#0b1312' : '#0f1a19');
+  x.fillRect(cx-sw/2, sy, sw, sh);
+  if(on){ x.fillStyle='rgba(204,85,0,0.10)'; x.fillRect(0,0,w,h); x.fillStyle='#2a1406'; x.beginPath(); x.arc(cx, sy+sh*0.42, sh*0.22, Math.PI, 0); x.fill(); x.fillRect(cx-sh*0.22, sy+sh*0.42, sh*0.44, 2); }
+  if(lost){ x.fillStyle='#8fd8cc'; x.font=F(7); x.textAlign='center'; x.fillText('NO SIGNAL', cx, sy+sh/2+3); }
+  // the watchers, from behind: heads only become bowl cuts in his light
+  for(var r=0;r<3;r++){
+    var n=7+r*2, yy=h*0.62+r*h*0.1, rr=4+r*1.6;
+    for(var i=0;i<n;i++){
+      var xx=cx+(i-(n-1)/2)*(w*0.8/n);
+      x.fillStyle='#000'; x.fillRect(xx-rr*0.9, yy, rr*1.8, h);
+      x.beginPath(); x.arc(xx, yy-rr*0.6, rr*0.85, 0, Math.PI*2); x.fill();
+      if(on){ x.fillStyle='rgba(204,85,0,0.55)'; x.beginPath(); x.arc(xx, yy-rr*0.9, rr*1.05, Math.PI, 0); x.fill(); x.fillRect(xx-rr*1.05, yy-rr*0.9, rr*2.1, 1.5); }
+    }
+  }
+  x.textAlign='center'; x.font=F(9);
+  x.fillStyle = on ? '#cc5500' : '#4d6b66';
+  x.fillText(lost ? 'SIGNAL RECEIVED.' : (on ? 'NOW SHOWING' : 'VIEWERS: ?'), cx, 14);
 };
 
 /* 032 — still here: a plain wall, a strip of light under it, a door that was always there */

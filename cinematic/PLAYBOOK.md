@@ -5,7 +5,7 @@ How **PLEASE REMAIN SEEN** (the 2026 Halloween special, VAULT item 030) was made
 - The film: `../stoopid_please_remain_seen.html`
 - The source: `please-remain-seen/`
 - The exact prompt that produced it: `please-remain-seen/BRIEF.md`
-- The sequels: `please-hold/` (02) and `still-here/` (03), each with its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `still-here/`.** It has the newest engine: caption layers burned into captures, portals, feed atlas, per-world looks, and a master silence gate.
+- The sequels: `please-hold/` (02), `still-here/` (03) and `signal-received/` (04, the last one). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `signal-received/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
 
 ---
 
@@ -143,6 +143,15 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **Reduced motion can break a shot whose story is the motion.** Damping toward the shot's midpoint turned the sit-down into a hover. Mark those moves `essential`.
 - **A scripted silence gates everything**, voice slots included. Say so wherever the slots are documented.
 
+### Added after SIGNAL RECEIVED (04)
+- **A twist can turn the camera around.** 01–03 trained the audience to fear the watchers. 04 just shows the watchers, from behind, and lets one light source reveal who they are. The flip is a lighting cue, not a caption.
+- **Silhouettes need a long lens.** From inside the crowd, heads filled the frame and read as mushrooms. From the back wall at about 17° FOV, a row of heads against one bright screen reads instantly.
+- **Keep the heads in the dark until the reveal.** Light the floor and lower wall behind them (bodies read, heads don't) and save the light that shows the head shape for the flip.
+- **A previous film's set can play inside the new one.** 04 imports 03's bedside room and renders it into a CRT through a `Feed`. Continuity costs almost nothing.
+- **Formant filters need a low Q.** At Q 4–6 the humming choir all but disappeared, because the sawtooth harmonics missed the narrow bands. Measure it with `audio-levels`.
+- **A dark object on a dark set needs its own key.** The hand on top of the set was invisible until it got a lighter material and a small spotlight.
+- **Bundling an image:** import it (Vite inlines it as a data URL), `await img.decode()` at the top level (build target es2022), then build the world.
+
 ## 7. Brand note
 
 The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sickly off-white, a little emergency red/orange). That's darker and dirtier than the SIGNAL palette (`#000 #FFF #00FFC6 #8A2BE2 #FF2D2D #CC5500`). For a special, the brief wins. For on-brand pieces, start from SIGNAL, and keep Burnt Orange `#CC5500` for the moment the flip lands.
@@ -169,4 +178,10 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Did the knocks and "You forgot our minute." land as the turn without explanation?
 - Did the real room feel more real than the station, or just different?
 - Did the simple hands and the child under the quilt hold up, or distract?
+- What to do more of:
+
+**SIGNAL RECEIVED (04)**
+- Did the bowl-cut reveal land as a laugh, a chill, or both?
+- Did "THIS PLANET IS NO LONGER AVAILABLE IN YOUR REGION." play as the one joke?
+- Did Earth's ending (white, NO SIGNAL, the empty bracket) feel too heavy after 03, or right?
 - What to do more of:
