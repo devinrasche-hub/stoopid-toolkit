@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 37 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 38 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="37">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="38">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">37 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">38 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -395,6 +395,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_please_share.html" style="--ac:var(--orange)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 038</span><span class="cls">AFTER HOURS 06</span></div>
+      <canvas class="viz" data-viz="share"></canvas>
+      <div class="body"><h3>PLEASE SHARE</h3>
+      <p>STOOPID AFTER HOURS 06. An image arrives that has to be shared to finish loading. The Algorithm is very good at sharing. The only way to get rid of it is to give it to someone. Two minutes.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>SHARED 0 TIMES</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_overnight_operator.html" style="--ac:var(--red)">
@@ -1077,6 +1086,26 @@ VIZ.hold = function(x,w,h,t){
   x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
   x.textAlign='center'; x.font=F(9);
   x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
+};
+
+/* 038 — please share: an image loading top-down, a share sheet, CANCEL */
+VIZ.share = function(x,w,h,t){
+  var cyc=9000, p=(t%cyc)/cyc, cx=w/2;
+  x.fillStyle='#050807'; x.fillRect(0,0,w,h);
+  var iw=Math.min(96,w*0.36), ih=iw*0.75, ix=cx-iw/2, iy=(h-ih)/2-6;
+  var load = p<0.7 ? Math.min(0.93, p/0.6) : 1;
+  x.fillStyle='#3e403e'; x.fillRect(ix,iy,iw,ih);
+  var rows=Math.floor(ih*load);
+  x.fillStyle='#4a4b48'; x.fillRect(ix,iy,iw,rows);
+  x.fillStyle='#9a9a90'; x.fillRect(cx-iw*0.12, iy+ih*0.08, iw*0.24, Math.min(rows, ih*0.88)-ih*0.08);
+  x.fillStyle='#030303'; x.fillRect(cx-iw*0.1, iy+ih*0.1, iw*0.2, Math.max(0, Math.min(rows, ih*0.96)-ih*0.1));
+  if(rows>ih*0.62){ x.fillStyle='#bdbab0'; x.beginPath(); x.ellipse(cx, iy+ih*0.76, iw*0.06, ih*0.2, 0, 0, Math.PI*2); x.fill();
+    x.fillStyle='#111'; x.fillRect(cx-iw*0.035, iy+ih*0.62, 2, 2); x.fillRect(cx+iw*0.025, iy+ih*0.62, 2, 2); }
+  if(load>=1){ x.strokeStyle='#151411'; x.lineWidth=1.2; x.beginPath(); x.ellipse(cx, iy+ih*0.9, iw*0.055, ih*0.03, 0, 0.1*Math.PI, 0.9*Math.PI); x.stroke(); }
+  x.textAlign='center'; x.font=F(9);
+  if(p<0.7){ x.fillStyle='#9fb8b2'; x.fillText('LOADING… '+Math.floor(load*100)+'%', cx, h-8); }
+  else { x.fillStyle='#cc5500'; x.fillText(p<0.78 ? 'CANCEL' : 'KEPT', cx, h-8); }
+  x.fillStyle='#4d6b66'; x.fillText('SEND TO: KIDDO?', cx, 14);
 };
 
 /* 037 — overnight operator: the card under the lamp, rule 7 scratched out, then written back in */
