@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 40 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 41 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="40">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="41">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">40 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">41 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -332,6 +332,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>THE VIDEO MACHINE</h3>
       <p>Drop an mp3 on a hypnotic loop and watch it listen back. Geometric tunnels, lofi rain, waveforms that move when the music does. Press record &mdash; that&rsquo;s the whole studio.</p></div>
       <div class="foot"><span class="st">STATUS: <em>REC READY</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_lyric_studio.html" style="--ac:var(--pink)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 041</span><span class="cls">STUDIO</span></div>
+      <canvas class="viz" data-viz="lyric"></canvas>
+      <div class="body"><h3>THE LYRIC STUDIO</h3>
+      <p>WAV in, music video out. Paste the lyrics, tap them in time, pick a look that moves with the kick, render a real MP4 &mdash; 16:9, 9:16 or square, up to 4K. Nothing gets uploaded.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>ON BEAT</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_signal_ack.html" style="--ac:var(--pink)">
@@ -1324,6 +1333,21 @@ VIZ.gif = function(x,w,h,t){
     for(var j=0;j<4;j++){ var gx=sx+(j%2)*(sw/2+2), gy=sy+28+Math.floor(j/2)*((fh-24)/2+2);
       x.fillStyle = j===0 ? '#00FFC6' : '#1c1c1c'; x.fillRect(gx, gy, sw/2-2, (fh-24)/2-2); }
   }
+};
+
+/* 041 — lyric studio: waveform lane, lyric blocks, karaoke wipe */
+VIZ.lyric = function(x,w,h,t){
+  var words=['TAP','IT','IN','TIME'], beat=500, b=Math.floor(t/beat), ph=(t%beat)/beat, kick=Math.exp(-ph*5);
+  var lineY=h*.36, size=Math.round(18+kick*3);
+  x.font='bold '+size+'px Impact, "Arial Black", sans-serif'; x.textAlign='left'; x.textBaseline='middle';
+  var full=words.join(' '), tw=x.measureText(full).width, sx=(w-tw)/2, p=((t%(beat*4))/(beat*4));
+  x.fillStyle='#3a3a3a'; x.fillText(full, sx, lineY);
+  x.save(); x.beginPath(); x.rect(sx, lineY-20, tw*p, 40); x.clip(); x.fillStyle='#FF40CD'; x.fillText(full, sx, lineY); x.restore();
+  var wy=h*.72, n=Math.floor((w-16)/3);
+  for(var i=0;i<n;i++){ var v=Math.abs(Math.sin(i*.37+t/300)*Math.sin(i*.11))*.8+.1, px=8+i*3, past=px<8+(w-16)*p;
+    x.fillStyle=past?'#00b892':'#1d3b35'; x.fillRect(px, wy-v*12, 2, v*24); }
+  for(var k=0;k<4;k++){ var bx=8+(w-16)*k/4; x.fillStyle=k===b%4?'rgba(255,64,205,.35)':'rgba(0,255,198,.12)'; x.fillRect(bx+1, h-16, (w-16)/4-3, 10); }
+  x.fillStyle='#fff'; x.fillRect(8+(w-16)*p, wy-18, 1.5, 44);
 };
 
 /* ==================== RENDER LOOP ==================== */
