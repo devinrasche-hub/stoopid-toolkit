@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 40 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 41 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="40">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="41">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">40 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">41 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -395,6 +395,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_load_more_replies.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 041</span><span class="cls">AFTER HOURS 09</span></div>
+      <canvas class="viz" data-viz="replies"></canvas>
+      <div class="body"><h3>LOAD MORE REPLIES</h3>
+      <p>STOOPID AFTER HOURS 09. A moderator&rsquo;s log. One comment on an old episode has a reply that won&rsquo;t load. Every level down is narrower, and older. Two minutes.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>KEEP GOING</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_pip_and_the_static.html" style="--ac:var(--orange)">
@@ -1104,6 +1113,24 @@ VIZ.hold = function(x,w,h,t){
   x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
   x.textAlign='center'; x.font=F(9);
   x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
+};
+
+/* 041 — load more replies: a thread that narrows like a passage as it goes down */
+VIZ.replies = function(x,w,h,t){
+  var cyc=9000, p=(t%cyc)/cyc;
+  x.fillStyle='#0d1214'; x.fillRect(0,0,w,h);
+  var words=['does anyone hear it?','lol no','yes. under the hum.','air moving','keep going','it gets narrow','keep','going','it\u2019s','fine','almost','there'];
+  var scroll = p<0.8 ? p/0.8*words.length*16 : 0, y0=26-scroll;
+  for(var i=0;i<(p<0.8?words.length:1);i++){
+    var y=y0+i*16, m=6+i*Math.min(9,w/30);
+    if(y<16||y>h-10) continue;
+    x.fillStyle='rgba(2,4,5,'+Math.min(0.9,0.2+i*0.07)+')'; x.fillRect(0,y-8,m,16); x.fillRect(w-m,y-8,m,16);
+    x.fillStyle='#2a3a40'; x.fillRect(m,y-8,1,16); x.fillRect(w-m-1,y-8,1,16);
+    x.fillStyle='#dde6e8'; x.font=F(8); x.textAlign='left'; x.fillText(words[i], m+4, y+3);
+  }
+  if(p>=0.8){ x.fillStyle='#ff9a4a'; x.font=F(8); x.textAlign='left'; x.fillText('@overnight_operator', 8, 40); x.fillStyle='#dde6e8'; x.fillText('keep going', 8, 52); }
+  x.fillStyle='#0a0e10'; x.fillRect(0,0,w,14); x.fillStyle='#c9d6da'; x.font=F(8); x.textAlign='left'; x.fillText(p<0.8?'Comments':'2,108 replies', 6, 10);
+  x.textAlign='center'; x.fillStyle='#5ab0ff'; x.fillText('\u25be LOAD MORE REPLIES', w/2, h-4);
 };
 
 /* 040 — pip and the static: a felt puppet with button eyes, a board of names, tape snow */
