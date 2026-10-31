@@ -5,7 +5,7 @@ How **PLEASE REMAIN SEEN** (the 2026 Halloween special, VAULT item 030) was made
 - The film: `../stoopid_please_remain_seen.html`
 - The source: `please-remain-seen/`
 - The exact prompt that produced it: `please-remain-seen/BRIEF.md`
-- The sequels: `please-hold/` (02), `still-here/` (03), `signal-received/` (04) and `overnight-operator/` (05, the first of the creepypasta run) and `please-share/` (06). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `please-share/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
+- The sequels: `please-hold/` (02), `still-here/` (03), `signal-received/` (04) and `overnight-operator/` (05, the first of the creepypasta run) `please-share/` (06) and `count-again/` (07). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `count-again/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
 
 ---
 
@@ -167,6 +167,22 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **A held object and a hand on something are two different rigs.** The pen grip seen from the side read well. The same rig on a trackball hid the fist behind its own sleeve. Build each pose from the camera's side.
 - **Keep the cursor off the line that matters.** It sat on top of "one more minute?" until it was moved to the end of the row.
 
+### Added after COUNT AGAIN (07)
+- **A window is a feed of the same scene in another state.** `main.js` lets a feed carry `pre()` and `post()`. The fourth monitor sets the room to "real" (warm mug, dry ink, the new operator), renders, then sets it back. That works without a second scene or a portal.
+- **Walking needs only a bob and cuts.** The hall walks are keyed paths with a small step bob. Every "door" is a cut to the same entrance path, and the repetition sells the loop.
+- **Dark on dark disappears in a feed.** The hood's black opening didn't show until the hood was a lighter burnt orange and had its own key light (on only while the window renders).
+- **Check the line of sight before framing through a doorway.** The first microwave shot looked at the hall wall. The camera has to stand in front of the opening.
+
+### Finding an anchor
+Dev said he didn't know what his anchors would be. An anchor is one small, real thing the film can build toward. If nothing comes to mind, these questions help:
+- What's something you do every night that nobody else knows about?
+- What object would you grab first if you had to leave the house fast?
+- What's the last message on your phone from someone you love, and what did it say?
+- What job, room or routine do you remember better than you should?
+- What sound means "home" to you?
+
+When there's no answer, borrow one from the series (01's chair, 03's "one more minute"). Or use a small object the film can make physical (07's warm mug).
+
 ## 7. Brand note
 
 The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sickly off-white, a little emergency red/orange). That's darker and dirtier than the SIGNAL palette (`#000 #FFF #00FFC6 #8A2BE2 #FF2D2D #CC5500`). For a special, the brief wins. For on-brand pieces, start from SIGNAL, and keep Burnt Orange `#CC5500` for the moment the flip lands.
@@ -193,6 +209,12 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Did the knocks and "You forgot our minute." land as the turn without explanation?
 - Did the real room feel more real than the station, or just different?
 - Did the simple hands and the child under the quilt hold up, or distract?
+- What to do more of:
+
+**COUNT AGAIN (07)**
+- Did the copies read as copies (chair, light, bars, wet ink) without being pointed at?
+- Did the fourth monitor read as a window, and the hood as the next operator?
+- Did FISH land as the one joke?
 - What to do more of:
 
 **PLEASE SHARE (06)**
