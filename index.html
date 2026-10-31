@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 39 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 40 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="39">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="40">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">39 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">40 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -395,6 +395,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_pip_and_the_static.html" style="--ac:var(--orange)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 040</span><span class="cls">AFTER HOURS 08</span></div>
+      <canvas class="viz" data-viz="pip"></canvas>
+      <div class="body"><h3>PIP AND THE STATIC</h3>
+      <p>STOOPID AFTER HOURS 08. Everyone remembers a kids&rsquo; show with a felt puppet and button eyes. Nobody can find it. The station&rsquo;s archive has the tape anyway. Two minutes.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>DO NOT AIR</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_count_again.html" style="--ac:var(--teal)">
@@ -1095,6 +1104,30 @@ VIZ.hold = function(x,w,h,t){
   x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
   x.textAlign='center'; x.font=F(9);
   x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
+};
+
+/* 040 — pip and the static: a felt puppet with button eyes, a board of names, tape snow */
+VIZ.pip = function(x,w,h,t){
+  var cyc=9000, p=(t%cyc)/cyc, cx=w/2, f=Math.floor(t/80);
+  x.fillStyle='#6f9fb0'; x.fillRect(0,0,w,h);
+  x.fillStyle='#5f7f48'; x.fillRect(0,h*0.72,w,h*0.28);
+  x.fillStyle='#a8432e'; x.fillRect(0,h*0.78,w,h*0.22);
+  // the board
+  var bx=cx+w*0.12, bw=Math.min(70,w*0.26), bh=bw*0.72, by=h*0.2;
+  x.fillStyle='#6b4a2e'; x.fillRect(bx-3,by-3,bw+6,bh+6); x.fillStyle='#25392f'; x.fillRect(bx,by,bw,bh);
+  x.fillStyle='rgba(240,240,230,0.8)'; for(var i=0;i<6;i++){ x.fillRect(bx+6, by+8+i*6, 10+((i*7)%9), 2); x.fillRect(bx+bw/2+4, by+8+i*6, 8+((i*5)%9), 2); }
+  if(p>0.55){ x.fillStyle='#f1efe6'; x.font=F(8); x.textAlign='center'; x.fillText('STOO'.slice(0, Math.min(4, Math.floor((p-0.55)/0.05)+1)), bx+bw/2, by+bh-4); }
+  // Pip
+  var px=cx-w*0.14, py=h*0.5;
+  x.fillStyle='#d2aa48'; x.fillRect(px-11, py+8, 22, h*0.3);
+  x.beginPath(); x.arc(px, py, 15, 0, Math.PI*2); x.fill();
+  x.fillStyle='#1d1712'; x.beginPath(); x.arc(px-6, py-2, 4, 0, Math.PI*2); x.arc(px+6, py-2, 4, 0, Math.PI*2); x.fill();
+  x.fillStyle='#2a1610'; x.beginPath(); x.arc(px, py+6, 5, 0, Math.PI); x.fill();
+  x.strokeStyle='#8a8a86'; x.lineWidth=1; x.beginPath(); x.moveTo(px-6,py-13); x.lineTo(px-10,py-24); x.moveTo(px+6,py-13); x.lineTo(px+10,py-24); x.stroke();
+  // tape snow, rolling through
+  var band=((t/1600)%1)*(h+30)-15;
+  for(var k=0;k<40;k++){ var r=(Math.sin((k+f)*12.9898)*43758.5453)%1; r=r<0?-r:r; x.fillStyle='rgba(240,240,235,'+(0.15+0.3*r)+')'; x.fillRect(r*w, band+(k%7)*2-6, 4+r*20, 1.5); }
+  x.textAlign='left'; x.font=F(8); x.fillStyle='#f2f2f2'; x.fillText(p<0.85 ? 'PLAY ▶' : '❚❚ PAUSE', 6, 12);
 };
 
 /* 039 — count again: a row of monitors; there are three; then four; the fourth is a window */
