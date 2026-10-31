@@ -5,7 +5,7 @@ How **PLEASE REMAIN SEEN** (the 2026 Halloween special, VAULT item 030) was made
 - The film: `../stoopid_please_remain_seen.html`
 - The source: `please-remain-seen/`
 - The exact prompt that produced it: `please-remain-seen/BRIEF.md`
-- The sequels: `please-hold/` (02), `still-here/` (03) and `signal-received/` (04, the last one). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `signal-received/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
+- The sequels: `please-hold/` (02), `still-here/` (03), `signal-received/` (04) and `overnight-operator/` (05, the first of the creepypasta run). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `overnight-operator/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
 
 ---
 
@@ -152,6 +152,15 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **A dark object on a dark set needs its own key.** The hand on top of the set was invisible until it got a lighter material and a small spotlight.
 - **Bundling an image:** import it (Vite inlines it as a data URL), `await img.decode()` at the top level (build target es2022), then build the world.
 
+### Added after OVERNIGHT OPERATOR (05)
+- **The creepypasta run takes shapes, not stories.** Use a pasta's form (rules for the night shift, the cursed image), never its characters or text. The repo is public. Free-license material (SCP is CC BY-SA) can come in with credit.
+- **A prop can be the script.** The laminated card carries every beat: the camera reads a rule, then the station tests it. Lay the card out in code (`card.js`) and aim the camera at a rule's coordinates, never at guessed positions.
+- **A desk lamp at 30 cm needs almost nothing.** A SpotLight at intensity ≈ 0.55 (decay 2) lights the card. 2.6 blew it out to white. Keep paper albedo off-white (`#cfc9b6`) and clearcoat low, or the hotspot eats the line that matters.
+- **Props between the camera and the subject get huge.** The talkback panel sat in front of the card and filled half the frame in red. Put small props beside or behind the hero prop.
+- **A flat hand reads as a slab when it holds something.** A loose fist of a few soft ellipsoids around the barrel, plus a dark sleeve, reads as a hand at the edge of frame.
+- **LED clocks: no "88:88" ghost.** Under bloom it reads as a real digit ("84:58").
+- **Playwright in a container:** if the pinned version can't find its browser, set `CHROMIUM_PATH` (the scripts in 05 read it).
+
 ## 7. Brand note
 
 The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sickly off-white, a little emergency red/orange). That's darker and dirtier than the SIGNAL palette (`#000 #FFF #00FFC6 #8A2BE2 #FF2D2D #CC5500`). For a special, the brief wins. For on-brand pieces, start from SIGNAL, and keep Burnt Orange `#CC5500` for the moment the flip lands.
@@ -178,6 +187,12 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Did the knocks and "You forgot our minute." land as the turn without explanation?
 - Did the real room feel more real than the station, or just different?
 - Did the simple hands and the child under the quilt hold up, or distract?
+- What to do more of:
+
+**OVERNIGHT OPERATOR (05)**
+- Did the microwave land as the one joke, and did it make the next beat worse?
+- Did the rule-1 feed (the room from behind you, no one in the chair) read without explanation?
+- Did the hand writing rule 7 land as the flip?
 - What to do more of:
 
 **SIGNAL RECEIVED (04)**

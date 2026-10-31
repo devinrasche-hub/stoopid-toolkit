@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 36 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 37 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="36">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="37">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">36 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">37 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -395,6 +395,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>STILL HERE</h3>
       <p>STOOPID AFTER HOURS 03. Autoplay found you a home that looks like yours, lit for a camera. Behind a wall with no door, someone knocks three times. Two minutes.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ONE MORE MINUTE</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_overnight_operator.html" style="--ac:var(--red)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 037</span><span class="cls">AFTER HOURS 05</span></div>
+      <canvas class="viz" data-viz="rules"></canvas>
+      <div class="body"><h3>OVERNIGHT OPERATOR</h3>
+      <p>STOOPID AFTER HOURS 05. A laminated card of rules for whoever runs the station after midnight. Rule 7 is scratched out. Somebody is about to fill it back in. Two minutes.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>ON SHIFT</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
     <a class="item" href="stoopid_signal_received.html" style="--ac:var(--orange)">
@@ -1068,6 +1077,28 @@ VIZ.hold = function(x,w,h,t){
   x.fillStyle='rgba(247,226,198,'+open+')'; x.fillRect(cx-5, cy-14, 10, 22);
   x.textAlign='center'; x.font=F(9);
   x.fillStyle='#ffb347'; x.fillText(p<0.7 ? 'PLEASE HOLD' : 'END OF TRANSMISSION', cx, h-12);
+};
+
+/* 037 — overnight operator: the card under the lamp, rule 7 scratched out, then written back in */
+VIZ.rules = function(x,w,h,t){
+  var cyc=9000, p=(t%cyc)/cyc, cx=w/2;
+  x.fillStyle='#050807'; x.fillRect(0,0,w,h);
+  var g=x.createRadialGradient(cx,h*0.5,4,cx,h*0.5,h*0.75); g.addColorStop(0,'rgba(255,226,184,0.16)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  x.fillStyle=g; x.fillRect(0,0,w,h);
+  var ch=Math.min(h-34, Math.min(78,w*0.3)*1.45), cw=ch/1.45, top=(h-ch)/2-4;
+  x.fillStyle='#cfc9b6'; x.fillRect(cx-cw/2, top, cw, ch);
+  x.fillStyle='#24231f'; x.fillRect(cx-cw*0.38, top+ch*0.07, cw*0.76, 2.5); x.fillRect(cx-cw*0.38, top+ch*0.12, cw*0.76, 1);
+  for(var i=0;i<8;i++){
+    var y=top+ch*(0.2+i*0.095);
+    if(i===6){ x.fillStyle='#0b0b0a'; x.fillRect(cx-cw*0.4, y-2, cw*0.8, 4); continue; }
+    x.fillStyle='rgba(36,35,31,0.55)'; x.fillRect(cx-cw*0.38, y-1, cw*(0.5+0.25*((i*7)%3)/2), 2);
+  }
+  // the new rule 7, a letter at a time
+  var k=Math.min(1,Math.max(0,(p-0.35)/0.4));
+  if(k>0){ x.fillStyle = p<0.8 ? '#cc5500' : '#0d0c0b'; x.fillRect(cx-cw*0.38, top+ch*0.8+3, cw*0.76*k, 2.5); }
+  x.textAlign='center'; x.font=F(9);
+  x.fillStyle = k>0 ? '#cc5500' : '#ff2d2d';
+  x.fillText(p<0.85 ? (k>0 ? 'RULE 7' : 'AFTER MIDNIGHT') : 'GOOD MORNING, OPERATOR', cx, h-8);
 };
 
 /* 036 — signal received: rows of watchers with bowl cuts, one screen, his orange */
