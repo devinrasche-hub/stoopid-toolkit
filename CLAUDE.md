@@ -10,7 +10,7 @@ Public brand tools for THE STOOPID SHOW, served by GitHub Pages from `main`.
 
 Browser films (Three.js + Web Audio) live in `cinematic/<slug>/` and build into a root `stoopid_<slug>.html`.
 
-**Before building or changing any cinematic, read `cinematic/PLAYBOOK.md`.** It has the brief template, the engine reuse map, the render-and-look checking loop, and the lessons from PLEASE REMAIN SEEN. Start new films by copying the latest film's folder (currently `cinematic/count-again/`).
+**Before building or changing any cinematic, read `cinematic/PLAYBOOK.md`.** It has the brief template, the engine reuse map, the render-and-look checking loop, and the lessons from PLEASE REMAIN SEEN. Start new films by copying the latest film's folder (currently `cinematic/pip-and-the-static/`).
 
 ## The Credits Department
 
