@@ -5,7 +5,7 @@ How **PLEASE REMAIN SEEN** (the 2026 Halloween special, VAULT item 030) was made
 - The film: `../stoopid_please_remain_seen.html`
 - The source: `please-remain-seen/`
 - The exact prompt that produced it: `please-remain-seen/BRIEF.md`
-- The sequels: `please-hold/` (02), `still-here/` (03), `signal-received/` (04) and `overnight-operator/` (05, the first of the creepypasta run) `please-share/` (06), `count-again/` (07) and `pip-and-the-static/` (08). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `pip-and-the-static/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
+- The sequels: `please-hold/` (02), `still-here/` (03), `signal-received/` (04) and `overnight-operator/` (05, the first of the creepypasta run) `please-share/` (06), `count-again/` (07), `pip-and-the-static/` (08) and `load-more-replies/` (09). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `load-more-replies/`, or the latest film whose set you need** (09 started from 07 for the station, not 08's archive). It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
 
 ---
 
@@ -179,6 +179,11 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **Keep a puppet uncanny, never predatory.** Pip keeps the names of friends who stopped watching. No secrets, no parents, no meeting. The brief says so, and the dread doesn't need more.
 - **Overlay marks belong on the text layer.** The tape's PLAY mark and rolling tracking band are painted with the captions, so they appear in every capture.
 
+### Added after LOAD MORE REPLIES (09)
+- **Text can be the set.** The thread is a passage: margins close in from both sides, darker walls outside them, older timestamps the deeper it goes. A 960×720 CRT canvas keeps it readable close up.
+- **Paper under the desk lamp needs a darker base** (`#bdb8a6`), even darker than the card. A big blank page reflects more of the lamp than a printed card does.
+- **A hand that stops being there:** cut it on a held frame and let the object it held fall. No move, no sound beyond the pen tipping over.
+
 ### Finding an anchor
 Dev said he didn't know what his anchors would be. An anchor is one small, real thing the film can build toward. If nothing comes to mind, these questions help:
 - What's something you do every night that nobody else knows about?
@@ -215,6 +220,12 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Did the knocks and "You forgot our minute." land as the turn without explanation?
 - Did the real room feel more real than the station, or just different?
 - Did the simple hands and the child under the quilt hold up, or distract?
+- What to do more of:
+
+**LOAD MORE REPLIES (09)**
+- Did the narrowing thread read as going *down*?
+- Did the wellbeing pop-up land as the one joke?
+- Did "keep going", posted as you, land as the flip?
 - What to do more of:
 
 **PIP AND THE STATIC (08)**
