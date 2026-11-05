@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 41 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 42 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="41">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="42">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">41 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">42 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -307,6 +307,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>THE STOOPID MINE</h3>
       <p>Eat the coin. Re-mint the coin. Generate value from belief. Proof of Work is out; Proof of Stoopid is in. Blockchain not included.</p></div>
       <div class="foot"><span class="st">STATUS: <em>MINTING</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_dead_air.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 042</span><span class="cls">GAME</span></div>
+      <canvas class="viz" data-viz="deadair"></canvas>
+      <div class="body"><h3>DEAD AIR</h3>
+      <p>One tap. Fling the signal from tower to tower before each one goes dead. Graze the orbit for PERFECT. A new daily course for everyone, every day, and a score to send your friends.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>ON AIR</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -918,6 +927,27 @@ VIZ.cube = function(x,w,h,t){
   if(Math.floor(t/700)%2){
     x.fillStyle='#555'; x.font=F(9); x.textAlign='center'; x.fillText('PRESS ME', cx, h-8);
   }
+};
+
+/* 042 — dead air: a dot orbits a tower, flings off the tangent, gets caught by the next */
+VIZ.deadair = function(x,w,h,t){
+  var A={x:w*0.32,y:h*0.68}, B={x:w*0.68,y:h*0.34}, R=Math.min(w,h)*0.13, T=3200, p=(t%T)/T;
+  [A,B].forEach(function(n,i){
+    var on = i===0 ? p<0.55 : p>0.4;
+    x.strokeStyle= on?'rgba(0,255,198,.45)':'#1e1e1e'; x.setLineDash([2,4]); x.lineWidth=1;
+    x.beginPath(); x.arc(n.x,n.y,R,0,6.283); x.stroke(); x.setLineDash([]);
+    var ph=(t/1200+i*.5)%1; x.strokeStyle='rgba(0,255,198,'+((1-ph)*.3*(on?1:0))+')';
+    x.beginPath(); x.arc(n.x,n.y,5+ph*(R-5),0,6.283); x.stroke();
+    x.fillStyle= on?'#00FFC6':'#222'; x.beginPath(); x.moveTo(n.x,n.y-8); x.lineTo(n.x+6,n.y+6); x.lineTo(n.x-6,n.y+6); x.closePath(); x.fill();
+  });
+  var dx=B.x-A.x, dy=B.y-A.y, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, nx=-uy, ny=ux;
+  var lp={x:A.x+nx*R, y:A.y+ny*R}, cp={x:B.x+nx*R, y:B.y+ny*R}, a0=Math.atan2(ny,nx), px, py;
+  if(p<0.35){ var a=a0-(0.35-p)/0.35*4.4; px=A.x+Math.cos(a)*R; py=A.y+Math.sin(a)*R; }
+  else if(p<0.5){ var f=(p-0.35)/0.15; px=lp.x+(cp.x-lp.x)*f; py=lp.y+(cp.y-lp.y)*f; }
+  else { var a2=a0+(p-0.5)/0.5*4.4; px=B.x+Math.cos(a2)*R; py=B.y+Math.sin(a2)*R; }
+  if(p>0.5 && p<0.62){ x.fillStyle='rgba(255,63,164,'+(1-(p-0.5)/0.12)+')'; x.font='bold 10px Courier New'; x.textAlign='center'; x.fillText('PERFECT',B.x,B.y-R-8); }
+  x.fillStyle='rgba(255,255,255,.18)'; x.beginPath(); x.arc(px,py,6,0,6.283); x.fill();
+  x.fillStyle='#fff'; x.beginPath(); x.arc(px,py,3,0,6.283); x.fill();
 };
 
 /* 009 — the coin: eat it, re-mint it */
