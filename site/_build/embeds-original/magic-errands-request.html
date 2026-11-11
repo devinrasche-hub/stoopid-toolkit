@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Errands</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        :root { --red:#e02121; --red-dark:#b81717; --bg:#000; --card:#141414; --line:#2a2a2a; --txt:#fff; --muted:#b3b3b3; }
+      html,body { background:var(--bg); }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--txt); line-height:1.45; padding:18px 16px 40px; }
+      .wrap { max-width:520px; margin:0 auto; }
+      .head { text-align:center; margin-bottom:22px; }
+        .brand { font-size:13px; letter-spacing:2px; text-transform:uppercase; color:var(--red); font-weight:800; margin-bottom:14px; }
+      h1 { font-size:26px; line-height:1.2; font-weight:800; margin-bottom:10px; }
+      h1 .r { color:var(--red); }
+      .sub { color:var(--muted); font-size:15px; }
+      .step { display:none; animation:fade .25s ease; }
+      .step.active { display:block; }
+      @keyframes fade { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+      .qlabel { font-size:18px; font-weight:700; margin:20px 0 14px; }
+      .opts { display:flex; flex-direction:column; gap:10px; }
+        .opt { display:block; width:100%; text-align:left; background:var(--card); color:var(--txt); border:2px solid var(--line); border-radius:14px; padding:17px 16px; font-size:17px; font-weight:600; cursor:pointer; transition:border-color .15s, background .15s; }
+      .opt:hover { border-color:var(--red); }
+      .opt.sel { border-color:var(--red); background:#1c0d0d; }
+        textarea { width:100%; min-height:110px; background:var(--card); color:var(--txt); border:2px solid var(--line); border-radius:14px; padding:14px; font-size:16px; font-family:inherit; resize:vertical; }
+      textarea:focus { outline:none; border-color:var(--red); }
+        .btn { display:block; width:100%; text-align:center; background:var(--red); color:#fff; border:none; border-radius:14px; padding:17px; font-size:18px; font-weight:800; cursor:pointer; text-decoration:none; transition:background .15s; }
+      .btn:hover { background:var(--red-dark); }
+      .btn:disabled { opacity:.4; cursor:not-allowed; }
+        .btn.ghost { background:transparent; border:2px solid var(--line); color:var(--txt); font-weight:700; }
+      .btn.ghost:hover { border-color:var(--red); }
+      .row { margin-top:14px; }
+        .back { background:none; border:none; color:var(--muted); font-size:15px; cursor:pointer; padding:8px 0; margin-top:6px; }
+      .back:hover { color:#fff; }
+        .card { background:var(--card); border:2px solid var(--line); border-radius:18px; padding:22px 18px; }
+        .card h2 { font-size:14px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; margin-bottom:6px; }
+        .card .svc { font-size:23px; font-weight:800; color:var(--red); margin-bottom:20px; line-height:1.2; }
+      .blk { margin-bottom:18px; }
+        .blk h3 { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--red); font-weight:800; margin-bottom:8px; }
+      .blk ul { list-style:none; }
+      .blk li { position:relative; padding-left:22px; margin-bottom:7px; font-size:15.5px; }
+        .blk li:before { content:""; position:absolute; left:2px; top:9px; width:7px; height:7px; background:var(--red); border-radius:50%; }
+        .oneliner { font-size:15.5px; color:#fff; background:#1c0d0d; border-left:3px solid var(--red); padding:12px 14px; border-radius:8px; margin:20px 0; }
+      .actions { display:flex; flex-direction:column; gap:11px; margin-top:8px; }
+      .placeholder-note { font-size:12px; color:#8a8a8a; text-align:center; margin-top:2px; }
+        .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--red); color:#fff; padding:13px 22px; border-radius:30px; font-weight:700; font-size:15px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50; }
+      .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+      .restart { text-align:center; margin-top:20px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+        <div class="head">
+          <div class="brand">Dev's Magic Errands &middot; Quad Cities</div>
+          <h1>Tell me the problem. <span class="r">I'll help you name the job.</span></h1>
+          <p class="sub">Answer a couple questions, get a photo checklist, send it my way.</p>
+      </div>
+      
+        <div id="step1" class="step active">
+          <div class="qlabel">What's going on?</div>
+          <div class="opts" id="mainOpts"></div>
+      </div>
+      
+        <div id="step2" class="step">
+          <div id="followups"></div>
+          <button class="btn row" id="toResult">See what I need</button>
+          <button class="back" id="back1">&larr; Start over</button>
+      </div>
+      
+        <div id="step3" class="step">
+              <div class="card">
+                <h2>Sounds like you need:</h2>
+                <div class="svc" id="svcName"></div>
+                      <div class="blk">
+                        <h3>Photos to send me</h3>
+                        <ul id="photoList"></ul>
+                </div>
+                      <div class="blk">
+                        <h3>How to prep</h3>
+                        <ul id="prepList"></ul>
+                </div>
+                <div class="oneliner" id="oneLiner"></div>
+                      <div class="actions">
+                        <button class="btn" id="copyBtn">Copy My Job Summary</button>
+                                <a class="btn ghost" id="fbBtn" href="https://facebook.com/magicerrands" target="_blank" rel="noopener">Message on Facebook</a>
+                                <a class="btn ghost" id="textBtn" href="sms:+15636500859">Text Dev</a>
+                        (Texts me directly at 563-650-0859)</div>
+                </div>
+          </div>
+          <div class="restart"><button class="back" id="back2">&larr; Start over</button></div>
+      </div>
+    </div>
+    <div class="toast" id="toast">Copied! Paste it into a message.</div>
+    
+    <script>
+      var JOBS = {
+          mentorship: {
+                name: "Mentorship / Consultations",
+                result: "A mentorship or consultation session",
+                followups: [
+                  { q: "What do you want help with?", opts: ["General mentorship","One specific problem","Ongoing check-ins","Not sure yet"] }
+                      ],
+                photos: ["A screenshot or note of what you're working on (if there is one)","Anything you've already tried"],
+                prep: ["Jot down your top 1-2 questions so we make the most of the time."],
+                oneliner: "Send me a note on what you're after and I'll set up a time that works. No pressure."
+          },
+          media: {
+                name: "Media / Event Content Coverage",
+                result: "Media or event content coverage",
+                followups: [
+                  { q: "What's the need?", opts: ["Content / shooting","Editing existing footage","Both","More / not sure"] },
+                  { q: "Roughly when?", opts: ["This week","This month","Just planning ahead"] }
+                      ],
+                photos: ["The venue or space (if it's an event)","Any examples of the look you want","Existing footage you need edited, if any"],
+                prep: ["Have a rough date and location in mind if you've got one."],
+                oneliner: "Tell me the vibe and the date and I'll get you a real quote fast \u2014 no games."
+          },
+          grass: {
+                name: "Grass is out of control",
+                result: "A mowing job",
+                followups: [
+                  { q: "Roughly how big is the yard?", opts: ["Small","Medium","Large","Acreage"] },
+                  { q: "How overgrown is it?", opts: ["Normal cut","Jungle rescue"] }
+                      ],
+                photos: ["A wide shot of the whole yard","A close-up of the tallest grass","Any tight spots (fences, trees, beds)"],
+                prep: ["Clear out any toys, hoses, or big rocks if you can. If not, no worries."],
+                oneliner: "Send the photos and I'll get you a real quote fast \u2014 no games."
+          },
+          weeds: {
+                name: "Weeds taking over",
+                result: "A weed cleanup",
+                followups: [
+                  { q: "Where are the weeds?", opts: ["Flower beds","Cracks / driveway","Whole yard","A little of everything"] },
+                  { q: "How bad is it?", opts: ["Getting started","Pretty overgrown"] }
+                      ],
+                photos: ["A wide shot of the worst area","A close-up so I can see what kind of weeds","Anything you want kept (plants, flowers)"],
+                prep: ["Point out anything you want KEPT so I don't pull the good stuff."],
+                oneliner: "Send the photos and I'll get you a real quote fast \u2014 no games."
+          },
+          cleanup: {
+                name: "Yard / property cleanup",
+                result: "A yard / property cleanup",
+                followups: [
+                  { q: "What kind of mess?", opts: ["Leaves / branches","Trash / junk","After a storm","General cleanup"] },
+                  { q: "Roughly how much?", opts: ["A small pile","A truckload","More than that"] }
+                      ],
+                photos: ["A wide shot of the whole area","A close-up of the piles or junk","Where things can be hauled out (gate, driveway)"],
+                prep: ["Let me know if anything is staying vs. going. Otherwise I've got it."],
+                oneliner: "Send the photos and I'll get you a real quote fast \u2014 no games."
+          },
+          shopvac: {
+                name: "Shop vac job (water, mess, vehicle)",
+                result: "A shop vac job",
+                followups: [
+                  { q: "What needs vacuuming?", opts: ["Standing water","A vehicle interior","A messy space","Something else"] },
+                  { q: "How big is the job?", opts: ["Small / quick","Medium","Big mess"] }
+                      ],
+                photos: ["A wide shot of the area or vehicle","A close-up of the worst of the mess","Where the nearest power outlet is"],
+                prep: ["Grab any loose valuables out of the way. I'll handle the rest."],
+                oneliner: "Send the photos and I'll get you a real quote fast \u2014 no games."
+          },
+          pressure: {
+                name: "Pressure washing",
+                result: "A pressure washing job",
+                followups: [
+                  { q: "What are we cleaning?", opts: ["Driveway / concrete","Deck / patio","House siding","Something else"] },
+                  { q: "Roughly how big?", opts: ["Small area","Medium","Large"] }
+                      ],
+                photos: ["A wide shot of the surface","A close-up of the dirt / stains","Where the nearest water spigot is"],
+                prep: ["Move cars, planters, or furniture off the area if you can."],
+                oneliner: "Send the photos and I'll get you a real quote fast \u2014 no games."
+          },
+          odd: {
+                name: "Odd job / something else",
+                result: "An odd job",
+                followups: [
+                  { q: "Tell me a bit more:", type: "text", placeholder: "What needs doing? A sentence or two is plenty." }
+                      ],
+                photos: ["A wide shot of the whole thing","A close-up of the tricky part","Anything related I should see"],
+                prep: ["Nothing \u2014 I've got it. Just send what you can."],
+                oneliner: "Send the photos and I'll get you a real quote fast \u2014 no games."
+          },
+          notsure: {
+                name: "Not sure \u2014 describe it",
+                result: "A custom job (we'll figure it out)",
+                followups: [
+                  { q: "Just describe it in your own words:", type: "text", placeholder: "Don't overthink it \u2014 tell me what's bugging you and I'll figure out the rest." }
+                      ],
+                photos: ["A wide shot of whatever the problem is","A close-up of the part that's bothering you"],
+                prep: ["Nothing \u2014 I've got it. Just tell me what you see."],
+                oneliner: "Even if it's messy, send it over. I'll help you figure out the job and get you a real quote \u2014 no games."
+          }
+      };
+      
+      var ORDER = ["mentorship","media","grass","weeds","cleanup","shopvac","pressure","odd","notsure"];
+      var state = { key:null, answers:[] };
+      
+      function show(id){
+          var steps=document.querySelectorAll('.step');
+          for(var i=0;i<steps.length;i++){ steps[i].classList.remove('active'); }
+          document.getElementById(id).classList.add('active');
+          window.scrollTo(0,0);
+      }
+      
+      function buildMain(){
+          var c=document.getElementById('mainOpts');
+          c.innerHTML='';
+          ORDER.forEach(function(k){
+                var b=document.createElement('button');
+                b.className='opt';
+                b.textContent=JOBS[k].name;
+                b.onclick=function(){ state.key=k; state.answers=[]; buildFollowups(); show('step2'); };
+                c.appendChild(b);
+          });
+      }
+      
+      function buildFollowups(){
+          var job=JOBS[state.key];
+          var wrap=document.getElementById('followups');
+          wrap.innerHTML='';
+          state.answers=[];
+          job.followups.forEach(function(f,idx){
+                var lbl=document.createElement('div');
+                lbl.className='qlabel';
+                lbl.textContent=f.q;
+                wrap.appendChild(lbl);
+                if(f.type==='text'){
+                        var ta=document.createElement('textarea');
+                        ta.placeholder=f.placeholder||'';
+                        ta.oninput=function(){ state.answers[idx]={q:f.q, a:ta.value.trim()}; };
+                        state.answers[idx]={q:f.q, a:''};
+                        wrap.appendChild(ta);
+                } else {
+                        var box=document.createElement('div');
+                        box.className='opts';
+                        f.opts.forEach(function(o){
+                                  var b=document.createElement('button');
+                                  b.className='opt';
+                                  b.textContent=o;
+                                  b.onclick=function(){
+                                              var sib=box.querySelectorAll('.opt');
+                                              for(var i=0;i<sib.length;i++){ sib[i].classList.remove('sel'); }
+                                              b.classList.add('sel');
+                                              state.answers[idx]={q:f.q, a:o};
+                                  };
+                                  box.appendChild(b);
+                        });
+                        wrap.appendChild(box);
+                }
+          });
+      }
+      
+      function buildResult(){
+          var job=JOBS[state.key];
+          document.getElementById('svcName').textContent=job.result;
+          var pl=document.getElementById('photoList'); pl.innerHTML='';
+          job.photos.forEach(function(p){ var li=document.createElement('li'); li.textContent=p; pl.appendChild(li); });
+          var pr=document.getElementById('prepList'); pr.innerHTML='';
+          job.prep.forEach(function(p){ var li=document.createElement('li'); li.textContent=p; pr.appendChild(li); });
+          document.getElementById('oneLiner').textContent=job.oneliner;
+      }
+      
+      function buildSummary(){
+          var job=JOBS[state.key];
+          var lines=[];
+          lines.push("MAGIC ERRANDS \u2014 JOB REQUEST");
+          lines.push("");
+          lines.push("Problem: "+job.name);
+          lines.push("Sounds like: "+job.result);
+          if(state.answers.length){
+                lines.push("");
+                lines.push("Details:");
+                state.answers.forEach(function(a){
+                        if(a && a.a){ lines.push("- "+a.q+" "+a.a); }
+                });
+          }
+          lines.push("");
+          lines.push("Photos I'll send:");
+          job.photos.forEach(function(p){ lines.push("- "+p); });
+          lines.push("");
+          lines.push("Ready when you are!");
+          return lines.join("\n");
+      }
+      
+      document.getElementById('toResult').onclick=function(){ buildResult(); show('step3'); };
+      document.getElementById('back1').onclick=function(){ show('step1'); };
+      document.getElementById('back2').onclick=function(){ state.key=null; state.answers=[]; show('step1'); };
+      
+      document.getElementById('copyBtn').onclick=function(){
+          var txt=buildSummary();
+          var done=function(){ var t=document.getElementById('toast'); t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2200); };
+          if(navigator.clipboard && navigator.clipboard.writeText){
+                navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
+          } else { fallbackCopy(txt); done(); }
+      };
+      function fallbackCopy(txt){
+          var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.top='-9999px';
+          document.body.appendChild(ta); ta.focus(); ta.select();
+          try{ document.execCommand('copy'); }catch(e){}
+          document.body.removeChild(ta);
+      }
+      
+      buildMain();
+          (function(){
+                  function isDesktop(){
+                            var ua = navigator.userAgent || "";
+                            var mobileUA = /Mobi|Android|iPhone|iPad|iPod|IEMobile|BlackBerry|Opera Mini/i.test(ua);
+                            var coarse = window.matchMedia && window.matchMedia("(pointer:coarse)").matches;
+                            var touch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+                            return !mobileUA && !coarse && !(touch && window.innerWidth < 900);
+                  }
+                  var ov = document.createElement("div");
+                  ov.id = "smsModal";
+                  ov.innerHTML = '<div class="sms-box"><button class="sms-x" aria-label="Close">&times;</button><div class="sms-msg">Oops! Mobiles only-- here write it down the old fashioned way</div><div class="sms-num">563-650-0859</div></div>';
+                  document.body.appendChild(ov);
+                  function closeM(){ ov.classList.remove("on"); }
+                  ov.addEventListener("click", function(e){ if(e.target===ov) closeM(); });
+                  ov.querySelector(".sms-x").addEventListener("click", closeM);
+                  document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeM(); });
+                  var tb = document.getElementById("textBtn");
+                  if(tb){
+                            tb.addEventListener("click", function(e){
+                                        if(isDesktop()){ e.preventDefault(); ov.classList.add("on"); }
+                            });
+                  }
+          })();
+    </script>
+      <style>
+              #smsModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:9999; align-items:center; justify-content:center; padding:20px; }
+        #smsModal.on { display:flex; }
+              #smsModal .sms-box { position:relative; background:#141414; border:2px solid #e02121; border-radius:16px; max-width:340px; width:100%; padding:28px 22px; text-align:center; }
+              #smsModal .sms-x { position:absolute; top:8px; right:12px; background:none; border:none; color:#b3b3b3; font-size:26px; line-height:1; cursor:pointer; }
+              #smsModal .sms-msg { color:#fff; font-size:18px; font-weight:700; line-height:1.35; margin-bottom:14px; }
+              #smsModal .sms-num { color:#e02121; font-size:26px; font-weight:800; letter-spacing:1px; }
+  </style>
+  </body>
+</html>

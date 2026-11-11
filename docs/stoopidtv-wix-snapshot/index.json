@@ -1,0 +1,434 @@
+[
+ {
+  "url": "https://www.stoopidtv.com/book",
+  "slug": "book",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/book",
+  "title": "Book | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com",
+  "slug": "home",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/",
+  "title": "STOOPID TV | The Stoopid Show + Humble Poe",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/beans",
+  "slug": "beans",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/beans",
+  "title": "Beans | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/arcade",
+  "slug": "arcade",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/arcade",
+  "title": "Arcade | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/category/all-products",
+  "slug": "category__all-products",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/category/all-products",
+  "title": "All Products | Stoopid Tv",
+  "textLen": 967
+ },
+ {
+  "url": "https://www.stoopidtv.com/book-online",
+  "slug": "book-online",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/book-online",
+  "title": "Hire Dev | Stoopid Tv",
+  "textLen": 604
+ },
+ {
+  "url": "https://www.stoopidtv.com/donate",
+  "slug": "donate",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/donate",
+  "title": "Fuel the Weird | STOOPID TV",
+  "textLen": 679
+ },
+ {
+  "url": "https://www.stoopidtv.com/donation-thank-you-page",
+  "slug": "donation-thank-you-page",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/donation-thank-you-page",
+  "title": "Thank You Page | Stoopid Tv",
+  "textLen": 508
+ },
+ {
+  "url": "https://www.stoopidtv.com/event-details/interactive-stoopid-comedy-experience",
+  "slug": "event-details__interactive-stoopid-comedy-experience",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/event-details/interactive-stoopid-comedy-experience",
+  "title": "Interactive STOOPID Comedy Experience | Stoopid Tv",
+  "textLen": 789
+ },
+ {
+  "url": "https://www.stoopidtv.com/event-details/behind-the-scenes-stoopid-experience",
+  "slug": "event-details__behind-the-scenes-stoopid-experience",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/event-details/behind-the-scenes-stoopid-experience",
+  "title": "Behind-The-Scenes STOOPID Experience | Stoopid Tv",
+  "textLen": 803
+ },
+ {
+  "url": "https://www.stoopidtv.com/episodes",
+  "slug": "episodes",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/episodes",
+  "title": "Watch | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/intake-form",
+  "slug": "intake-form",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/intake-form",
+  "title": "intake-form | Stoopid Tv",
+  "textLen": 385
+ },
+ {
+  "url": "https://www.stoopidtv.com/event-details/stoopid-fan-content-creation-party",
+  "slug": "event-details__stoopid-fan-content-creation-party",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/event-details/stoopid-fan-content-creation-party",
+  "title": "STOOPID Fan Content Creation Party | Stoopid Tv",
+  "textLen": 848
+ },
+ {
+  "url": "https://www.stoopidtv.com/event-list",
+  "slug": "event-list",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/event-list",
+  "title": "Events | Stoopid Tv",
+  "textLen": 539
+ },
+ {
+  "url": "https://www.stoopidtv.com/inquiry-services-page",
+  "slug": "inquiry-services-page",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/inquiry-services-page",
+  "title": "Inquiry Services Page | Stoopid Tv",
+  "textLen": 1712
+ },
+ {
+  "url": "https://www.stoopidtv.com/pricing-plans/list",
+  "slug": "pricing-plans__list",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/pricing-plans/list",
+  "title": "Plans & Pricing | Stoopid Tv",
+  "textLen": 2264
+ },
+ {
+  "url": "https://www.stoopidtv.com/magic-errands",
+  "slug": "magic-errands",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/magic-errands",
+  "title": "Magic Errands | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/baseball-cap",
+  "slug": "product-page__baseball-cap",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/baseball-cap",
+  "title": "Baseball Cap | Stoopid Tv",
+  "textLen": 747
+ },
+ {
+  "url": "https://www.stoopidtv.com/magic-errands-what-do-you-need-done",
+  "slug": "magic-errands-what-do-you-need-done",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/magic-errands-what-do-you-need-done",
+  "title": "Magic Errands | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/ceramic-flower-vase",
+  "slug": "product-page__ceramic-flower-vase",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/ceramic-flower-vase",
+  "title": "Ceramic Flower Vase | Stoopid Tv",
+  "textLen": 706
+ },
+ {
+  "url": "https://www.stoopidtv.com/music",
+  "slug": "music",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/music",
+  "title": "Humble Poe | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/crew-t-shirt",
+  "slug": "product-page__crew-t-shirt",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/crew-t-shirt",
+  "title": "Crew T-Shirt | Stoopid Tv",
+  "textLen": 711
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/foaming-facial-cleanser",
+  "slug": "product-page__foaming-facial-cleanser",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/foaming-facial-cleanser",
+  "title": "Foaming Facial Cleanser | Stoopid Tv",
+  "textLen": 732
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/essential-oil-diffuser",
+  "slug": "product-page__essential-oil-diffuser",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/essential-oil-diffuser",
+  "title": "Essential Oil Diffuser | Stoopid Tv",
+  "textLen": 736
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/hydrating-eye-serum",
+  "slug": "product-page__hydrating-eye-serum",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/hydrating-eye-serum",
+  "title": "Hydrating Eye Serum - Pre Order | Stoopid Tv",
+  "textLen": 795
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/knitted-golf-sweater",
+  "slug": "product-page__knitted-golf-sweater",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/knitted-golf-sweater",
+  "title": "Knitted Golf Sweater | Stoopid Tv",
+  "textLen": 734
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/minimalist-tote-bag",
+  "slug": "product-page__minimalist-tote-bag",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/minimalist-tote-bag",
+  "title": "Minimalist Tote Bag | Stoopid Tv",
+  "textLen": 717
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/round-eyeglasses",
+  "slug": "product-page__round-eyeglasses",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/round-eyeglasses",
+  "title": "Round Eyeglasses | Stoopid Tv",
+  "textLen": 726
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/solid-wood-chair",
+  "slug": "product-page__solid-wood-chair",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/solid-wood-chair",
+  "title": "Solid Wood Chair | Stoopid Tv",
+  "textLen": 727
+ },
+ {
+  "url": "https://www.stoopidtv.com/realm",
+  "slug": "realm",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/realm",
+  "title": "The Realm | Stoopid Tv",
+  "textLen": 357
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/stainless-steel-water-bottle",
+  "slug": "product-page__stainless-steel-water-bottle",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/stainless-steel-water-bottle",
+  "title": "Stainless Steel Water Bottle | Stoopid Tv",
+  "textLen": 751
+ },
+ {
+  "url": "https://www.stoopidtv.com/product-page/textured-loop-earrings",
+  "slug": "product-page__textured-loop-earrings",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/product-page/textured-loop-earrings",
+  "title": "Textured Loop Earrings | Stoopid Tv",
+  "textLen": 736
+ },
+ {
+  "url": "https://www.stoopidtv.com/service-page/set-up-your-ai-helpers",
+  "slug": "service-page__set-up-your-ai-helpers",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/service-page/set-up-your-ai-helpers",
+  "title": "Set Up Your AI Helpers | Stoopid Tv",
+  "textLen": 757
+ },
+ {
+  "url": "https://www.stoopidtv.com/service-page/clip-pack-10-clips",
+  "slug": "service-page__clip-pack-10-clips",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/service-page/clip-pack-10-clips",
+  "title": "Clip Pack (10 clips) | Stoopid Tv",
+  "textLen": 660
+ },
+ {
+  "url": "https://www.stoopidtv.com/service-page/clip-pack-5-clips",
+  "slug": "service-page__clip-pack-5-clips",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/service-page/clip-pack-5-clips",
+  "title": "Clip Pack (5 clips) | Stoopid Tv",
+  "textLen": 755
+ },
+ {
+  "url": "https://www.stoopidtv.com/service-page/posting-game-plan",
+  "slug": "service-page__posting-game-plan",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/service-page/posting-game-plan",
+  "title": "Posting Game Plan | Stoopid Tv",
+  "textLen": 745
+ },
+ {
+  "url": "https://www.stoopidtv.com/ceramic-flower-vase",
+  "slug": "ceramic-flower-vase",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/ceramic-flower-vase",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/minimalist-tote-bag",
+  "slug": "minimalist-tote-bag",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/minimalist-tote-bag",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/earn",
+  "slug": "earn",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/earn",
+  "title": "EARN | Stoopid Tv",
+  "textLen": 585
+ },
+ {
+  "url": "https://www.stoopidtv.com/hydrating-eye-serum",
+  "slug": "hydrating-eye-serum",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/hydrating-eye-serum",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/knitted-golf-sweater",
+  "slug": "knitted-golf-sweater",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/knitted-golf-sweater",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/foaming-facial-cleanser",
+  "slug": "foaming-facial-cleanser",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/foaming-facial-cleanser",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/solid-wood-chair",
+  "slug": "solid-wood-chair",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/solid-wood-chair",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/round-eyeglasses",
+  "slug": "round-eyeglasses",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/round-eyeglasses",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/baseball-cap",
+  "slug": "baseball-cap",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/baseball-cap",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/stainless-steel-water-bottle",
+  "slug": "stainless-steel-water-bottle",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/stainless-steel-water-bottle",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/essential-oil-diffuser",
+  "slug": "essential-oil-diffuser",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/essential-oil-diffuser",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/textured-loop-earrings",
+  "slug": "textured-loop-earrings",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/textured-loop-earrings",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/crew-t-shirt",
+  "slug": "crew-t-shirt",
+  "status": 404,
+  "final": "https://www.stoopidtv.com/crew-t-shirt",
+  "title": "404 Error: Page Not Found",
+  "textLen": 67
+ },
+ {
+  "url": "https://www.stoopidtv.com/booking-calendar/set-up-your-ai-helpers",
+  "slug": "booking-calendar__set-up-your-ai-helpers",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/booking-calendar/set-up-your-ai-helpers",
+  "title": "Set Up Your AI Helpers - Stoopid Tv",
+  "textLen": 778
+ },
+ {
+  "url": "https://www.stoopidtv.com/cart-page",
+  "slug": "cart-page",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/cart-page",
+  "title": "Cart Page | Stoopid Tv",
+  "textLen": 397
+ },
+ {
+  "url": "https://www.stoopidtv.com/booking-calendar/posting-game-plan",
+  "slug": "booking-calendar__posting-game-plan",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/booking-calendar/posting-game-plan",
+  "title": "Posting Game Plan - Stoopid Tv",
+  "textLen": 773
+ },
+ {
+  "url": "https://www.stoopidtv.com/booking-calendar/clip-pack-5-clips",
+  "slug": "booking-calendar__clip-pack-5-clips",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/booking-calendar/clip-pack-5-clips",
+  "title": "Clip Pack (5 clips) - Stoopid Tv",
+  "textLen": 783
+ },
+ {
+  "url": "https://www.stoopidtv.com/booking-calendar/clip-pack-10-clips",
+  "slug": "booking-calendar__clip-pack-10-clips",
+  "status": 200,
+  "final": "https://www.stoopidtv.com/booking-calendar/clip-pack-10-clips",
+  "title": "Clip Pack (10 clips) - Stoopid Tv",
+  "textLen": 784
+ }
+]

@@ -44,6 +44,8 @@ Everything is a single self-contained HTML file. (The Halloween cinematic is bui
 
 ## Also hosted here: The Credits Department
 
+[**stoopidtv.com**](https://devinrasche-hub.github.io/stoopid-toolkit/site/) — the main website, rebuilt off Wix as plain static pages in `site/` (how to edit and rebuild: `site/README.md`; the snapshot it was rebuilt from: `docs/stoopidtv-wix-snapshot/`). Not a tool, so it isn't in THE VAULT.
+
 [**The Hall of STOOPID**](https://devinrasche-hub.github.io/stoopid-toolkit/credits/) (VAULT 035) is the second exception to "no server". Its pages are static like everything else, but the people, consent records and episode credits live in a Cloudflare Worker + D1 database (`credits-api/`), and the producer's console at `credits/admin/` needs an admin token. It reads Beans from the public `STOOPIDshow/beans-feed` and never writes them. Nothing private is in this repo: sample people exist only in local-dev seed files and are marked `SAMPLE`.
 
 - How it works: `docs/credits-system-architecture.md`
