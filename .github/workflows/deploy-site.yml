@@ -1,0 +1,146 @@
+name: Deploy stoopidtv.com
+
+# Publishes site/ to Cloudflare Pages (project "stoopidtv").
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (the same ones Ask Dev uses).
+#
+# Run by hand with "cutover" ticked to point stoopidtv.com and www.stoopidtv.com at the Pages
+# project. That only replaces the A / AAAA / CNAME records for those two names. Mail (MX, TXT)
+# is never touched. It needs a token that can edit DNS for the zone; without one it explains
+# what to click instead.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cutover:
+        description: "Point stoopidtv.com at this site (changes DNS)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/deploy-site.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+env:
+  PROJECT: stoopidtv
+  DOMAIN: stoopidtv.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check Cloudflare secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository secrets, then run this workflow."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the committed pages match the build script
+        run: |
+          python3 site/_build/build.py
+          git diff --exit-code -- site || { echo "::error::site/ is out of date. Run python3 site/_build/build.py and commit."; exit 1; }
+
+      - name: Stage the public files
+        run: rsync -a --exclude _build --exclude README.md site/ dist/
+
+      - name: Find or create the Pages project
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
+          code=$(curl -s -o project.json -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/$PROJECT")
+          if [ "$code" != "200" ]; then
+            echo "Project lookup returned HTTP $code; creating it."
+            jq -c '.errors' project.json || true
+            npx --yes wrangler@4 pages project create "$PROJECT" --production-branch main
+          fi
+
+      - name: Deploy
+        run: npx --yes wrangler@4 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true
+
+      - name: Smoke test
+        id: live
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
+          sub=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/$PROJECT" | jq -r '.result.subdomain')
+          [ -n "$sub" ] && [ "$sub" != "null" ] || { echo "::error::Could not read the project's pages.dev address."; exit 1; }
+          echo "sub=$sub" >> "$GITHUB_OUTPUT"
+          for attempt in $(seq 1 12); do
+            ok=true
+            for path in / /episodes/ /arcade/ /embeds/home.html /donate/; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "https://$sub$path")
+              echo "Attempt $attempt: https://$sub$path -> HTTP $code"
+              [ "$code" = "200" ] || ok=false
+            done
+            $ok && break
+            sleep 5
+          done
+          $ok || { echo "::error::The deployed site isn't answering at https://$sub"; exit 1; }
+          echo "Live at https://$sub" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice::Live at https://$sub"
+
+      - name: Point the domain at the site
+        if: github.event_name == 'workflow_dispatch' && inputs.cutover
+        env:
+          SUB: ${{ steps.live.outputs.sub }}
+        run: |
+          set -u
+          cf() { curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          base="https://api.cloudflare.com/client/v4"
+
+          zone=$(cf "$base/zones?name=$DOMAIN" | jq -r '.result[0].id // empty')
+          if [ -z "$zone" ]; then
+            echo "::error::This token can't see the $DOMAIN zone. Either the domain is in a different Cloudflare account, or the token lacks Zone permissions. In the dashboard: delete the A record for $DOMAIN and the CNAME for www, then add both names under Workers & Pages > $PROJECT > Custom domains."
+            exit 1
+          fi
+
+          # Check DNS edit rights before deleting anything.
+          probe=$(cf -X POST "$base/zones/$zone/dns_records" --data '{"type":"TXT","name":"_stv-deploy-check.'"$DOMAIN"'","content":"\"ok\"","ttl":60}')
+          probe_id=$(echo "$probe" | jq -r '.result.id // empty')
+          if [ -z "$probe_id" ]; then
+            echo "$probe" | jq -c '.errors'
+            echo "::error::This token can't edit DNS for $DOMAIN, so nothing was changed. Add 'Zone > DNS > Edit' for $DOMAIN to the token, or in the dashboard: delete the A record for $DOMAIN and the CNAME for www, then add both names under Workers & Pages > $PROJECT > Custom domains."
+            exit 1
+          fi
+          cf -X DELETE "$base/zones/$zone/dns_records/$probe_id" >/dev/null
+
+          for name in "$DOMAIN" "www.$DOMAIN"; do
+            echo "== $name"
+            # Register the name on the Pages project first, so there's no gap where DNS points nowhere.
+            cf -X POST "$base/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT/domains" --data '{"name":"'"$name"'"}' \
+              | jq -c '{success, errors: [.errors[]?.message]}'
+            for type in A AAAA CNAME; do
+              for id in $(cf "$base/zones/$zone/dns_records?type=$type&name=$name" | jq -r '.result[].id'); do
+                echo "removing old $type record $id"
+                cf -X DELETE "$base/zones/$zone/dns_records/$id" | jq -c '{success}'
+              done
+            done
+            cf -X POST "$base/zones/$zone/dns_records" \
+              --data '{"type":"CNAME","name":"'"$name"'","content":"'"$SUB"'","proxied":true,"ttl":1}' \
+              | jq -ce '{success, errors: [.errors[]?.message]} | if .success then . else error("could not create the CNAME") end'
+          done
+
+          echo "Waiting for the domain to come up (certificates can take a few minutes)."
+          for attempt in $(seq 1 30); do
+            a=$(curl -s -o /dev/null -w '%{http_code}' "https://www.$DOMAIN/embeds/home.html" || true)
+            b=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/embeds/home.html" || true)
+            echo "Attempt $attempt: www -> $a, apex -> $b"
+            [ "$a" = "200" ] && [ "$b" = "200" ] && { echo "::notice::$DOMAIN now serves the new site."; exit 0; }
+            sleep 20
+          done
+          echo "::warning::DNS is switched but the domain wasn't answering yet after 10 minutes. Check Workers & Pages > $PROJECT > Custom domains."

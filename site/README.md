@@ -7,3 +7,7 @@ The public site, rebuilt from the Wix snapshot of 2026-11-11 (see `docs/stoopidt
 - Donate goes to Buy Me a Coffee. Hire Dev "Book Now" goes to Ask Dev. Earn goes to Discord.
 - Not carried over from Wix: the newsletter signup, the Earn early-access form, online booking/checkout, the store.
 - Fonts (Anton, Poppins) still load from Google Fonts, as the original pages did.
+
+## Deploying
+
+`.github/workflows/deploy-site.yml` publishes this folder to Cloudflare Pages (project `stoopidtv`) on every push to `main` that touches `site/`. Run it by hand with **cutover** ticked to point stoopidtv.com at it.
