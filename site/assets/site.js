@@ -46,3 +46,31 @@
     timer = setTimeout(function () { frames.forEach(refit); }, 150);
   });
 })();
+
+// Newsletter and Earn sign-ups post to /api/signup on this site.
+(function () {
+  var loaded = Date.now();
+  [].forEach.call(document.querySelectorAll('form.signup'), function (form) {
+    var msg = form.querySelector('.form-msg');
+    var btn = form.querySelector('button');
+    function say(text, cls) { msg.textContent = text; msg.className = 'form-msg ' + cls; }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var data = { list: form.getAttribute('data-list'), elapsed_ms: Date.now() - loaded };
+      [].forEach.call(form.elements, function (el) { if (el.name) data[el.name] = el.value.trim(); });
+      if (!/^\S+@\S+\.\S+$/.test(data.email || '')) { say('Add a real email address.', 'bad'); form.elements.email.focus(); return; }
+      if (form.elements.first_name && !data.first_name) { say('Add your first name.', 'bad'); form.elements.first_name.focus(); return; }
+      btn.disabled = true; say('Sending...', '');
+      fetch(form.getAttribute('action'), {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data)
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (out) {
+          if (res.ok && out.ok) { form.reset(); say("You're in. Thanks.", 'ok'); }
+          else { say(out.error || "That didn't go through. Try again in a minute.", 'bad'); }
+        });
+      }).catch(function () {
+        say("That didn't go through. Check your connection and try again.", 'bad');
+      }).then(function () { btn.disabled = false; });
+    });
+  });
+})();
