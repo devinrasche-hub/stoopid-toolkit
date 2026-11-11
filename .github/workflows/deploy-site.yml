@@ -89,7 +89,7 @@ jobs:
 
       - name: Deploy
         working-directory: stage
-        run: npx --yes wrangler@4 pages deploy --branch main --commit-dirty=true
+        run: npx --yes wrangler@4 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true
 
       - name: Smoke test
         id: live
