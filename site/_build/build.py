@@ -103,7 +103,14 @@ EARN = """
   <h1>Your time is worth money. Finally.</h1>
   <p class="lede">STOOPID is a platform that pays you for your time and attention.</p>
   <p class="lede">Get early access before we launch.<br><span class="fine">(Or, well, it WILL be!)</span></p>
-  <p><a class="btn" href="{discord}" target="_blank" rel="noopener">Get early access on Discord</a></p>
+  <form class="signup stack" data-list="earn" action="{root}api/signup" method="post" novalidate>
+    <label>First name *<input type="text" name="first_name" autocomplete="given-name" maxlength="80" required></label>
+    <label>Email address *<input type="email" name="email" autocomplete="email" maxlength="254" required></label>
+    <label>Where do you mainly hang out?<input type="text" name="hangout" maxlength="200"></label>
+    <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    <button class="btn" type="submit">Submit</button>
+    <p class="form-msg" role="status" aria-live="polite"></p>
+  </form>
   <p class="aside">Already earning beans? <a href="{root}beans/">See how beans work</a>.</p>
 </section>
 """
@@ -178,6 +185,13 @@ SHELL = """<!DOCTYPE html>
 {body}
 </main>
 <footer class="foot">
+  <form class="signup news" data-list="newsletter" action="{root}api/signup" method="post" novalidate>
+    <h2>the not so stoopid newsletter. sometimes. when there's something.</h2>
+    <label>Get the weekly weird delivered. *<input type="email" name="email" autocomplete="email" maxlength="254" required></label>
+    <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    <button class="btn" type="submit">Sign me up</button>
+    <p class="form-msg" role="status" aria-live="polite"></p>
+  </form>
   <p class="foot-links"><a href="{root}donate/">Contribute</a> · <a href="{root}book-online/">Hire Dev</a> · <a href="{root}magic-errands/">Magic Errands</a> · <a href="{root}beans/">Beans FAQ</a></p>
   <p class="social">
 {social}

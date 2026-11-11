@@ -1,7 +1,8 @@
 name: Deploy stoopidtv.com
 
-# Publishes site/ to Cloudflare Pages (project "stoopidtv").
-# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (the same ones Ask Dev uses).
+# Publishes site/ to Cloudflare Pages with the sign-up function and its D1 database
+# (site/_cloudflare/). Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+# (the same ones Ask Dev uses).
 #
 # Run by hand with "cutover" ticked to point stoopidtv.com and www.stoopidtv.com at the Pages
 # project. That only replaces the A / AAAA / CNAME records for those two names. Mail (MX, TXT)
@@ -57,8 +58,11 @@ jobs:
           python3 site/_build/build.py
           git diff --exit-code -- site || { echo "::error::site/ is out of date. Run python3 site/_build/build.py and commit."; exit 1; }
 
-      - name: Stage the public files
-        run: rsync -a --exclude _build --exclude README.md site/ dist/
+      - name: Stage the public files and the sign-up function
+        run: |
+          mkdir stage
+          rsync -a --exclude _build --exclude _cloudflare --exclude README.md site/ stage/dist/
+          cp -r site/_cloudflare/. stage/
 
       - name: Find or create the Pages project
         run: |
@@ -70,8 +74,22 @@ jobs:
             npx --yes wrangler@4 pages project create "$PROJECT" --production-branch main
           fi
 
+      - name: Find or create the sign-ups database
+        working-directory: stage
+        run: |
+          find_db() { npx --yes wrangler@4 d1 list --json | jq -r '.[] | select(.name=="stoopidtv_signups") | .uuid'; }
+          DB_ID=$(find_db)
+          if [ -z "$DB_ID" ]; then
+            npx --yes wrangler@4 d1 create stoopidtv_signups
+            DB_ID=$(find_db)
+          fi
+          [ -n "$DB_ID" ] || { echo "::error::Could not find or create the stoopidtv_signups database."; exit 1; }
+          sed -i "s/^database_id = .*/database_id = \"$DB_ID\"/" wrangler.toml
+          npx --yes wrangler@4 d1 execute stoopidtv_signups --remote --file schema.sql
+
       - name: Deploy
-        run: npx --yes wrangler@4 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true
+        working-directory: stage
+        run: npx --yes wrangler@4 pages deploy --branch main --commit-dirty=true
 
       - name: Smoke test
         id: live
@@ -83,7 +101,7 @@ jobs:
           for attempt in $(seq 1 12); do
             ok=true
             for path in / /episodes/ /arcade/ /embeds/home.html /donate/; do
-              code=$(curl -s -o /dev/null -w '%{http_code}' "https://$sub$path")
+              code=$(curl -sL -o /dev/null -w '%{http_code}' "https://$sub$path")
               echo "Attempt $attempt: https://$sub$path -> HTTP $code"
               [ "$code" = "200" ] || ok=false
             done
@@ -91,6 +109,10 @@ jobs:
             sleep 5
           done
           $ok || { echo "::error::The deployed site isn't answering at https://$sub"; exit 1; }
+          # An empty sign-up must be rejected by the function (and saves nothing).
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "https://$sub/api/signup" -H 'content-type: application/json' -d '{}')
+          echo "POST /api/signup with an empty body -> HTTP $code (expected 422)"
+          [ "$code" = "422" ] || { echo "::error::The sign-up endpoint isn't answering."; exit 1; }
           echo "Live at https://$sub" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice::Live at https://$sub"
 
@@ -137,8 +159,8 @@ jobs:
 
           echo "Waiting for the domain to come up (certificates can take a few minutes)."
           for attempt in $(seq 1 30); do
-            a=$(curl -s -o /dev/null -w '%{http_code}' "https://www.$DOMAIN/embeds/home.html" || true)
-            b=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/embeds/home.html" || true)
+            a=$(curl -sL -o /dev/null -w '%{http_code}' "https://www.$DOMAIN/embeds/home.html" || true)
+            b=$(curl -sL -o /dev/null -w '%{http_code}' "https://$DOMAIN/embeds/home.html" || true)
             echo "Attempt $attempt: www -> $a, apex -> $b"
             [ "$a" = "200" ] && [ "$b" = "200" ] && { echo "::notice::$DOMAIN now serves the new site."; exit 0; }
             sleep 20
