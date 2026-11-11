@@ -15,3 +15,7 @@ Browser films (Three.js + Web Audio) live in `cinematic/<slug>/` and build into 
 ## The Credits Department
 
 `credits/` (static pages + shared engine), `credits-api/` (Worker + D1) and `credits-render/` (local video export). Read `docs/credits-system-architecture.md` first. Rules: never write Beans (read `STOOPIDshow/beans-feed` only); public output only shows people with `visibility='public'` and consent; published `credit_versions` are immutable (corrections add a revision); preview and export must keep using the same `credits/engine/` code. Run `npm test` in `credits-api/` and `credits-render/` before pushing.
+
+## stoopidtv.com
+
+`site/` is the main website, rebuilt off Wix. Read `site/README.md` first. Page bodies live in `site/_build/embeds-original/`; shell, nav, footer and the hand-written pages live in `site/_build/build.py`. Run `python3 site/_build/build.py` after any change and commit the output. Keep every link relative.
