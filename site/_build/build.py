@@ -16,7 +16,6 @@ import re
 
 BUILD = pathlib.Path(__file__).resolve().parent
 SITE = BUILD.parent
-LOGO = (BUILD / "logo.svg").read_text().strip()
 
 CANONICAL = "https://www.stoopidtv.com"
 ASK_DEV = "https://devinrasche-hub.github.io/stoopid-toolkit/ask-dev/"
@@ -176,7 +175,7 @@ SHELL = """<!DOCTYPE html>
 <body>
 <a class="skip" href="#main">Skip to Main Content</a>
 <header class="top">
-  <a class="brand" href="{home}">{logo}<span>STOOPID TV</span></a>
+  <a class="brand" href="{home}"><span>STOOPID TV</span></a>
   <nav aria-label="Main">
 {nav}
   </nav>
@@ -223,14 +222,14 @@ def render(path, key, title, desc, body, root=None, canonical=None):
     return SHELL.format(
         title=html.escape(title), desc=html.escape(desc, quote=True), root=root, home=home,
         canonical=canonical or (CANONICAL + "/" + path), site=CANONICAL,
-        logo=LOGO, nav=nav, body=body.strip("\n"), social=social)
+        nav=nav, body=body.strip("\n"), social=social)
 
 
 def build_embeds():
     out = SITE / "embeds"
     out.mkdir(exist_ok=True)
     for src in sorted((BUILD / "embeds-original").glob("*.html")):
-        text = src.read_text()
+        text = src.read_text(encoding="utf-8")
 
         def fix(m):
             path = m.group(2).strip("/")
@@ -239,7 +238,7 @@ def build_embeds():
 
         # Old absolute links to the Wix site become relative links to the new pages.
         text = re.sub(r'href="https?://(www\.)?stoopidtv\.com/?([^"#?]*)"', fix, text)
-        (out / src.name).write_text(text)
+        (out / src.name).write_text(text, encoding="utf-8")
 
 
 def main():
@@ -247,16 +246,16 @@ def main():
     for path, key, title, desc, body in PAGES:
         d = SITE / path
         d.mkdir(parents=True, exist_ok=True)
-        (d / "index.html").write_text(render(path, key, title, desc, body))
+        (d / "index.html").write_text(render(path, key, title, desc, body), encoding="utf-8")
     # 404 can be served from any depth, so it uses root-absolute links.
     (SITE / "404.html").write_text(
         render("404", None, "No signal | STOOPID TV", "Page not found.", NOTFOUND,
-               root="/", canonical=CANONICAL + "/"))
+               root="/", canonical=CANONICAL + "/"), encoding="utf-8")
     urls = "\n".join(f"  <url><loc>{CANONICAL}/{p}</loc></url>" for p, *_ in PAGES)
     (SITE / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + "\n</urlset>\n")
-    (SITE / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {CANONICAL}/sitemap.xml\n")
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + "\n</urlset>\n", encoding="utf-8")
+    (SITE / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {CANONICAL}/sitemap.xml\n", encoding="utf-8")
     print(f"built {len(PAGES)} pages into {SITE}")
 
 
