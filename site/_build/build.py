@@ -60,13 +60,18 @@ def frame(name, title, cls="embed", extra=""):
 # the D1 table billboard_requests (see site/README.md). To fill a slot, replace None with:
 #     {"name": "Joe's Pizza", "url": "https://joespizza.example", "img": "assets/ads/joes.png"}
 # Ad images are 300 x 250 px (anything that shape works) and live in site/assets/ads/.
-BILLBOARD_PRICE = "$10 / month"
+# Monthly price by row, the same on both sides. It climbs from the bottom: 3 = bottom, 1 = top.
+BILLBOARD_PRICES = {"3": 10, "2": 15, "1": 20}
 BILLBOARDS = {
     "L1": None, "L2": None, "L3": None,
     "R1": None, "R2": None, "R3": None,
 }
 SLOT_NAMES = {"L1": "Left, top", "L2": "Left, middle", "L3": "Left, bottom",
               "R1": "Right, top", "R2": "Right, middle", "R3": "Right, bottom"}
+
+
+def price(slot):
+    return f"${BILLBOARD_PRICES[slot[1]]} / month"
 
 
 def billboard(slot, ad):
@@ -77,9 +82,9 @@ def billboard(slot, ad):
                 f'<img src="{{root}}{html.escape(ad["img"], quote=True)}" alt="{name}" width="300" height="250" '
                 f'loading="lazy"><span class="bb-ad">Ad</span></a>')
     return (f'<button class="bb bb-open" type="button" data-slot="{slot}" aria-haspopup="dialog" '
-            f'aria-label="Billboard {SLOT_NAMES[slot].lower()} is available, {BILLBOARD_PRICE}. Rent it">'
+            f'aria-label="Billboard {SLOT_NAMES[slot].lower()} is available, {price(slot)}. Rent it">'
             f'<span class="bb-head">Insert your ad here!</span>'
-            f'<span class="bb-price">{BILLBOARD_PRICE}</span>'
+            f'<span class="bb-price">{price(slot)}</span>'
             f'<span class="bb-cta">Available &middot; rent it</span></button>')
 
 
@@ -87,13 +92,15 @@ def rent_dialog():
     open_slots = [s for s, ad in BILLBOARDS.items() if not ad]
     if not open_slots:
         return ""
-    options = "\n".join(f'        <option value="{s}">{SLOT_NAMES[s]}</option>' for s in open_slots)
+    options = "\n".join(f'        <option value="{s}">{SLOT_NAMES[s]} &middot; {price(s)}</option>' for s in open_slots)
+    prices = sorted(BILLBOARD_PRICES[s[1]] for s in open_slots)
+    span = f"${prices[0]}" + (f" to ${prices[-1]}" if prices[-1] != prices[0] else "") + " a month"
     return f"""
 <dialog class="rent" id="rent" aria-labelledby="rent-h">
   <form class="signup stack" data-list="billboard" action="{{root}}api/billboard" method="post" novalidate
         data-ok="Got it. Dev will email you about your billboard.">
     <h2 id="rent-h">Rent a billboard</h2>
-    <p class="fine">{BILLBOARD_PRICE}. Your ad sits beside STOOPID BOY on the arcade page and links wherever you want.
+    <p class="fine">{span}, by spot. Your ad sits beside STOOPID BOY on the arcade page and links wherever you want.
       Dev will email you to set it up. Nothing is charged here.</p>
     <label>Which billboard?
       <select name="slot">

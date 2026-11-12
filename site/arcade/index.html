@@ -39,14 +39,14 @@
 <main id="main">
 <div class="arcade-stage">
   <aside class="bb-col bb-left" aria-label="Billboards">
-    <button class="bb bb-open" type="button" data-slot="L1" aria-haspopup="dialog" aria-label="Billboard left, top is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
-    <button class="bb bb-open" type="button" data-slot="L2" aria-haspopup="dialog" aria-label="Billboard left, middle is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="L1" aria-haspopup="dialog" aria-label="Billboard left, top is available, $20 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$20 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="L2" aria-haspopup="dialog" aria-label="Billboard left, middle is available, $15 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$15 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
     <button class="bb bb-open" type="button" data-slot="L3" aria-haspopup="dialog" aria-label="Billboard left, bottom is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
   </aside>
   <div class="game-wrap"><iframe class="game" src="../embeds/stoopid-boy.html" title="STOOPID BOY" loading="eager" scrolling="no" allow="autoplay; fullscreen"></iframe></div>
   <aside class="bb-col bb-right" aria-label="More billboards">
-    <button class="bb bb-open" type="button" data-slot="R1" aria-haspopup="dialog" aria-label="Billboard right, top is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
-    <button class="bb bb-open" type="button" data-slot="R2" aria-haspopup="dialog" aria-label="Billboard right, middle is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="R1" aria-haspopup="dialog" aria-label="Billboard right, top is available, $20 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$20 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="R2" aria-haspopup="dialog" aria-label="Billboard right, middle is available, $15 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$15 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
     <button class="bb bb-open" type="button" data-slot="R3" aria-haspopup="dialog" aria-label="Billboard right, bottom is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
   </aside>
 </div>
@@ -55,17 +55,17 @@
   <form class="signup stack" data-list="billboard" action="../api/billboard" method="post" novalidate
         data-ok="Got it. Dev will email you about your billboard.">
     <h2 id="rent-h">Rent a billboard</h2>
-    <p class="fine">$10 / month. Your ad sits beside STOOPID BOY on the arcade page and links wherever you want.
+    <p class="fine">$10 to $20 a month, by spot. Your ad sits beside STOOPID BOY on the arcade page and links wherever you want.
       Dev will email you to set it up. Nothing is charged here.</p>
     <label>Which billboard?
       <select name="slot">
         <option value="any">Any open one</option>
-        <option value="L1">Left, top</option>
-        <option value="L2">Left, middle</option>
-        <option value="L3">Left, bottom</option>
-        <option value="R1">Right, top</option>
-        <option value="R2">Right, middle</option>
-        <option value="R3">Right, bottom</option>
+        <option value="L1">Left, top &middot; $20 / month</option>
+        <option value="L2">Left, middle &middot; $15 / month</option>
+        <option value="L3">Left, bottom &middot; $10 / month</option>
+        <option value="R1">Right, top &middot; $20 / month</option>
+        <option value="R2">Right, middle &middot; $15 / month</option>
+        <option value="R3">Right, bottom &middot; $10 / month</option>
       </select></label>
     <label>Your name *<input type="text" name="first_name" autocomplete="name" maxlength="80" required></label>
     <label>Email address *<input type="email" name="email" autocomplete="email" maxlength="254" required></label>
