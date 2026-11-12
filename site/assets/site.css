@@ -40,6 +40,21 @@ iframe.game{display:block;width:min(500px,100%);height:800px;border:0;background
 .bb-sold{padding:0}
 .bb-sold img{display:block;width:100%;height:100%;object-fit:cover;border-radius:6px}
 .bb-ad{position:absolute;top:6px;left:6px;padding:1px 6px;background:rgba(15,11,30,.85);color:var(--c);font:700 10px/1.5 var(--m);letter-spacing:.1em;text-transform:uppercase;border-radius:3px}
+/* sample ads that flip onto empty billboards now and then (site.js) */
+.bb{perspective:600px}
+.bb-sample{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:22px 10px 10px;border-radius:6px;text-align:center;opacity:0;transform:rotateX(-90deg);transform-origin:50% 0;transition:opacity .2s .1s,transform .45s cubic-bezier(.3,1.4,.5,1);pointer-events:none;overflow:hidden}
+.bb.is-sample .bb-sample{opacity:1;transform:none;transition:opacity .15s,transform .5s cubic-bezier(.3,1.4,.5,1)}
+.bb.is-sample::before{opacity:0;animation:none}
+.s-tag{position:absolute;top:6px;left:6px;padding:1px 6px;background:rgba(15,11,30,.85);color:#FFF3DE;font:700 9px/1.5 var(--m);letter-spacing:.1em;text-transform:uppercase;border-radius:3px}
+.s-name{font:400 clamp(18px,1.8vw,25px)/1 var(--an);letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+.s-line{font-weight:600;font-size:12.5px;line-height:1.25;text-wrap:balance}
+.s-fine{font:700 9.5px/1.3 var(--m);letter-spacing:.05em;text-transform:uppercase;opacity:.75}
+.s-yours{margin-top:3px;font:700 9.5px/1.3 var(--m);letter-spacing:.06em;text-transform:uppercase;text-decoration:underline;text-underline-offset:2px;opacity:.9}
+.s-cream{background:#FFF3DE;color:#111}.s-cream .s-name{color:#FF5B4A}
+.s-yellow{background:#FFD93B;color:#111}.s-yellow .s-name{color:#0F0B1E}
+.s-teal{background:#2EE6C9;color:#0F0B1E}.s-teal .s-name{color:#0F0B1E}
+.s-coral{background:#FF5B4A;color:#FFF3DE}.s-coral .s-name{color:#FFD93B}
+.s-night{background:#1C1438;color:#FFF3DE;box-shadow:inset 0 0 0 2px #FFD93B}.s-night .s-name{color:#FFD93B}
 @media (max-width:1100px){
   .arcade-stage{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 18px;max-width:780px;margin:0 auto}
   .arcade-stage .game-wrap{grid-column:1/-1;order:-1}
@@ -49,8 +64,12 @@ iframe.game{display:block;width:min(500px,100%);height:800px;border:0;background
   .arcade-stage{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 16px 28px}
   .bb-head{font-size:16px}
   .bb-cta{font-size:10px;letter-spacing:.04em;white-space:nowrap}
+  .bb-sample{gap:2px;padding:18px 6px 6px}
+  .s-name{font-size:15px}
+  .s-line{font-size:11px}
+  .s-fine,.s-yours{font-size:8.5px;letter-spacing:.02em}
 }
-@media (prefers-reduced-motion:reduce){.bb-open::before{animation:none}.bb{transition:none}.bb:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){.bb-open::before{animation:none}.bb{transition:none}.bb:hover{transform:none}.bb-sample,.bb.is-sample .bb-sample{transform:none;transition:opacity .4s}}
 
 /* rent-a-billboard form */
 .rent{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:30px 24px 22px;border:2px solid var(--p);border-radius:8px;background:var(--da);color:var(--c);box-shadow:0 0 44px rgba(46,230,201,.25)}

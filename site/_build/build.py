@@ -11,6 +11,7 @@ Run from anywhere:  python3 site/_build/build.py
 - All links are relative, so the folder works at a domain root or in a subfolder.
 """
 import html
+import json
 import pathlib
 import re
 
@@ -70,6 +71,28 @@ SLOT_NAMES = {"L1": "Left, top", "L2": "Left, middle", "L3": "Left, bottom",
               "R1": "Right, top", "R2": "Right, middle", "R3": "Right, bottom"}
 
 
+# Pretend ads that flip onto empty billboards now and then to show what a rented one looks
+# like. Every one carries a "SAMPLE AD" tag. All made up: no real businesses.
+# (name, line, fine print, theme) — themes are styled in site.css as .s-<theme>.
+SAMPLE_ADS = [
+    # believable
+    ("Gary's Gutters", "We clean 'em so you don't have to.", "Free estimates · Tue–Sat", "cream"),
+    ("Slice Haven", "2 large 1-topping pizzas, $19.99", "Pickup only, after 4pm", "coral"),
+    ("Paws & Suds", "Dog grooming that won't ghost you.", "Walk-ins welcome", "teal"),
+    ("Brenda's Bakes", "Cinnamon rolls the size of your head.", "Saturdays at the market", "yellow"),
+    ("Flat Fix Mobile", "We ride out to your flat tire.", "Text us for a time", "night"),
+    ("Tax Pal", "Your taxes, done before you panic.", "Book by April 1", "cream"),
+    # unbelievable
+    ("Moon Timeshares", "Low gravity. Lower prices.", "Oxygen sold separately", "night"),
+    ("Rent-A-Ghost", "Haunt your ex's new place.", "Ectoplasm cleanup extra", "teal"),
+    ("Pigeon Prime", "Same-day delivery. Mostly.", "Pigeon may keep item", "yellow"),
+    ("Nap Lawyers LLP", "Woken up early? You may be owed a nap.", "Calls returned after naps", "cream"),
+    ("Premium Fog", "Fog for every occasion.", "You won't see the difference", "night"),
+    ("Big Bean Insurance", "Covering beans since 1 bean.", "Not actual insurance", "coral"),
+    ("Psychic Hotline", "We knew you'd read this.", "Results may vary, as foreseen", "yellow"),
+]
+
+
 def price(slot):
     return f"${BILLBOARD_PRICES[slot[1]]} / month"
 
@@ -85,7 +108,8 @@ def billboard(slot, ad):
             f'aria-label="Billboard {SLOT_NAMES[slot].lower()} is available, {price(slot)}. Rent it">'
             f'<span class="bb-head">Insert your ad here!</span>'
             f'<span class="bb-price">{price(slot)}</span>'
-            f'<span class="bb-cta">Available &middot; rent it</span></button>')
+            f'<span class="bb-cta">Available &middot; rent it</span>'
+            f'<span class="bb-sample" aria-hidden="true"></span></button>')
 
 
 def rent_dialog():
@@ -127,7 +151,14 @@ def arcade_body():
             f'  <aside class="bb-col bb-left" aria-label="Billboards">\n{side("L")}\n  </aside>\n'
             f'  <div class="game-wrap">{game}</div>\n'
             f'  <aside class="bb-col bb-right" aria-label="More billboards">\n{side("R")}\n  </aside>\n'
-            f'</div>\n' + rent_dialog() + frame("arcade", "The Arcade"))
+            f'</div>\n' + rent_dialog() + sample_ads_json() + frame("arcade", "The Arcade"))
+
+
+def sample_ads_json():
+    data = [dict(zip(("name", "line", "fine", "theme"), ad)) for ad in SAMPLE_ADS]
+    # "<\/" keeps a stray "</script>" in the data from closing the tag early.
+    return ('<script type="application/json" id="sample-ads">'
+            + json.dumps(data, ensure_ascii=False).replace("</", "<\\/") + "</script>\n")
 
 
 DONATE = """
