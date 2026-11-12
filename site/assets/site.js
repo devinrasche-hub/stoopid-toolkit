@@ -104,3 +104,52 @@
   });
   dlg.addEventListener('close', function () { if (opener) opener.focus(); });
 })();
+
+// Sample ads: now and then an empty billboard flips to a pretend ad for a few seconds, to show
+// what a rented one looks like. Each is tagged "SAMPLE AD"; clicking still opens the rent form.
+(function () {
+  var data = document.getElementById('sample-ads');
+  var slots = [].slice.call(document.querySelectorAll('.bb-open'));
+  if (!data || !slots.length) return;
+  var ads;
+  try { ads = JSON.parse(data.textContent); } catch (e) { return; }
+  if (!ads.length) return;
+
+  var SHOW_MS = 7000, MAX_UP = 2;
+  var deck = [];
+  function nextAd() {
+    if (!deck.length) deck = ads.slice().sort(function () { return Math.random() - 0.5; });
+    return deck.pop();
+  }
+  function el(cls, text) { var s = document.createElement('span'); s.className = cls; s.textContent = text; return s; }
+
+  function show(b) {
+    var ad = nextAd(), box = b.querySelector('.bb-sample');
+    box.className = 'bb-sample s-' + ad.theme;
+    box.textContent = '';
+    box.appendChild(el('s-tag', 'Sample ad'));
+    box.appendChild(el('s-name', ad.name));
+    box.appendChild(el('s-line', ad.line));
+    box.appendChild(el('s-fine', ad.fine));
+    box.appendChild(el('s-yours', 'Your ad could be here'));
+    b.classList.add('is-sample');
+    setTimeout(function () { hide(b); }, SHOW_MS);
+  }
+  // Don't yank an ad out from under someone pointing at it.
+  function hide(b) {
+    if (b.matches(':hover') || b === document.activeElement) { setTimeout(function () { hide(b); }, 1500); return; }
+    b.classList.remove('is-sample');
+  }
+
+  function tick() {
+    if (!document.hidden && !(document.getElementById('rent') || {}).open) {
+      var up = slots.filter(function (b) { return b.classList.contains('is-sample'); }).length;
+      var free = slots.filter(function (b) {
+        return !b.classList.contains('is-sample') && !b.matches(':hover') && b !== document.activeElement;
+      });
+      if (up < MAX_UP && free.length) show(free[Math.floor(Math.random() * free.length)]);
+    }
+    setTimeout(tick, 7000 + Math.random() * 5000);
+  }
+  setTimeout(tick, 3500);
+})();
