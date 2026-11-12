@@ -87,6 +87,19 @@ jobs:
           sed -i "s/^database_id = .*/database_id = \"$DB_ID\"/" wrangler.toml
           npx --yes wrangler@4 d1 execute stoopidtv_signups --remote --file schema.sql
 
+      # Billboard requests push to Dev's phone via ntfy when NTFY_TOPIC is set (the same secret
+      # Ask Dev uses). Pages deployments read secrets when they're created, so this runs first.
+      - name: Sync the ntfy topic for billboard alerts
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "::warning::NTFY_TOPIC isn't set, so billboard requests save without a phone alert."
+            exit 0
+          fi
+          printf '%s' "$NTFY_TOPIC" | npx --yes wrangler@4 pages secret put NTFY_TOPIC --project-name "$PROJECT" >/dev/null
+          echo "set NTFY_TOPIC on $PROJECT"
+
       - name: Deploy
         working-directory: stage
         run: npx --yes wrangler@4 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true

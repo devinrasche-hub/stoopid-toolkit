@@ -30,6 +30,7 @@ Six little billboards sit beside STOOPID BOY on `/arcade/` (three each side; a g
 - **Empty slot** (`None`): shows "Insert your ad here!" and the price, and opens a "Rent a billboard" form with that slot picked. Requests go to `/api/billboard` (`_cloudflare/functions/api/billboard.js`) and into the D1 table `billboard_requests`. Nothing is charged on the site; Dev follows up by email.
 - **Rented slot**: set it to `{"name": "...", "url": "https://...", "img": "assets/ads/<file>.png"}`, put a 300 x 250 image in `site/assets/ads/`, rebuild and push. It shows the image with a small "Ad" tag and links out with `rel="sponsored"`.
 - **Price**: change `BILLBOARD_PRICE`.
+- **Alerts**: each new request sends an ntfy push ("New billboard request", which slot and the request number; no names or emails) to the topic in the repo secret `NTFY_TOPIC`, the same one Ask Dev uses. The deploy workflow copies it onto the Pages project. A failed push never loses a request.
 
 Reading requests (Cloudflare dashboard → D1 → `stoopidtv_signups` → Console, or `npx wrangler d1 execute stoopidtv_signups --remote --command "..."`):
 
