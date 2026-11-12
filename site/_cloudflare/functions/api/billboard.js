@@ -7,15 +7,21 @@ const SLOTS = new Set(["any", "L1", "L2", "L3", "R1", "R2", "R3"]);
 const SLOT_NAMES = { any: "any open slot", L1: "left, top", L2: "left, middle", L3: "left, bottom",
                      R1: "right, top", R2: "right, middle", R3: "right, bottom" };
 
+// Logs the outcome (never the topic) so `wrangler pages deployment tail` shows why a push failed.
 async function push(env, slot, id) {
-  if (!env.NTFY_TOPIC) return;
+  if (!env.NTFY_TOPIC) { console.log(`billboard #${id}: push skipped, NTFY_TOPIC not set`); return; }
   try {
-    await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, {
+    const res = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, {
       method: "POST",
       headers: { Title: "New billboard request", Tags: "moneybag" },
       body: `Arcade billboard: ${SLOT_NAMES[slot]} · request #${id}`,
     });
-  } catch {} // A failed push never loses the request; it's already saved.
+    const detail = res.ok ? "" : ` ${(await res.text()).slice(0, 200)}`;
+    console.log(`billboard #${id}: push ${res.status}${detail}`);
+  } catch (e) {
+    // A failed push never loses the request; it's already saved.
+    console.log(`billboard #${id}: push failed, ${e && e.message}`);
+  }
 }
 const EMAIL = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[a-z]{2,}$/i;
 
@@ -28,7 +34,8 @@ function json(obj, status) {
 
 const clean = (v, max) => String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 
-export async function onRequestPost({ request, env, waitUntil }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   // Only this site's own pages may submit.
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return json({ ok: false, error: "Not allowed from this site." }, 403);
@@ -62,7 +69,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   ).bind(new Date().toISOString(), slot, name, email, promote, link).run();
 
   // Send the push after replying, so the visitor never waits on ntfy.
-  waitUntil(push(env, slot, saved.meta.last_row_id));
+  context.waitUntil(push(env, slot, saved.meta.last_row_id));
   return json({ ok: true }, 200);
 }
 
