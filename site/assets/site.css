@@ -9,7 +9,6 @@ a{color:inherit}
 /* header */
 .top{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px 40px;flex-wrap:wrap;padding:14px 40px;background:var(--da);border-bottom:1px solid rgba(255,243,222,.08)}
 .brand{display:flex;align-items:center;gap:8px;text-decoration:none;font:400 22px/1 var(--an);letter-spacing:.01em;color:var(--c);white-space:nowrap}
-.logo{width:34px;height:30px;flex:none}
 .top nav{display:flex;gap:4px 30px;flex-wrap:wrap}
 .top nav a{text-decoration:none;font-size:16px;padding:6px 0;white-space:nowrap}
 .top nav a:hover,.top nav a[aria-current]{color:var(--t)}
