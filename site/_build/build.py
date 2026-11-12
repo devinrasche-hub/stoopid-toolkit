@@ -90,6 +90,21 @@ SAMPLE_ADS = [
     ("Premium Fog", "Fog for every occasion.", "You won't see the difference", "night"),
     ("Big Bean Insurance", "Covering beans since 1 bean.", "Not actual insurance", "coral"),
     ("Psychic Hotline", "We knew you'd read this.", "Results may vary, as foreseen", "yellow"),
+    # weirder
+    ("Void Storage Co.", "Put it in the void. Forget it forever.", "Retrieval not available", "night"),
+    ("Left Socks Only", "Finally, a store that gets it.", "Right socks banned on premises", "cream"),
+    ("Clown Dentistry", "Honk if it hurts.", "Balloon animal with every filling", "coral"),
+    ("Gravel of the Month", "A fresh box of gravel, monthly.", "Gravel not edible. We checked.", "yellow"),
+    ("Wizard Taxi", "We get you there. Sometimes before.", "Fares charged in years", "night"),
+    ("Spoon Rehab", "Has your spoon become a fork?", "Sporks seen by appointment", "teal"),
+    ("Bees, Wholesale", "Bulk bees for any occasion.", "Do not open the box", "yellow"),
+    ("Puddle Appraisers", "Is your puddle worth anything?", "Free quote before it dries", "teal"),
+    ("Snail Mail Express", "Letters carried by actual snails.", "Delivery in 4–6 years", "cream"),
+    ("Crab Divorce Law", "Crabs deserve closure too.", "Consultations held sideways", "coral"),
+    ("Lemon Relocation", "New name. New life. Still a lemon.", "Limes on a waitlist", "yellow"),
+    ("Ceiling Realty", "Live on the ceiling. Rent's way up.", "Gravity waiver required", "night"),
+    ("Mime Hotline", "Call now. We won't say a thing.", "Silence billed by the minute", "cream"),
+    ("Haunted Mattresses", "Every bed comes pre-slept-in.", "Previous owner included", "teal"),
 ]
 
 
