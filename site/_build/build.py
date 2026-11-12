@@ -105,6 +105,21 @@ SAMPLE_ADS = [
     ("Ceiling Realty", "Live on the ceiling. Rent's way up.", "Gravity waiver required", "night"),
     ("Mime Hotline", "Call now. We won't say a thing.", "Silence billed by the minute", "cream"),
     ("Haunted Mattresses", "Every bed comes pre-slept-in.", "Previous owner included", "teal"),
+    # weirdest
+    ("Discount Thunder", "Slightly used thunder, half price.", "Lightning sold separately", "night"),
+    ("Feelings Pawnshop", "We buy feelings. Cash today.", "No refunds on regret", "coral"),
+    ("Shadow Rentals", "Rent a shadow for your big day.", "Returns itself at sundown", "cream"),
+    ("Tooth Futures", "Invest in baby teeth today.", "Past teeth no guarantee", "yellow"),
+    ("Cloud Wranglers", "We round up loose clouds.", "Not liable for rain", "teal"),
+    ("Inflatable Grandpa", "For when the real one's busy.", "Do not inflate indoors", "cream"),
+    ("Moth Concierge", "Lamps booked. Sweaters located.", "Tips accepted in lint", "night"),
+    ("Echo Repair", "Is your echo getting quieter?", "Warranty... ranty... anty", "teal"),
+    ("Underwater Bakery", "Soggy since 1987.", "Bring your own snorkel", "coral"),
+    ("Hiccup Insurance", "Covered from the very first hic.", "Holding your breath voids claim", "yellow"),
+    ("Doorknob Therapy", "Tired of being turned? We listen.", "Couch for doorknobs only", "cream"),
+    ("Second-Hand Dreams", "Gently dreamed. Like new.", "Some nightmares may remain", "night"),
+    ("Toast Whisperer", "Talks your toast down from burnt.", "Bagels by referral only", "yellow"),
+    ("Time Refunds", "Get back the hours you wasted here.", "Refund issued yesterday", "teal"),
 ]
 
 
