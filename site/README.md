@@ -22,3 +22,17 @@ SELECT created_at, list, email, first_name, hangout FROM signups ORDER BY create
 ```
 
 `list` is `newsletter` or `earn`. The same address can only appear once per list.
+
+## Arcade billboards
+
+Six little billboards sit beside STOOPID BOY on `/arcade/` (three each side; a grid under the game on narrow screens). The slots, the price and who has rented what are all in the `BILLBOARDS` block near the top of `_build/build.py`.
+
+- **Empty slot** (`None`): shows "Insert your ad here!" and the price, and opens a "Rent a billboard" form with that slot picked. Requests go to `/api/billboard` (`_cloudflare/functions/api/billboard.js`) and into the D1 table `billboard_requests`. Nothing is charged on the site; Dev follows up by email.
+- **Rented slot**: set it to `{"name": "...", "url": "https://...", "img": "assets/ads/<file>.png"}`, put a 300 x 250 image in `site/assets/ads/`, rebuild and push. It shows the image with a small "Ad" tag and links out with `rel="sponsored"`.
+- **Price**: change `BILLBOARD_PRICE`.
+
+Reading requests (Cloudflare dashboard → D1 → `stoopidtv_signups` → Console, or `npx wrangler d1 execute stoopidtv_signups --remote --command "..."`):
+
+```sql
+SELECT created_at, slot, name, email, promote, link FROM billboard_requests ORDER BY created_at DESC;
+```
