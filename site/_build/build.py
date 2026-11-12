@@ -27,6 +27,7 @@ NAV = [
     ("episodes", "Watch"),
     ("music", "Humble Poe"),
     ("book", "Book"),
+    ("library", "Library"),
     ("beans", "Beans"),
     ("arcade", "Arcade"),
     ("realm", "The Realm"),
@@ -148,7 +149,7 @@ PAGES = [
     ("earn", None, "EARN | STOOPID TV", "STOOPID is a platform that pays you for your time and attention.", EARN),
     # The Library scrolls inside its own window (sticky reader bar, drawer, progress), so its frame
     # is one screen tall instead of being stretched to fit like the other embeds.
-    ("library", None, "STOOPID Library | STOOPID TV",
+    ("library", "library", "STOOPID Library | STOOPID TV",
      "Free public-domain books on STOOPID shelves, with a reader that remembers your place.",
      frame("library", "STOOPID Library", "embed-full")),
 ]
@@ -196,7 +197,7 @@ SHELL = """<!DOCTYPE html>
     <button class="btn" type="submit">Sign me up</button>
     <p class="form-msg" role="status" aria-live="polite"></p>
   </form>
-  <p class="foot-links"><a href="{root}donate/">Contribute</a> · <a href="{root}book-online/">Hire Dev</a> · <a href="{root}magic-errands/">Magic Errands</a> · <a href="{root}beans/">Beans FAQ</a></p>
+  <p class="foot-links"><a href="{root}donate/">Contribute</a> · <a href="{root}book-online/">Hire Dev</a> · <a href="{root}magic-errands/">Magic Errands</a> · <a href="{root}library/">Library</a> · <a href="{root}beans/">Beans FAQ</a></p>
   <p class="social">
 {social}
   </p>
