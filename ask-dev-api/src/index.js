@@ -130,10 +130,12 @@ async function notify(env, r) {
       results.push("email:failed:network");
     }
   }
-  if (env.NTFY_TOPIC) {
+  // Trim: a secret pasted or piped in often carries a trailing newline, which ntfy answers with 404.
+  const topic = (env.NTFY_TOPIC || "").trim();
+  if (topic) {
     // Push to Dev's phone via ntfy. Keeps personal details out of the push itself.
     try {
-      const res = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, {
+      const res = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
         method: "POST",
         headers: { Title: `${r.is_test ? "[TEST] " : ""}New Ask Dev request`, Tags: "inbox_tray" },
         body: `${CATEGORIES[r.category]} · ${TIMELINES[r.timeline] || "no timeline given"} · ${r.id}`,

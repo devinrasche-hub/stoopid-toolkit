@@ -9,9 +9,11 @@ const SLOT_NAMES = { any: "any open slot", L1: "left, top", L2: "left, middle", 
 
 // Logs the outcome (never the topic) so `wrangler pages deployment tail` shows why a push failed.
 async function push(env, slot, id) {
-  if (!env.NTFY_TOPIC) { console.log(`billboard #${id}: push skipped, NTFY_TOPIC not set`); return; }
+  // Trim: a secret pasted or piped in often carries a trailing newline, which ntfy answers with 404.
+  const topic = (env.NTFY_TOPIC || "").trim();
+  if (!topic) { console.log(`billboard #${id}: push skipped, NTFY_TOPIC not set`); return; }
   try {
-    const res = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, {
+    const res = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
       method: "POST",
       headers: { Title: "New billboard request", Tags: "moneybag" },
       body: `Arcade billboard: ${SLOT_NAMES[slot]} · request #${id}`,
