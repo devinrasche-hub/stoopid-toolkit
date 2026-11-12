@@ -146,6 +146,11 @@ PAGES = [
      HIRE.replace("{cards}", "\n".join(
          CARD.format(name=n, length=l, price=p, blurb=b, ask="{ask}") for n, l, p, b in SERVICES))),
     ("earn", None, "EARN | STOOPID TV", "STOOPID is a platform that pays you for your time and attention.", EARN),
+    # The Library scrolls inside its own window (sticky reader bar, drawer, progress), so its frame
+    # is one screen tall instead of being stretched to fit like the other embeds.
+    ("library", None, "STOOPID Library | STOOPID TV",
+     "Free public-domain books on STOOPID shelves, with a reader that remembers your place.",
+     frame("library", "STOOPID Library", "embed-full")),
 ]
 
 # ---------------------------------------------------------------- shell
