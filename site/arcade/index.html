@@ -37,7 +37,46 @@
   </nav>
 </header>
 <main id="main">
-<div class="game-wrap"><iframe class="game" src="../embeds/stoopid-boy.html" title="STOOPID BOY" loading="eager" scrolling="no" allow="autoplay; fullscreen"></iframe></div>
+<div class="arcade-stage">
+  <aside class="bb-col bb-left" aria-label="Billboards">
+    <button class="bb bb-open" type="button" data-slot="L1" aria-haspopup="dialog" aria-label="Billboard left, top is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="L2" aria-haspopup="dialog" aria-label="Billboard left, middle is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="L3" aria-haspopup="dialog" aria-label="Billboard left, bottom is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+  </aside>
+  <div class="game-wrap"><iframe class="game" src="../embeds/stoopid-boy.html" title="STOOPID BOY" loading="eager" scrolling="no" allow="autoplay; fullscreen"></iframe></div>
+  <aside class="bb-col bb-right" aria-label="More billboards">
+    <button class="bb bb-open" type="button" data-slot="R1" aria-haspopup="dialog" aria-label="Billboard right, top is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="R2" aria-haspopup="dialog" aria-label="Billboard right, middle is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+    <button class="bb bb-open" type="button" data-slot="R3" aria-haspopup="dialog" aria-label="Billboard right, bottom is available, $10 / month. Rent it"><span class="bb-head">Insert your ad here!</span><span class="bb-price">$10 / month</span><span class="bb-cta">Available &middot; rent it</span></button>
+  </aside>
+</div>
+
+<dialog class="rent" id="rent" aria-labelledby="rent-h">
+  <form class="signup stack" data-list="billboard" action="../api/billboard" method="post" novalidate
+        data-ok="Got it. Dev will email you about your billboard.">
+    <h2 id="rent-h">Rent a billboard</h2>
+    <p class="fine">$10 / month. Your ad sits beside STOOPID BOY on the arcade page and links wherever you want.
+      Dev will email you to set it up. Nothing is charged here.</p>
+    <label>Which billboard?
+      <select name="slot">
+        <option value="any">Any open one</option>
+        <option value="L1">Left, top</option>
+        <option value="L2">Left, middle</option>
+        <option value="L3">Left, bottom</option>
+        <option value="R1">Right, top</option>
+        <option value="R2">Right, middle</option>
+        <option value="R3">Right, bottom</option>
+      </select></label>
+    <label>Your name *<input type="text" name="first_name" autocomplete="name" maxlength="80" required></label>
+    <label>Email address *<input type="email" name="email" autocomplete="email" maxlength="254" required></label>
+    <label>What do you want to promote? *<textarea name="promote" maxlength="500" rows="3" required></textarea></label>
+    <label>Link (optional)<input type="url" name="link" maxlength="300" placeholder="https://"></label>
+    <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    <button class="btn" type="submit">Send request</button>
+    <p class="form-msg" role="status" aria-live="polite"></p>
+  </form>
+  <button class="rent-x" type="button" aria-label="Close">&times;</button>
+</dialog>
 <iframe class="embed" src="../embeds/arcade.html" title="The Arcade" loading="eager"></iframe>
 </main>
 <footer class="foot">

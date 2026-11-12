@@ -59,13 +59,14 @@
       var data = { list: form.getAttribute('data-list'), elapsed_ms: Date.now() - loaded };
       [].forEach.call(form.elements, function (el) { if (el.name) data[el.name] = el.value.trim(); });
       if (!/^\S+@\S+\.\S+$/.test(data.email || '')) { say('Add a real email address.', 'bad'); form.elements.email.focus(); return; }
-      if (form.elements.first_name && !data.first_name) { say('Add your first name.', 'bad'); form.elements.first_name.focus(); return; }
+      if (form.elements.first_name && !data.first_name) { say('Add your name.', 'bad'); form.elements.first_name.focus(); return; }
+      if (form.elements.promote && !data.promote) { say('Tell us what you want to promote.', 'bad'); form.elements.promote.focus(); return; }
       btn.disabled = true; say('Sending...', '');
       fetch(form.getAttribute('action'), {
         method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data)
       }).then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (out) {
-          if (res.ok && out.ok) { form.reset(); say("You're in. Thanks.", 'ok'); }
+          if (res.ok && out.ok) { form.reset(); say(form.getAttribute('data-ok') || "You're in. Thanks.", 'ok'); }
           else { say(out.error || "That didn't go through. Try again in a minute.", 'bad'); }
         });
       }).catch(function () {
@@ -73,4 +74,33 @@
       }).then(function () { btn.disabled = false; });
     });
   });
+})();
+
+// Arcade billboards: an open slot opens the rent form with that slot picked.
+(function () {
+  var dlg = document.getElementById('rent');
+  if (!dlg || typeof dlg.showModal !== 'function') return;
+  var form = dlg.querySelector('form');
+  var opener = null;
+
+  [].forEach.call(document.querySelectorAll('.bb-open'), function (b) {
+    b.addEventListener('click', function () {
+      opener = b;
+      var slot = b.getAttribute('data-slot');
+      if (form.elements.slot.querySelector('option[value="' + slot + '"]')) form.elements.slot.value = slot;
+      var msg = form.querySelector('.form-msg');
+      msg.textContent = ''; msg.className = 'form-msg';
+      dlg.showModal();
+      form.elements.first_name.focus();
+    });
+  });
+
+  dlg.querySelector('.rent-x').addEventListener('click', function () { dlg.close(); });
+  // A click on the dimmed backdrop (outside the box) closes it too.
+  dlg.addEventListener('click', function (e) {
+    if (e.target !== dlg) return;
+    var r = dlg.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+  });
+  dlg.addEventListener('close', function () { if (opener) opener.focus(); });
 })();

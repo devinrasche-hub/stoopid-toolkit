@@ -54,6 +54,75 @@ def frame(name, title, cls="embed", extra=""):
             f'loading="eager"{extra}></iframe>')
 
 
+# ---------------------------------------------------------------- arcade billboards
+# Six little billboards beside STOOPID BOY on the arcade page (L = left, R = right, 1 = top).
+# An empty slot (None) shows "Insert your ad here!" and opens the rent form; requests land in
+# the D1 table billboard_requests (see site/README.md). To fill a slot, replace None with:
+#     {"name": "Joe's Pizza", "url": "https://joespizza.example", "img": "assets/ads/joes.png"}
+# Ad images are 300 x 250 px (anything that shape works) and live in site/assets/ads/.
+BILLBOARD_PRICE = "$10 / month"
+BILLBOARDS = {
+    "L1": None, "L2": None, "L3": None,
+    "R1": None, "R2": None, "R3": None,
+}
+SLOT_NAMES = {"L1": "Left, top", "L2": "Left, middle", "L3": "Left, bottom",
+              "R1": "Right, top", "R2": "Right, middle", "R3": "Right, bottom"}
+
+
+def billboard(slot, ad):
+    if ad:
+        name = html.escape(ad["name"], quote=True)
+        return (f'<a class="bb bb-sold" href="{html.escape(ad["url"], quote=True)}" target="_blank" '
+                f'rel="sponsored noopener" aria-label="Ad: {name}">'
+                f'<img src="{{root}}{html.escape(ad["img"], quote=True)}" alt="{name}" width="300" height="250" '
+                f'loading="lazy"><span class="bb-ad">Ad</span></a>')
+    return (f'<button class="bb bb-open" type="button" data-slot="{slot}" aria-haspopup="dialog" '
+            f'aria-label="Billboard {SLOT_NAMES[slot].lower()} is available, {BILLBOARD_PRICE}. Rent it">'
+            f'<span class="bb-head">Insert your ad here!</span>'
+            f'<span class="bb-price">{BILLBOARD_PRICE}</span>'
+            f'<span class="bb-cta">Available &middot; rent it</span></button>')
+
+
+def rent_dialog():
+    open_slots = [s for s, ad in BILLBOARDS.items() if not ad]
+    if not open_slots:
+        return ""
+    options = "\n".join(f'        <option value="{s}">{SLOT_NAMES[s]}</option>' for s in open_slots)
+    return f"""
+<dialog class="rent" id="rent" aria-labelledby="rent-h">
+  <form class="signup stack" data-list="billboard" action="{{root}}api/billboard" method="post" novalidate
+        data-ok="Got it. Dev will email you about your billboard.">
+    <h2 id="rent-h">Rent a billboard</h2>
+    <p class="fine">{BILLBOARD_PRICE}. Your ad sits beside STOOPID BOY on the arcade page and links wherever you want.
+      Dev will email you to set it up. Nothing is charged here.</p>
+    <label>Which billboard?
+      <select name="slot">
+        <option value="any">Any open one</option>
+{options}
+      </select></label>
+    <label>Your name *<input type="text" name="first_name" autocomplete="name" maxlength="80" required></label>
+    <label>Email address *<input type="email" name="email" autocomplete="email" maxlength="254" required></label>
+    <label>What do you want to promote? *<textarea name="promote" maxlength="500" rows="3" required></textarea></label>
+    <label>Link (optional)<input type="url" name="link" maxlength="300" placeholder="https://"></label>
+    <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    <button class="btn" type="submit">Send request</button>
+    <p class="form-msg" role="status" aria-live="polite"></p>
+  </form>
+  <button class="rent-x" type="button" aria-label="Close">&times;</button>
+</dialog>
+"""
+
+
+def arcade_body():
+    side = lambda s: "\n".join("    " + billboard(k, v) for k, v in BILLBOARDS.items() if k[0] == s)
+    game = frame("stoopid-boy", "STOOPID BOY", "game", ' scrolling="no" allow="autoplay; fullscreen"')
+    return (f'<div class="arcade-stage">\n'
+            f'  <aside class="bb-col bb-left" aria-label="Billboards">\n{side("L")}\n  </aside>\n'
+            f'  <div class="game-wrap">{game}</div>\n'
+            f'  <aside class="bb-col bb-right" aria-label="More billboards">\n{side("R")}\n  </aside>\n'
+            f'</div>\n' + rent_dialog() + frame("arcade", "The Arcade"))
+
+
 DONATE = """
 <section class="page split">
   <div class="split-art" aria-hidden="true"><div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span>STV</span></div>
@@ -134,9 +203,7 @@ PAGES = [
     ("music", "music", "Humble Poe | STOOPID TV", "Humble Poe: the not-so-dumb little band on channel 2.", frame("humble-poe", "Humble Poe")),
     ("book", "book", "Book | STOOPID TV", "STOOPID, But True: the book.", frame("book", "STOOPID, But True")),
     ("beans", "beans", "Beans | STOOPID TV", "What beans are, how to earn them, and the leaderboard.", frame("beans", "Beans")),
-    ("arcade", "arcade", "Arcade | STOOPID TV", "Play STOOPID BOY and the rest of the arcade.",
-     '<div class="game-wrap">' + frame("stoopid-boy", "STOOPID BOY", "game", ' scrolling="no" allow="autoplay; fullscreen"') + "</div>\n"
-     + frame("arcade", "The Arcade")),
+    ("arcade", "arcade", "Arcade | STOOPID TV", "Play STOOPID BOY and the rest of the arcade.", arcade_body()),
     ("realm", "realm", "The Realm | STOOPID TV", "The Stoopid Realm: the community.", frame("realm", "The Stoopid Realm")),
     ("magic-errands", None, "Magic Errands | STOOPID TV", "Magic Errands: get it done.", frame("magic-errands", "Magic Errands")),
     ("magic-errands-what-do-you-need-done", None, "Magic Errands | STOOPID TV", "Magic Errands: what do you need done?",
