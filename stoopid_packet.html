@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Packet</title>
+<meta name="description" content="STOOPID TV opening: one packet of the show rides from the studio mic, through the fiber and the Wi-Fi, into a viewer's TV. Original soundtrack generated in the browser. Record it, export the WAV, change the words.">
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500; --pink:#FF40CD; }
+  [hidden]{display:none!important}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:'Courier New',monospace;overflow:hidden}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+  #stage{display:block;max-width:100vw;max-height:100vh;aspect-ratio:16/9;width:100vw;height:auto;background:#000}
+  @media (min-aspect-ratio:16/9){ #stage{height:100vh;width:auto} }
+  body.clean, body.clean *{cursor:none!important}
+
+  /* opening screen */
+  #intro{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:radial-gradient(ellipse at 50% 40%,rgba(0,255,198,.18),rgba(0,0,0,.94) 70%);overflow:auto}
+  .card{width:min(560px,100%);border:1px solid #333;background:rgba(0,0,0,.82);padding:26px 24px 22px}
+  .kick{font-size:11px;letter-spacing:3px;color:var(--teal)}
+  h1{margin:8px 0 4px;font-family:"Arial Black",Arial,sans-serif;font-size:clamp(26px,6vw,40px);line-height:1;letter-spacing:1px}
+  h1 b{color:var(--teal)}
+  .lede{color:#aaa;font-size:13px;line-height:1.55;margin:10px 0 16px}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-bottom:14px}
+  .fields label{display:flex;flex-direction:column;gap:4px;font-size:10px;letter-spacing:2px;color:#888}
+  .fields label.wide{grid-column:1/-1}
+  .fields input,.fields select{font:inherit;font-size:14px;color:#fff;background:#0d0d0d;border:1px solid #333;padding:8px 9px;letter-spacing:1px}
+  .fields input:focus,.fields select:focus{outline:none;border-color:var(--teal)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:#aaa;margin-bottom:16px}
+  .row label{display:flex;gap:6px;align-items:center}
+  button{font:inherit;cursor:pointer}
+  #go{width:100%;padding:14px;font-size:16px;letter-spacing:4px;font-weight:bold;color:#000;background:var(--pink);border:0}
+  #go:disabled{opacity:.5;cursor:wait}
+  .fine{margin-top:12px;font-size:10px;color:#666;letter-spacing:1px;line-height:1.6}
+
+  /* player bar */
+  #bar{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;gap:8px;align-items:center;padding:10px 16px 12px;
+    background:linear-gradient(transparent,rgba(0,0,0,.85) 40%);transition:opacity .3s}
+  #bar.idle{opacity:0}
+  #bar button{background:#000;color:#fff;border:1px solid #444;padding:6px 10px;font-size:12px;letter-spacing:1px;min-width:38px}
+  #bar button:hover{border-color:var(--teal);color:var(--teal)}
+  #bar button.on{background:var(--red);border-color:var(--red);color:#fff}
+  #seek{flex:1;min-width:60px;accent-color:var(--teal)}
+  #time{font-size:12px;color:#aaa;min-width:92px;text-align:right}
+  @media (max-width:700px){ #bar{flex-wrap:wrap} #seek{order:-1;flex-basis:100%} }
+
+  .vault-return{position:fixed;left:56px;top:0;z-index:30;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-top:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}
+  .vault-return:hover{opacity:1;background:#00FFC6;color:#000}
+  @media(max-width:700px){.vault-return{left:14px}}
+  body.clean .vault-return, body.clean #bar{display:none}
+</style>
+</head>
+<body>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+<div id="wrap"><canvas id="stage" width="1920" height="1080"></canvas></div>
+
+<div id="intro">
+  <div class="card">
+    <div class="kick">THE BROADCAST FLOOR &middot; OPENING TITLES</div>
+    <h1>THE <b>PACKET</b></h1>
+    <p class="lede">See the show from the data's side. One packet leaves the studio mic, gets encoded, rides the fiber through the router hops, crosses the last mile over Wi-Fi and lands in a viewer's TV, just in time for an hour of STOOPID TV. 30 seconds. The music is original and is generated live in your browser.</p>
+    <div class="fields">
+      <label>TITLE<input id="f1" maxlength="16" value="STOOPID TV"></label>
+      <label>UNDER IT<input id="f2" maxlength="20" value="PRESENTS..."></label>
+      <label>RUNTIME (H:MM:SS)<input id="f3" maxlength="8" value="1:00:00"></label>
+      <label>QUALITY<select id="fq"><option value="1080">1080p</option><option value="720">720p</option><option value="540">540p</option></select></label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="fs" checked> sound</label>
+      <label><input type="checkbox" id="fc"> clean capture (no interface)</label>
+    </div>
+    <button id="go">START</button>
+    <div class="fine">SPACE play/pause &middot; R restart &middot; &larr;/&rarr; seek &middot; , . frame step &middot; M mute &middot; F fullscreen &middot; H hide interface<br>
+    REC records picture + sound to a video file in real time. WAV exports the soundtrack. PNG saves the current frame.</div>
+  </div>
+</div>
+
+<div id="bar" hidden>
+  <button id="bPlay" title="Play / pause (Space)">&#10074;&#10074;</button>
+  <button id="bRe" title="Restart (R)">&#8634;</button>
+  <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek">
+  <span id="time">0.0 / 30.0</span>
+  <button id="bMute" title="Mute (M)">SND</button>
+  <button id="bRec" title="Record from the start">REC</button>
+  <button id="bWav" title="Export soundtrack as WAV">WAV</button>
+  <button id="bPng" title="Save this frame">PNG</button>
+  <button id="bFs" title="Fullscreen (F)">&#9974;</button>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   THE PACKET — STOOPID TV opening, from the point of view of the data.
+   One packet of the show leaves the studio mic, gets encoded, rides the
+   fiber through the router hops, crosses the last mile over Wi-Fi, goes
+   in through a living-room window and lands in the TV, where a viewer
+   is about to watch an hour of STOOPID TV.
+   Every frame is a pure function of time t (seconds).
+   ===================================================================== */
+
+const DUR = 30.0;
+const TAU = Math.PI * 2;
+const A = 16 / 9;
+const MONO = '"Courier New",Courier,monospace';
+const DISPLAY = '"Arial Black","Helvetica Neue",Arial,sans-serif';
+const C = { teal: '#00FFC6', purple: '#8A2BE2', red: '#FF2D2D', orange: '#CC5500', pink: '#FF40CD', white: '#ffffff', warm: '#ffc96b', ink: '#03050a' };
+
+// Scene boundaries (on the 120 BPM beat grid: one beat = 0.5 s)
+const T = { encode: 4.5, pipe: 9.0, mile: 16.0, viewer: 20.0, arrive: 22.0, presents: 24.0 };
+const HOPS = [
+  { u: 1.0, name: 'HOP 01 · STUDIO ROUTER', ms: '1 ms' },
+  { u: 2.4, name: 'HOP 07 · DAVENPORT, IA', ms: '6 ms' },
+  { u: 4.4, name: 'HOP 11 · THE BACKBONE', ms: '19 ms' },
+  { u: 5.6, name: 'HOP 14 · EDGE SERVER', ms: '27 ms' },
+];
+const LOSS = { at: 3.25, back: 3.95 };   // pipe-local: packet #000002 drops, then comes back
+
+const canvas = document.getElementById('stage');
+let ctx = canvas.getContext('2d');
+let W = 1920, H = 1080, U = 540;
+const FX = document.createElement('canvas');   // scratch layer for copies
+let fctx = FX.getContext('2d');
+const MOS = document.createElement('canvas');  // mosaic downscale
+let mctx = MOS.getContext('2d');
+
+/* ---------- words (editable) ---------- */
+const Q = new URLSearchParams(location.search);
+const WORDS = {
+  title: Q.get('title') || 'STOOPID TV',
+  sub: Q.get('sub') || 'PRESENTS...',
+  runtime: Q.get('runtime') || '1:00:00',
+};
+// One hour of video at about 1,000 packets a second.
+function runtimeSeconds() {
+  const p = WORDS.runtime.split(':').map((x) => parseInt(x, 10) || 0);
+  let s = 0; for (const v of p) s = s * 60 + v;
+  return Math.max(1, s);
+}
+const fmtInt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function totalPackets() { return runtimeSeconds() * 1000; }
+
+/* ---------- math ---------- */
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+function sst(a, b, x) { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); }
+function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+
+/* ---------- drawing helpers (scene units: 1 = half the frame height) ---------- */
+function px(n) { return n / U; }    // n pixels at 1080p-equivalent, in units
+function line(c, x0, y0, x1, y1) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+function rr(c, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+function text(c, s, x, y, size, col, o = {}) {
+  c.save(); c.translate(x, y); const k = size / 100; c.scale(k, k);
+  c.font = `${o.weight || 'bold'} 100px ${o.font || MONO}`; c.textAlign = o.align || 'left'; c.textBaseline = o.base || 'middle';
+  if (o.glow) { c.shadowColor = o.glow; c.shadowBlur = (o.blur || 18) * (H / 1080); }
+  c.fillStyle = col; c.fillText(s, 0, 0); c.restore();
+}
+function glowDot(c, x, y, r, col, a = 1) {
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.globalAlpha = a; c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); c.globalAlpha = 1;
+}
+// A packet: a glowing tile with a header stripe.
+function packet(c, x, y, s, col, a = 1, label) {
+  c.save(); c.globalAlpha *= a;
+  glowDot(c, x, y, s * 1.9, col, 0.45);
+  c.fillStyle = 'rgba(3,6,12,.92)'; rr(c, x - s / 2, y - s / 2, s, s, s * 0.12); c.fill();
+  c.strokeStyle = col; c.lineWidth = Math.max(px(1.2), s * 0.06); c.stroke();
+  c.fillStyle = col; c.fillRect(x - s / 2 + s * 0.12, y - s / 2 + s * 0.14, s * 0.76, s * 0.12);
+  for (let k = 0; k < 3; k++) { c.globalAlpha = 0.55 * a; c.fillRect(x - s / 2 + s * 0.12, y - s * 0.06 + k * s * 0.17, s * (0.3 + 0.4 * hash(k + s)), s * 0.07); }
+  c.restore();
+  if (label) text(c, label, x, y + s * 0.85, Math.max(0.028, s * 0.2), col, { align: 'center' });
+}
+
+/* =====================================================================
+   01 SOURCE — the studio. A silhouette at a mic, a camera with a red light.
+   ===================================================================== */
+function drawSource(c, t) {
+  const u = t, Z = 1 + 2.2 * Math.pow(sst(0.4, 4.5, u), 1.6), fx = -0.28, fy = 0.02;
+  c.save(); c.translate(-fx * (Z - 1), -fy * (Z - 1)); c.scale(Z, Z);
+  c.fillStyle = '#04060b'; c.fillRect(-4, -3, 8, 6);
+  // back wall: monitor glow and a big lit STOOPID sign out of focus
+  glowDot(c, 0.6, -0.45, 1.3, 'rgba(138,43,226,.35)');
+  glowDot(c, -1.1, -0.2, 1.0, 'rgba(0,255,198,.14)');
+  text(c, 'STOOPID', 0.75, -0.55, 0.32, 'rgba(255,64,205,.22)', { font: DISPLAY, weight: 900, align: 'center', glow: 'rgba(255,64,205,.6)', blur: 40 });
+  // perspective floor grid
+  c.strokeStyle = 'rgba(0,255,198,.13)'; c.lineWidth = px(1.2);
+  for (let k = -14; k <= 14; k++) line(c, k * 0.06, 0.3, k * 0.6, 1.4);
+  for (let k = 0; k < 8; k++) { const y = 0.3 + Math.pow(k / 8, 1.8) * 1.1; line(c, -3, y, 3, y); }
+  // desk
+  c.fillStyle = '#0b0f1a'; c.beginPath(); c.moveTo(-1.6, 0.42); c.lineTo(1.0, 0.42); c.lineTo(1.25, 1.2); c.lineTo(-1.85, 1.2); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,255,198,.45)'; c.lineWidth = px(2); line(c, -1.6, 0.42, 1.0, 0.42);
+  // the host: a silhouette, rim-lit (no face, no likeness)
+  const breathe = Math.sin(u * 2.1) * 0.006;
+  c.fillStyle = '#010204';
+  c.beginPath(); c.ellipse(-0.62, 0.42 + breathe, 0.42, 0.3, 0, Math.PI, 0); c.fill();
+  c.beginPath(); c.arc(-0.62, -0.02 + breathe, 0.17, 0, TAU); c.fill();
+  c.lineWidth = px(3);
+  c.strokeStyle = 'rgba(0,255,198,.85)'; c.beginPath(); c.arc(-0.62, -0.02 + breathe, 0.17, -1.2, 0.5); c.stroke();
+  c.beginPath(); c.ellipse(-0.62, 0.42 + breathe, 0.42, 0.3, 0, -0.9, -0.15); c.stroke();
+  c.strokeStyle = 'rgba(255,64,205,.6)'; c.beginPath(); c.arc(-0.62, -0.02 + breathe, 0.17, 2.4, 3.6); c.stroke();
+  // headphones
+  c.strokeStyle = '#1c2236'; c.lineWidth = px(9); c.beginPath(); c.arc(-0.62, -0.03 + breathe, 0.19, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+  // mic on a boom
+  c.strokeStyle = '#2a3150'; c.lineWidth = px(6); line(c, 0.55, -0.9, 0.05, -0.25); line(c, 0.05, -0.25, fx + 0.06, fy - 0.06);
+  c.save(); c.translate(fx, fy); c.rotate(-0.5);
+  c.fillStyle = '#151a2c'; rr(c, -0.05, -0.12, 0.1, 0.24, 0.05); c.fill();
+  c.strokeStyle = 'rgba(0,255,198,.9)'; c.lineWidth = px(2); c.stroke();
+  c.strokeStyle = 'rgba(0,255,198,.35)'; c.lineWidth = px(1);
+  for (let k = 1; k < 6; k++) line(c, -0.045, -0.12 + k * 0.035, 0.045, -0.12 + k * 0.035);
+  c.restore();
+  // sound leaving the mic turns into bits
+  for (let k = 0; k < 7; k++) {
+    const p = (u * 0.8 + k / 7) % 1, r = 0.06 + p * 0.55;
+    c.strokeStyle = `rgba(0,255,198,${(1 - p) * 0.7})`; c.lineWidth = px(2);
+    c.beginPath(); c.arc(fx, fy, r, -0.7, 0.7); c.stroke();
+    for (let b = 0; b < 4; b++) {
+      const a = -0.6 + b * 0.4 + Math.sin(k + b) * 0.05;
+      text(c, (hash(k * 7 + b + Math.floor(u * 3)) > 0.5 ? '1' : '0'), fx + Math.cos(a) * r, fy + Math.sin(a) * r, 0.05 * (1 - p * 0.3), `rgba(255,255,255,${(1 - p) * 0.8})`, { align: 'center' });
+    }
+  }
+  // the camera on a tripod, red light
+  c.fillStyle = '#10141f'; rr(c, 1.15, -0.32, 0.34, 0.2, 0.03); c.fill();
+  c.strokeStyle = 'rgba(138,43,226,.8)'; c.lineWidth = px(2); c.stroke();
+  c.beginPath(); c.arc(1.12, -0.22, 0.07, 0, TAU); c.fillStyle = '#0a0d16'; c.fill(); c.stroke();
+  c.strokeStyle = '#2a3150'; c.lineWidth = px(5); line(c, 1.32, -0.12, 1.2, 0.42); line(c, 1.32, -0.12, 1.45, 0.42);
+  if (Math.floor(u * 2) % 2 === 0) glowDot(c, 1.43, -0.27, 0.05, C.red);
+  c.restore();
+  // HUD for the studio
+  text(c, '● REC', -A + 0.08, -0.86, 0.06, Math.floor(u * 2) % 2 ? C.red : '#7a1414');
+  text(c, 'THE STOOPID SHOW · LIVE FROM THE STUDIO', -A + 0.34, -0.86, 0.045, 'rgba(255,255,255,.75)');
+  const enc = sst(2.0, 4.4, u);
+  if (enc > 0) {
+    text(c, `ENCODING FRAME 000001 · ${Math.round(enc * 100)}%`, -A + 0.08, 0.86, 0.045, C.teal);
+    c.fillStyle = 'rgba(0,255,198,.2)'; c.fillRect(-A + 0.08, 0.91, 1.2, 0.012);
+    c.fillStyle = C.teal; c.fillRect(-A + 0.08, 0.91, 1.2 * enc, 0.012);
+  }
+}
+
+/* =====================================================================
+   02 ENCODE — pixels become bits, bits become packets. One of them is us.
+   ===================================================================== */
+const GRID = { cols: 32, rows: 18 };
+const PAL = ['#04060b', '#0b0f1a', '#151a2c', '#00FFC6', '#8A2BE2', '#FF40CD', '#1c2236', '#2a3150'];
+function drawEncode(c, t) {
+  const u = t - T.encode;
+  c.fillStyle = C.ink; c.fillRect(-4, -3, 8, 6);
+  // 0.0–1.4: the mosaic of the last frame flips tile by tile into bits
+  const cw = (2 * A) / GRID.cols, ch = 2 / GRID.rows;
+  const gridFade = 1 - sst(1.4, 2.0, u);
+  if (gridFade > 0) {
+    for (let j = 0; j < GRID.rows; j++) for (let i = 0; i < GRID.cols; i++) {
+      const n = j * GRID.cols + i, flip = sst(0.15 + hash(n) * 0.9, 0.35 + hash(n) * 0.9, u);
+      const x = -A + i * cw, y = -1 + j * ch;
+      c.globalAlpha = gridFade;
+      if (flip < 1) {
+        c.fillStyle = PAL[Math.floor(hash(n + 3) * (hash(n + 9) > 0.8 ? 8 : 3))];
+        c.fillRect(x + cw * 0.5 * flip, y, cw * (1 - flip), ch);
+      }
+      if (flip > 0) text(c, hash(n + 77) > 0.5 ? '1' : '0', x + cw / 2, y + ch / 2, ch * 0.75, hash(n) > 0.85 ? C.pink : C.teal, { align: 'center' });
+    }
+    c.globalAlpha = 1;
+  }
+  // 1.4–: streams of bits pack into packets on conveyor rows
+  const rowsIn = sst(1.2, 2.0, u);
+  if (rowsIn > 0) {
+    const zoom = 1 + 7 * Math.pow(sst(3.2, 4.5, u), 2.2);
+    c.save(); c.scale(zoom, zoom);
+    for (let r = -4; r <= 4; r++) {
+      const y = r * 0.24, dir = r % 2 ? -1 : 1, sp = 0.35 + hash(r + 20) * 0.25;
+      c.globalAlpha = rowsIn * (r === 0 ? 1 : 0.55);
+      // bit stream
+      for (let k = 0; k < 60; k++) {
+        const x = ((k * 0.07 + dir * u * sp * 2 + hash(r) * 4) % 4.2 + 4.2) % 4.2 - 2.1;
+        text(c, hash(k + r * 61 + 1) > 0.5 ? '1' : '0', x, y + 0.09, 0.035, 'rgba(0,255,198,.45)', { align: 'center' });
+      }
+      // packets
+      for (let k = 0; k < 7; k++) {
+        if (r === 0 && k === 3) continue;
+        const x = ((k * 0.62 + dir * u * sp + hash(r + 5) * 3) % 4.34 + 4.34) % 4.34 - 2.17;
+        c.strokeStyle = 'rgba(0,255,198,.55)'; c.lineWidth = px(1.4); c.fillStyle = 'rgba(0,30,26,.6)';
+        rr(c, x - 0.24, y - 0.065, 0.48, 0.13, 0.015); c.fill(); c.stroke();
+        text(c, `PKT ${String(1000 + Math.floor(hash(k + r * 13) * 9000)).padStart(6, '0')}`, x - 0.21, y - 0.025, 0.028, 'rgba(255,255,255,.7)');
+        text(c, '▒▒▒▓▒▓▒▒▓▒', x - 0.21, y + 0.03, 0.026, 'rgba(0,255,198,.5)');
+      }
+    }
+    c.globalAlpha = 1;
+    // our packet: centre row, centre slot, held still while the rows slide
+    const a = sst(1.6, 2.2, u);
+    c.save(); c.globalAlpha = a;
+    glowDot(c, 0, 0, 0.6, 'rgba(255,64,205,.35)');
+    c.fillStyle = 'rgba(20,4,24,.92)'; rr(c, -0.3, -0.085, 0.6, 0.17, 0.02); c.fill();
+    c.strokeStyle = C.pink; c.lineWidth = px(2.5); c.stroke();
+    text(c, 'PKT 000001', -0.27, -0.045, 0.034, C.white);
+    text(c, 'SRC STOOPID → DST YOU', -0.27, 0.0, 0.024, C.pink);
+    text(c, 'FLAGS: URGENT, SILLY', -0.27, 0.042, 0.024, 'rgba(255,255,255,.6)');
+    c.restore();
+    c.restore();
+    // labels around our packet (screen space, before the dive)
+    const lab = sst(2.0, 2.4, u) * (1 - sst(3.2, 3.6, u));
+    if (lab > 0) {
+      c.globalAlpha = lab;
+      c.strokeStyle = C.pink; c.lineWidth = px(2);
+      const bx = 0.36, by = 0.13;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { line(c, sx * bx, sy * by, sx * (bx - 0.06), sy * by); line(c, sx * bx, sy * by, sx * bx, sy * (by - 0.04)); }
+      text(c, 'THIS ONE.', 0, -0.26, 0.07, C.white, { align: 'center', font: DISPLAY, weight: 900 });
+      text(c, `PACKET 1 OF ${fmtInt(totalPackets())} · 1,316 BYTES OF STOOPID`, 0, 0.25, 0.04, C.pink, { align: 'center' });
+      c.globalAlpha = 1;
+    }
+  }
+}
+
+/* =====================================================================
+   03 THE PIPE — first person down the fiber, through the router hops.
+   ===================================================================== */
+const FOC = 1.0;
+function pipeZ(u) { return 5 * u + 1.3 * u * u; }
+function drawPipe(c, t) {
+  const u = t - T.pipe, zc = pipeZ(u);
+  const spin = u * 0.25;
+  c.fillStyle = '#020309'; c.fillRect(-4, -3, 8, 6);
+  glowDot(c, 0, 0, 0.9, 'rgba(138,43,226,.45)');
+  glowDot(c, 0, 0, 0.25, 'rgba(255,255,255,.8)');
+  // rings of the fiber
+  const R = 1.55;
+  for (let k = Math.floor(zc) + 45; k > Math.floor(zc); k--) {
+    const dz = k - zc; if (dz < 0.15) continue;
+    const s = FOC / dz, a = clamp(1 - dz / 45, 0, 1) * sst(0.15, 0.7, dz);
+    const pulse = k % 7 === 0;
+    c.strokeStyle = pulse ? `rgba(255,64,205,${a})` : (k % 2 ? `rgba(0,255,198,${a * 0.75})` : `rgba(138,43,226,${a * 0.8})`);
+    c.lineWidth = Math.max(px(1), s * 0.012 * (pulse ? 3 : 1));
+    c.beginPath();
+    for (let v = 0; v <= 8; v++) { const ang = v / 8 * TAU + k * 0.09 + spin; const x = Math.cos(ang) * R * s, y = Math.sin(ang) * R * s; v ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.stroke();
+  }
+  // other packets streaking past along the walls
+  for (let j = 0; j < 90; j++) {
+    const ang = hash(j) * TAU + spin, rad = 0.6 + hash(j + 1) * 0.85, rate = 12 + hash(j + 2) * 20;
+    const dz = 40 - ((u * rate + hash(j + 3) * 40) % 40);
+    if (dz < 0.3) continue;
+    const s0 = FOC / dz, s1 = FOC / (dz + 1.2);
+    const col = j % 5 === 0 ? '255,64,205' : j % 3 ? '0,255,198' : '255,255,255';
+    c.strokeStyle = `rgba(${col},${clamp(1 - dz / 40, 0, 1) * 0.9})`; c.lineWidth = Math.max(px(1), s0 * 0.02);
+    line(c, Math.cos(ang) * rad * s0, Math.sin(ang) * rad * s0, Math.cos(ang) * rad * s1, Math.sin(ang) * rad * s1);
+  }
+  // router hops: a bright gate with side exits, then a flash as we pass
+  let flash = 0;
+  for (const h of HOPS) {
+    const dz = pipeZ(h.u) - zc;
+    if (dz > 0.12 && dz < 30) {
+      const s = FOC / dz, a = sst(30, 18, dz);
+      c.strokeStyle = `rgba(255,255,255,${a})`; c.lineWidth = Math.max(px(2), s * 0.04);
+      c.beginPath(); c.arc(0, 0, 1.1 * s, 0, TAU); c.stroke();
+      c.strokeStyle = `rgba(204,85,0,${a})`; c.lineWidth = Math.max(px(1.5), s * 0.02);
+      for (let e = 0; e < 3; e++) { const ang = e * TAU / 3 + 0.5; c.beginPath(); c.arc(Math.cos(ang) * 0.65 * s, Math.sin(ang) * 0.65 * s, 0.22 * s, 0, TAU); c.stroke(); }
+      c.beginPath(); c.arc(0, 0, 0.3 * s, 0, TAU); c.strokeStyle = `rgba(0,255,198,${a})`; c.stroke();
+    }
+    flash = Math.max(flash, Math.exp(-Math.abs(u - h.u) * 26) * (u > h.u - 0.03 ? 1 : 0));
+  }
+  // our neighbours in the stream, flying in formation (screen space)
+  const nb = [[0.62, 0.32, 2], [-0.7, 0.26, 3], [0.48, -0.42, 4]];
+  for (const [x, y, n] of nb) {
+    const bob = Math.sin(u * 3 + n) * 0.015;
+    let a = sst(0.2, 0.8, u) * (1 - sst(6.2, 6.6, u)), col = C.teal, lab = `PKT 00000${n}`;
+    if (n === 2) {
+      if (u > LOSS.at && u < LOSS.back) { a *= hash(Math.floor(u * 30)) > 0.5 ? 0.25 : 0; col = C.red; }
+      else if (u >= LOSS.back) { a *= sst(LOSS.back, LOSS.back + 0.15, u); }
+      if (u > LOSS.at - 0.3 && u < LOSS.at) { col = hash(Math.floor(u * 40)) > 0.5 ? C.red : C.teal; }
+    }
+    packet(c, x, y + bob, 0.1, col, a, lab);
+  }
+  if (u > LOSS.at && u < LOSS.back + 0.9) {
+    const lost = u < LOSS.back;
+    text(c, lost ? 'PACKET 000002 LOST. RETRANSMITTING…' : 'PACKET 000002 FOUND. CARRY ON.', 0, 0.62, 0.055, lost ? C.red : C.teal, { align: 'center', glow: lost ? C.red : C.teal });
+  }
+  if (flash > 0.02) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(120,255,225,${flash * 0.35})`; c.fillRect(-4, -3, 8, 6); c.restore(); }
+  // the end of the fiber opens up
+  const out = sst(6.2, 7.0, u);
+  if (out > 0) {
+    glowDot(c, 0, 0, 0.2 + out * 3.5, `rgba(255,255,255,${out})`, 1);
+    c.fillStyle = `rgba(255,255,255,${sst(6.75, 7.0, u)})`; c.fillRect(-4, -3, 8, 6);
+  }
+  return { hop: HOPS.filter((h) => u >= h.u - 0.1).pop() };
+}
+
+/* =====================================================================
+   04 THE LAST MILE — over the town at night, Wi-Fi rings, one lit window.
+   ===================================================================== */
+function cam3(Cp, pitch) {
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  return (p) => {
+    const rx = p[0] - Cp[0], ry = p[1] - Cp[1], rz = p[2] - Cp[2];
+    const z = rz * cp - ry * sp, y = ry * cp + rz * sp;
+    if (z < 0.05) return null;
+    return [rx * FOC * 1.3 / z, -y * FOC * 1.3 / z, z];
+  };
+}
+const HOUSES = (() => {
+  const list = [];
+  for (let zi = 0; zi < 12; zi++) for (let xi = -5; xi <= 5; xi++) {
+    const x = xi * 2.2 + (hash(zi * 31 + xi) - 0.5) * 0.4, z = 4 + zi * 2.6;
+    if (Math.abs(x) < 1.6 && Math.abs(z - 10.5) < 2) continue;  // keep the street clear around the target
+    list.push({ x, z, w: 0.8 + hash(xi + zi) * 0.5, h: 0.6 + hash(xi * 3 + zi) * 0.5, lit: hash(xi * 7 + zi * 3) });
+  }
+  list.push({ x: 0, z: 10.5, w: 1.1, h: 0.85, lit: 1, target: true });
+  return list.sort((a, b) => b.z - a.z);
+})();
+function drawMile(c, t) {
+  const u = t - T.mile, k = sst(0, 4, u);
+  const e = Math.pow(k, 1.6);
+  const Cp = [lerp(-1.5, 0, k), lerp(7.5, 0.5, e), lerp(-4, 9.25, e)], pitch = lerp(0.6, 0.02, sst(0, 3.4, u));
+  const P = cam3(Cp, pitch);
+  const sky = c.createLinearGradient(0, -1, 0, 1); sky.addColorStop(0, '#05030f'); sky.addColorStop(1, '#0b1030');
+  c.fillStyle = sky; c.fillRect(-4, -3, 8, 6);
+  for (let i = 0; i < 120; i++) { c.fillStyle = `rgba(255,255,255,${0.3 + 0.5 * hash(i + 3)})`; c.fillRect((hash(i) * 2 - 1) * A, -1 + hash(i + 50) * 0.9 - (1 - k) * 0.5, px(2), px(2)); }
+  // ground grid
+  c.lineWidth = px(1.2);
+  for (let gx = -24; gx <= 24; gx += 2) {
+    const a = P([gx, 0, 0.5]), b = P([gx, 0, 40]); if (!a || !b) continue;
+    c.strokeStyle = gx === 0 ? 'rgba(204,85,0,.45)' : 'rgba(0,255,198,.12)'; line(c, a[0], a[1], b[0], b[1]);
+  }
+  for (let gz = 1; gz <= 40; gz += 2) {
+    const a = P([-24, 0, gz]), b = P([24, 0, gz]); if (!a || !b) continue;
+    c.strokeStyle = 'rgba(0,255,198,.1)'; line(c, a[0], a[1], b[0], b[1]);
+  }
+  // street lights along the road
+  for (let z = 2; z < 36; z += 3) for (const sx of [-1, 1]) {
+    const p = P([sx * 1.4, 0.5, z]); if (p) glowDot(c, p[0], p[1], 0.06 / p[2] * 3, 'rgba(255,201,107,.9)');
+  }
+  // houses, far to near
+  for (const hs of HOUSES) {
+    const x0 = hs.x - hs.w / 2, x1 = hs.x + hs.w / 2, z0 = hs.z - hs.w / 2, z1 = hs.z + hs.w / 2, h = hs.h;
+    const v = (x, y, z) => P([x, y, z]);
+    const f = [v(x0, 0, z0), v(x1, 0, z0), v(x1, h, z0), v(hs.x, h + hs.w * 0.4, z0), v(x0, h, z0)];
+    if (f.some((p) => !p)) continue;
+    const far = clamp(1 - f[0][2] / 32, 0.15, 1);
+    // side and roof as wireframe behind the front
+    const back = [v(x0, 0, z1), v(x1, 0, z1), v(x1, h, z1), v(hs.x, h + hs.w * 0.4, z1), v(x0, h, z1)];
+    c.strokeStyle = hs.target ? `rgba(255,64,205,${far})` : `rgba(0,255,198,${far * 0.6})`; c.lineWidth = px(hs.target ? 2.2 : 1.3);
+    if (!back.some((p) => !p)) {
+      c.fillStyle = '#060914';
+      c.beginPath(); back.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); c.fill(); c.stroke();
+      for (let i = 0; i < 5; i++) line(c, f[i][0], f[i][1], back[i][0], back[i][1]);
+    }
+    c.fillStyle = '#070b18';
+    c.beginPath(); f.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); c.fill(); c.stroke();
+    // a window on the front
+    if (hs.lit > 0.35) {
+      const wy0 = h * 0.35, wy1 = h * 0.75, wx = hs.target ? 0.32 : 0.18;
+      const q = [v(hs.x - wx, wy0, z0 - 0.001), v(hs.x + wx, wy0, z0 - 0.001), v(hs.x + wx, wy1, z0 - 0.001), v(hs.x - wx, wy1, z0 - 0.001)];
+      if (!q.some((p) => !p)) {
+        c.fillStyle = hs.target ? '#7fe6ff' : `rgba(255,201,107,${0.4 + 0.5 * hs.lit})`;
+        c.beginPath(); q.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); c.fill();
+        if (hs.target) {   // a TV flickering inside
+          const cx = (q[0][0] + q[2][0]) / 2, cy = (q[0][1] + q[2][1]) / 2;
+          glowDot(c, cx, cy, Math.abs(q[1][0] - q[0][0]) * 1.4, `rgba(0,255,198,${0.4 + 0.2 * Math.sin(t * 9)})`);
+        }
+      }
+    }
+    if (hs.target) {
+      // router on the roof: blinking light and Wi-Fi rings over the yard
+      const r0 = P([hs.x + 0.3, h + 0.15, z0 + 0.2]);
+      if (r0) glowDot(c, r0[0], r0[1], 0.05 * 3 / r0[2], Math.floor(t * 6) % 2 ? C.teal : C.pink);
+      for (let ring = 0; ring < 4; ring++) {
+        const p = (t * 0.6 + ring / 4) % 1, R = 0.3 + p * 6;
+        c.strokeStyle = `rgba(255,64,205,${(1 - p) * 0.8})`; c.lineWidth = px(2);
+        c.beginPath(); let started = false;
+        for (let s = 0; s <= 48; s++) {
+          const a = s / 48 * TAU, q2 = P([hs.x + Math.cos(a) * R, h + 0.15, z0 + 0.2 + Math.sin(a) * R]);
+          if (!q2) { started = false; continue; }
+          started ? c.lineTo(q2[0], q2[1]) : c.moveTo(q2[0], q2[1]); started = true;
+        }
+        c.stroke();
+      }
+    }
+  }
+  // our packet, riding the Wi-Fi in front of the lens, then diving for the window
+  const dive = sst(2.6, 3.8, u);
+  packet(c, lerp(0.0, 0, dive), lerp(0.62, 0.05, dive), lerp(0.12, 0.03, dive), C.pink, 1 - sst(3.6, 3.85, u));
+  const warm = sst(3.55, 4.0, u);
+  if (warm > 0) { c.fillStyle = `rgba(160,240,255,${warm})`; c.fillRect(-4, -3, 8, 6); }
+}
+
+/* =====================================================================
+   05 THE VIEWER — the living room. One person, one couch, one hour.
+   ===================================================================== */
+const TVR = { x: 0, y: -0.15, hw: 0.62, hh: 0.62 / A };
+function drawViewer(c, t) {
+  const u = t - T.viewer;
+  const zIn = 1 + 0.35 * sst(0, 3.2, u), zFinal = A / TVR.hw;
+  const z = lerp(zIn, zFinal, Math.pow(sst(3.1, 4.0, u), 2.4));
+  c.save();
+  const k = sst(0, 1, (z - 1) / (zFinal - 1));
+  c.translate(0, -TVR.y * z * k); c.scale(z, z);
+  // the room
+  c.fillStyle = '#060912'; c.fillRect(-4, -3, 8, 6);
+  const tvlight = c.createRadialGradient(TVR.x, TVR.y, 0.2, TVR.x, TVR.y + 0.4, 2.2);
+  tvlight.addColorStop(0, 'rgba(0,255,198,.22)'); tvlight.addColorStop(1, 'rgba(0,255,198,0)');
+  c.fillStyle = tvlight; c.fillRect(-4, -3, 8, 6);
+  // window with the town outside
+  c.fillStyle = '#0b1030'; c.fillRect(-1.6, -0.75, 0.55, 0.5);
+  for (let i = 0; i < 14; i++) { c.fillStyle = `rgba(255,201,107,${0.4 + 0.5 * hash(i)})`; c.fillRect(-1.58 + hash(i + 2) * 0.5, -0.4 + hash(i + 5) * 0.12, px(5), px(5)); }
+  c.strokeStyle = '#1c2236'; c.lineWidth = px(6); c.strokeRect(-1.6, -0.75, 0.55, 0.5); line(c, -1.325, -0.75, -1.325, -0.25);
+  // shelf + speaker
+  c.fillStyle = '#0d1222'; c.fillRect(-0.9, 0.24, 1.8, 0.12);
+  c.fillStyle = '#0a0e1a'; rr(c, 0.9, -0.4, 0.2, 0.62, 0.03); c.fill(); c.strokeStyle = 'rgba(138,43,226,.4)'; c.lineWidth = px(2); c.stroke();
+  // the TV
+  c.fillStyle = '#05070c'; rr(c, TVR.x - TVR.hw - 0.025, TVR.y - TVR.hh - 0.025, TVR.hw * 2 + 0.05, TVR.hh * 2 + 0.05, 0.02); c.fill();
+  c.strokeStyle = 'rgba(0,255,198,.35)'; c.lineWidth = px(1.5); c.stroke();
+  c.save(); c.beginPath(); c.rect(TVR.x - TVR.hw, TVR.y - TVR.hh, TVR.hw * 2, TVR.hh * 2); c.clip();
+  c.translate(TVR.x, TVR.y); c.scale(TVR.hw / A, TVR.hw / A);
+  drawScreen(c, t);
+  c.restore();
+  // our packet flies across the room into the screen
+  const pk = sst(0.5, 2.0, u);
+  if (pk > 0 && pk < 1) {
+    const x = lerp(0.35, TVR.x, pk), y = lerp(0.85, TVR.y, pk), s = lerp(0.16, 0.012, Math.pow(pk, 0.7));
+    for (let tr = 1; tr < 6; tr++) { const q = Math.max(0, pk - tr * 0.03); glowDot(c, lerp(0.35, TVR.x, q), lerp(0.85, TVR.y, q), s * 1.2, 'rgba(255,64,205,.35)'); }
+    packet(c, x, y, s, C.pink, 1);
+  }
+  // couch, popcorn, the viewer (silhouette from behind)
+  const lean = sst(2.0, 2.6, u) * 0.03;
+  c.fillStyle = '#0c1020'; c.beginPath(); c.moveTo(-3, 3); c.lineTo(-3, 0.78); c.quadraticCurveTo(-1.6, 0.6, 0, 0.66); c.quadraticCurveTo(1.6, 0.6, 3, 0.78); c.lineTo(3, 3); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(0,255,198,.35)'; c.lineWidth = px(2); c.beginPath(); c.moveTo(-3, 0.78); c.quadraticCurveTo(-1.6, 0.6, 0, 0.66); c.quadraticCurveTo(1.6, 0.6, 3, 0.78); c.stroke();
+  c.fillStyle = '#010206';
+  c.beginPath(); c.ellipse(-0.3, 0.98 - lean, 0.42, 0.34, 0, Math.PI, 0); c.fill();
+  c.beginPath(); c.arc(-0.3, 0.5 - lean * 1.6, 0.17, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(0,255,198,.7)'; c.lineWidth = px(3);
+  c.beginPath(); c.arc(-0.3, 0.5 - lean * 1.6, 0.17, -2.6, -0.5); c.stroke();
+  c.beginPath(); c.ellipse(-0.3, 0.98 - lean, 0.42, 0.34, 0, -2.7, -0.4); c.stroke();
+  // popcorn bowl on the cushion
+  c.fillStyle = '#FF2D2D'; c.beginPath(); c.moveTo(0.35, 0.62); c.lineTo(0.75, 0.62); c.lineTo(0.7, 0.76); c.lineTo(0.4, 0.76); c.closePath(); c.fill();
+  for (let i = 0; i < 9; i++) { c.fillStyle = '#fff6dc'; c.beginPath(); c.arc(0.39 + i * 0.042, 0.605 - (i % 2) * 0.02, 0.026, 0, TAU); c.fill(); }
+  const pop = sst(2.0, 2.2, u) * (1 - sst(2.5, 2.8, u));
+  if (u > 2.0 && u < 2.8) { c.fillStyle = '#fff6dc'; c.beginPath(); c.arc(0.58, 0.58 - Math.sin(Math.min(1, (u - 2.0) / 0.8) * Math.PI) * 0.18, 0.024, 0, TAU); c.globalAlpha = Math.max(pop, 0.6); c.fill(); c.globalAlpha = 1; }
+  c.restore();
+}
+// What the TV shows: buffering, then the opening assembling itself.
+function drawScreen(c, t) {
+  c.fillStyle = '#030308'; c.fillRect(-A - 0.1, -1.1, 2 * A + 0.2, 2.2);
+  if (t < T.arrive) {
+    const p = Math.floor(lerp(87, 99, sst(T.viewer + 0.5, T.arrive - 0.1, t)));
+    c.strokeStyle = 'rgba(0,255,198,.25)'; c.lineWidth = px(14); c.beginPath(); c.arc(0, -0.08, 0.28, 0, TAU); c.stroke();
+    c.strokeStyle = C.teal; c.beginPath(); c.arc(0, -0.08, 0.28, t * 5, t * 5 + 1.6); c.stroke();
+    text(c, `LOADING ${WORDS.title}… ${p}%`, 0, 0.42, 0.11, C.white, { align: 'center' });
+    text(c, 'WAITING ON 1 PACKET', 0, 0.62, 0.08, C.pink, { align: 'center' });
+    return;
+  }
+  drawPresents(c, t);
+}
+
+/* =====================================================================
+   06 STOOPID TV PRESENTS... — the delivered packets assemble the title.
+   ===================================================================== */
+let titleCache = { key: '', pts: [] };
+function titlePoints() {
+  const key = WORDS.title;
+  if (titleCache.key === key) return titleCache.pts;
+  const cv = document.createElement('canvas'), w = 640, h = 140; cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let fs = 120; g.font = `900 ${fs}px ${DISPLAY}`;
+  while (g.measureText(key).width > w * 0.96 && fs > 20) { fs -= 4; g.font = `900 ${fs}px ${DISPLAY}`; }
+  g.fillText(key, w / 2, h / 2);
+  const d = g.getImageData(0, 0, w, h).data, pts = [], step = 5;
+  for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) if (d[(y * w + x) * 4 + 3] > 120) pts.push([(x / w - 0.5) * 3.3, (y / h - 0.5) * 0.72 - 0.18]);
+  titleCache = { key, pts, size: fs * 3.3 / w };
+  return pts;
+}
+function drawPresents(c, t) {
+  const u = t - T.presents;   // the assembly starts before the cut, inside the TV
+  c.fillStyle = '#030308'; c.fillRect(-A - 0.1, -1.1, 2 * A + 0.2, 2.2);
+  c.strokeStyle = 'rgba(138,43,226,.14)'; c.lineWidth = px(1);
+  for (let x = -1.8; x <= 1.8; x += 0.2) line(c, x, -1, x, 1);
+  for (let y = -1; y <= 1; y += 0.2) line(c, -A, y, A, y);
+  const pts = titlePoints(), sz = 3.3 / 640 * 5 * 0.92;
+  const crisp = sst(-0.1, 0.35, u);
+  for (let i = 0; i < pts.length; i++) {
+    const st = -1.9 + hash(i) * 1.2, p = sst(st, st + 0.75, u);
+    if (p <= 0 && u < st - 0.4) continue;
+    const a = hash(i + 7) * TAU, d0 = 1.2 + hash(i + 3) * 2.2;
+    const sx = Math.cos(a) * d0, sy = Math.sin(a) * d0 * 0.7;
+    const x = lerp(sx, pts[i][0], p), y = lerp(sy, pts[i][1], p);
+    c.globalAlpha = (p < 1 ? 0.35 + 0.65 * p : 1) * (1 - crisp * 0.85);
+    c.fillStyle = hash(i + 11) > 0.8 ? C.pink : C.teal;
+    c.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+  }
+  c.globalAlpha = 1;
+  if (crisp > 0) {
+    const size = titleCache.size;
+    const jit = (hash(Math.floor(t * 12)) > 0.93) ? 0.03 : 0;
+    c.globalAlpha = crisp;
+    text(c, WORDS.title, -0.018 - jit, -0.18, size, 'rgba(255,64,205,.85)', { font: DISPLAY, weight: 900, align: 'center' });
+    text(c, WORDS.title, 0.018 + jit, -0.18, size, 'rgba(0,255,198,.85)', { font: DISPLAY, weight: 900, align: 'center' });
+    text(c, WORDS.title, 0, -0.18, size, '#ffffff', { font: DISPLAY, weight: 900, align: 'center', glow: 'rgba(0,255,198,.7)', blur: 30 });
+    c.globalAlpha = 1;
+  }
+  // PRESENTS... types in, one dot per beat
+  if (u > 0.9) {
+    const sub = WORDS.sub, base = sub.replace(/\.+$/, ''), dots = sub.length - base.length;
+    const nb = Math.min(base.length, Math.floor((u - 0.9) / 0.06));
+    const nd = Math.min(dots, Math.max(0, Math.floor((u - 0.9 - base.length * 0.06) / 0.5) + 1));
+    const s = base.slice(0, nb) + (nb === base.length ? '.'.repeat(nd) : '');
+    const fullW = sub.length * 0.6 * 0.16;
+    text(c, s, -fullW / 2, 0.3, 0.16, C.white, { align: 'left' });
+  }
+  if (u > 2.6) {
+    const a = sst(2.6, 3.0, u);
+    c.globalAlpha = a;
+    text(c, `RUNTIME ${WORDS.runtime} · ALL ${fmtInt(totalPackets())} PACKETS ARRIVED`, 0, 0.62, 0.05, C.teal, { align: 'center' });
+    const el = Math.max(0, u - 3.0), tot = runtimeSeconds();
+    const fmt = (s) => { s = Math.floor(s); const hh = Math.floor(s / 3600), mm = Math.floor(s / 60) % 60, ss = s % 60; return (hh ? hh + ':' : '') + String(mm).padStart(hh ? 2 : 1, '0') + ':' + String(ss).padStart(2, '0'); };
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(-1.0, 0.74, 2.0, 0.012);
+    c.fillStyle = C.pink; c.fillRect(-1.0, 0.74, 2.0 * Math.min(1, el / tot) + 0.004, 0.012);
+    text(c, `${fmt(el)} / ${fmt(tot)}`, 1.0, 0.8, 0.04, 'rgba(255,255,255,.7)', { align: 'right' });
+    text(c, tot === 3600 ? 'ENJOY THE HOUR.' : 'ENJOY THE SHOW.', -1.0, 0.8, 0.04, 'rgba(255,255,255,.7)');
+    c.globalAlpha = 1;
+  }
+}
+
+/* ---------- HUD: where the packet is ---------- */
+const STAGES = [[0, '01 SOURCE'], [T.encode, '02 ENCODE'], [T.pipe, '03 THE PIPE'], [T.mile, '04 THE LAST MILE'], [T.viewer, '05 THE VIEWER']];
+function latencyMs(t) {
+  if (t < T.encode) return 0;
+  if (t < T.pipe) return lerp(0, 0.6, sst(T.encode, T.pipe, t));
+  if (t < T.mile) return lerp(0.6, 27, (t - T.pipe) / (T.mile - T.pipe));
+  return lerp(27, 31, sst(T.mile, T.arrive, t));
+}
+function drawHUD(c, t, info) {
+  if (t >= T.presents - 0.9) return;
+  const a = (t < 0.3 ? sst(0, 0.3, t) : 1) * (1 - sst(T.presents - 1.4, T.presents - 0.9, t));
+  c.save(); c.globalAlpha = a;
+  const stage = STAGES.filter((s) => t >= s[0]).pop()[1];
+  if (t >= T.encode) {
+    text(c, `PKT 000001 / ${fmtInt(totalPackets())}`, -A + 0.08, -0.86, 0.045, C.teal);
+    text(c, `${latencyMs(t).toFixed(1)} ms`, A - 0.08, -0.86, 0.045, C.teal, { align: 'right' });
+  }
+  rr(c, -A + 0.08, 0.8, 0.62, 0.1, 0.01); c.fillStyle = 'rgba(0,0,0,.55)'; c.fill(); c.strokeStyle = 'rgba(0,255,198,.6)'; c.lineWidth = px(1.5); c.stroke();
+  text(c, stage, -A + 0.12, 0.85, 0.045, C.white);
+  if (info && info.hop) {
+    const hu = t - T.pipe - info.hop.u, ha = sst(-0.1, 0.1, hu) * (1 - sst(1.1, 1.4, hu));
+    if (ha > 0) { c.globalAlpha = a * ha; text(c, `${info.hop.name} · ${info.hop.ms}`, A - 0.08, 0.85, 0.05, C.orange, { align: 'right', glow: C.orange, blur: 12 }); }
+  }
+  if (t >= T.mile && t < T.viewer) text(c, 'WI-FI · 5 GHz · ▂▄▆ 3 BARS · DST: 1 VIEWER', A - 0.08, 0.85, 0.045, C.pink, { align: 'right' });
+  if (t >= T.arrive && t < T.presents) {
+    c.globalAlpha = a * sst(T.arrive, T.arrive + 0.2, t);
+    text(c, 'DELIVERED · 31 ms · 1 VIEWER', A - 0.08, 0.85, 0.05, C.teal, { align: 'right', glow: C.teal, blur: 12 });
+  }
+  c.restore();
+}
+
+/* ---------- post: mosaic, glitch, scanlines ---------- */
+function mosaic(c, b) {
+  if (b <= 1.5) return;
+  const w = Math.max(1, Math.ceil(W / b)), h = Math.max(1, Math.ceil(H / b));
+  if (MOS.width !== w || MOS.height !== h) { MOS.width = w; MOS.height = h; mctx = MOS.getContext('2d'); }
+  mctx.imageSmoothingEnabled = true; mctx.drawImage(canvas, 0, 0, w, h);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = false;
+  c.drawImage(MOS, 0, 0, w, h, 0, 0, W, H); c.imageSmoothingEnabled = true; c.restore();
+}
+function glitch(c, t, amt) {
+  if (amt <= 0) return;
+  fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, W, H); fctx.drawImage(canvas, 0, 0);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+  const n = 8, seed = Math.floor(t * 24);
+  for (let i = 0; i < n; i++) {
+    const y = hash(seed * 13 + i) * H, h = (0.01 + hash(seed + i * 3) * 0.06) * H, dx = (hash(seed * 7 + i) - 0.5) * 0.12 * W * amt;
+    c.drawImage(FX, 0, y, W, h, dx, y, W, h);
+  }
+  c.restore();
+}
+// Moments that glitch on purpose: the mosaic cut, packet loss, arrivals, the title landing.
+function glitchAt(t) {
+  const up = T.pipe;
+  return Math.max(
+    sst(4.2, 4.5, t) * (1 - sst(4.5, 4.75, t)),
+    (t > up + LOSS.at && t < up + LOSS.at + 0.25) ? 0.9 : 0,
+    (t > up + LOSS.back && t < up + LOSS.back + 0.12) ? 0.6 : 0,
+    (t > T.arrive && t < T.arrive + 0.16) ? 0.8 : 0,
+    (t > T.presents - 0.1 && t < T.presents + 0.12) ? 0.5 : 0,
+    (t > 28.8 && t < 29.1) ? 1 : 0,
+  );
+}
+
+function render(t) {
+  const c = ctx;
+  t = clamp(t, 0, DUR);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+  c.setTransform(U, 0, 0, U, W / 2, H / 2);
+  let info = null;
+  c.save();
+  if (t < T.encode) drawSource(c, t);
+  else if (t < T.pipe) drawEncode(c, t);
+  else if (t < T.mile) info = drawPipe(c, t);
+  else if (t < T.viewer) drawMile(c, t);
+  else if (t < T.presents) drawViewer(c, t);
+  else drawPresents(c, t);
+  c.restore();
+  // pipe entrance: white burst as we dive into our packet
+  if (t > T.pipe - 0.5 && t < T.pipe + 0.4) {
+    const a = t < T.pipe ? sst(T.pipe - 0.5, T.pipe, t) : 1 - sst(T.pipe, T.pipe + 0.4, t);
+    c.fillStyle = `rgba(255,255,255,${a})`; c.fillRect(-4, -3, 8, 6);
+  }
+  // after each white-out, fade the next scene up from it
+  for (const [t0, col] of [[T.mile, '255,255,255'], [T.viewer, '160,240,255']]) {
+    if (t >= t0 && t < t0 + 0.45) { c.fillStyle = `rgba(${col},${1 - sst(t0, t0 + 0.45, t)})`; c.fillRect(-4, -3, 8, 6); }
+  }
+  const mb = Math.max(sst(3.3, 4.5, t) * (t < T.encode ? 1 : 0), (t >= T.encode ? 1 - sst(T.encode, T.encode + 0.5, t) : 0));
+  if (mb > 0) mosaic(c, 1 + mb * 58 * (H / 1080));
+  glitch(c, t, glitchAt(t));
+  c.setTransform(U, 0, 0, U, W / 2, H / 2);
+  drawHUD(c, t, info);
+  // scanlines and vignette
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = 'rgba(0,0,0,.16)';
+  const step = Math.max(2, Math.round(H / 360));
+  for (let y = 0; y < H; y += step * 2) c.fillRect(0, y, W, step);
+  const v = c.createRadialGradient(W / 2, H / 2, H * 0.4, W / 2, H / 2, H * 1.05);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.45)');
+  c.fillStyle = v; c.fillRect(0, 0, W, H);
+  const fade = Math.max(1 - sst(0, 0.5, t), sst(DUR - 0.6, DUR, t));
+  if (fade > 0) { c.fillStyle = `rgba(0,0,0,${fade})`; c.fillRect(0, 0, W, H); }
+}
+
+/* =====================================================================
+   SOUND — original, built from oscillators and noise. Every event sits on
+   the film's timeline, so seeking, REC and the offline WAV all agree.
+   ===================================================================== */
+const MASTER = 0.6;              // keeps peaks under -6 dBFS
+const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+const noiseCache = new WeakMap();
+function noiseBuf(ac) {
+  if (noiseCache.has(ac)) return noiseCache.get(ac);
+  const b = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d = b.getChannelData(0);
+  let s = 12345; for (let i = 0; i < d.length; i++) { s = (s * 1103515245 + 12345) & 0x7fffffff; d[i] = s / 0x3fffffff - 1; }
+  noiseCache.set(ac, b); return b;
+}
+function makeReverb(ac) {
+  const len = Math.floor(ac.sampleRate * 1.4), b = ac.createBuffer(2, len, ac.sampleRate);
+  let s = 777;
+  for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) { s = (s * 1103515245 + 12345) & 0x7fffffff; d[i] = (s / 0x3fffffff - 1) * Math.pow(1 - i / len, 3); } }
+  const cv = ac.createConvolver(); cv.buffer = b; return cv;
+}
+function env(ac, g, when, peak, att, dec) { g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + att); g.gain.exponentialRampToValueAtTime(0.0001, when + att + dec); }
+function panTo(ac, node, out, p) { const sp = ac.createStereoPanner(); sp.pan.value = p; node.connect(sp); sp.connect(out); return sp; }
+
+const INS = {
+  pluck(ac, o, when, m, vel, pan) {
+    const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = 'lowpass';
+    f.frequency.setValueAtTime(4200, when); f.frequency.exponentialRampToValueAtTime(900, when + 0.35);
+    const a = ac.createOscillator(), b = ac.createOscillator(), bg = ac.createGain();
+    a.type = 'triangle'; b.type = 'sawtooth'; a.frequency.value = mtof(m); b.frequency.value = mtof(m) * 1.003; bg.gain.value = 0.18;
+    a.connect(f); b.connect(bg); bg.connect(f); f.connect(g);
+    env(ac, g, when, 0.11 * vel, 0.004, 0.9);
+    const sp = panTo(ac, g, o.bus, pan); sp.connect(o.rev);
+    a.start(when); b.start(when); a.stop(when + 1); b.stop(when + 1);
+  },
+  whistle(ac, o, when, m, dur, vel = 1) {
+    const g = ac.createGain(), a = ac.createOscillator(), b = ac.createOscillator(), bg = ac.createGain();
+    const lfo = ac.createOscillator(), lg = ac.createGain();
+    a.type = 'sine'; b.type = 'triangle'; bg.gain.value = 0.22;
+    const fr = mtof(m);
+    a.frequency.setValueAtTime(fr * 0.97, when); a.frequency.exponentialRampToValueAtTime(fr, when + 0.045);
+    b.frequency.setValueAtTime(fr * 0.97, when); b.frequency.exponentialRampToValueAtTime(fr, when + 0.045);
+    lfo.frequency.value = 5.6; lg.gain.setValueAtTime(0, when); lg.gain.linearRampToValueAtTime(fr * 0.007, when + Math.min(0.25, dur));
+    lfo.connect(lg); lg.connect(a.frequency); lg.connect(b.frequency);
+    a.connect(g); b.connect(bg); bg.connect(g);
+    const pk = 0.13 * vel, end = when + Math.max(0.08, dur * 0.92);
+    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(pk, when + 0.025);
+    g.gain.setValueAtTime(pk, end - 0.02); g.gain.exponentialRampToValueAtTime(0.0001, end + 0.09);
+    const sp = panTo(ac, g, o.bus, 0.05); sp.connect(o.rev);
+    for (const n of [a, b, lfo]) { n.start(when); n.stop(end + 0.12); }
+  },
+  bass(ac, o, when, m, dur) {
+    const g = ac.createGain(), a = ac.createOscillator(), b = ac.createOscillator(), f = ac.createBiquadFilter();
+    a.type = 'triangle'; b.type = 'sine'; a.frequency.value = mtof(m); b.frequency.value = mtof(m - 12);
+    f.type = 'lowpass'; f.frequency.value = 1000;
+    a.connect(f); b.connect(f); f.connect(g); g.connect(o.bus);
+    env(ac, g, when, 0.2, 0.008, Math.max(0.15, dur));
+    a.start(when); b.start(when); a.stop(when + dur + 0.3); b.stop(when + dur + 0.3);
+  },
+  glock(ac, o, when, m, vel = 1, pan = 0) {
+    for (const [mul, gn, dec] of [[1, 1, 1.2], [2.76, 0.28, 0.5], [5.4, 0.1, 0.25]]) {
+      const g = ac.createGain(), a = ac.createOscillator(); a.type = 'sine'; a.frequency.value = mtof(m) * mul;
+      a.connect(g); env(ac, g, when, 0.06 * vel * gn, 0.002, dec);
+      const sp = panTo(ac, g, o.bus, pan); sp.connect(o.rev);
+      a.start(when); a.stop(when + dec + 0.05);
+    }
+  },
+  kick(ac, o, when, vel = 1) {
+    const g = ac.createGain(), a = ac.createOscillator(); a.type = 'sine';
+    a.frequency.setValueAtTime(140, when); a.frequency.exponentialRampToValueAtTime(42, when + 0.14);
+    a.connect(g); g.connect(o.bus); env(ac, g, when, 0.55 * vel, 0.003, 0.3);
+    a.start(when); a.stop(when + 0.4);
+  },
+  noise(ac, o, when, type, freq, q, peak, dec, pan = 0, toRev = false) {
+    const src = ac.createBufferSource(); src.buffer = noiseBuf(ac);
+    const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ac.createGain(); src.connect(f); f.connect(g); env(ac, g, when, peak, 0.002, dec);
+    const sp = panTo(ac, g, o.bus, pan); if (toRev) sp.connect(o.rev);
+    src.start(when, (when * 0.37) % 1.5); src.stop(when + dec + 0.05);
+  },
+  snap(ac, o, when, v = 1) { INS.noise(ac, o, when, 'bandpass', 1900, 0.9, 0.22 * v, 0.13, 0, true); },
+  hat(ac, o, when, v = 1) { INS.noise(ac, o, when, 'highpass', 7500, 0.7, 0.05 * v, 0.045, 0.25); },
+  crash(ac, o, when) { INS.noise(ac, o, when, 'highpass', 4500, 0.5, 0.16, 1.8, 0, true); },
+  whoosh(ac, o, when, len, peak = 0.22, lo = 250, hi = 3200) {
+    const src = ac.createBufferSource(); src.buffer = noiseBuf(ac); src.loop = true;
+    const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.1;
+    f.frequency.setValueAtTime(lo, when); f.frequency.exponentialRampToValueAtTime(hi, when + len * 0.75); f.frequency.exponentialRampToValueAtTime(hi * 0.6, when + len);
+    const g = ac.createGain(); g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + len * 0.72); g.gain.exponentialRampToValueAtTime(0.0001, when + len);
+    const sp = ac.createStereoPanner(); sp.pan.setValueAtTime(-0.6, when); sp.pan.linearRampToValueAtTime(0.6, when + len);
+    src.connect(f); f.connect(g); g.connect(sp); sp.connect(o.bus); sp.connect(o.rev);
+    src.start(when); src.stop(when + len + 0.05);
+  },
+  blip(ac, o, when, f0, f1, dur, peak, type = 'sine', pan = 0) {
+    const g = ac.createGain(), a = ac.createOscillator(); a.type = type;
+    a.frequency.setValueAtTime(f0, when); a.frequency.exponentialRampToValueAtTime(f1, when + dur);
+    a.connect(g); env(ac, g, when, peak, 0.004, dur);
+    const sp = panTo(ac, g, o.bus, pan); sp.connect(o.rev);
+    a.start(when); a.stop(when + dur + 0.05);
+  },
+};
+
+
+// Digital instruments on top of the shared ones.
+INS.arp = function (ac, o, when, m, vel = 1, pan = 0, cut = 2600) {
+  const g = ac.createGain(), a = ac.createOscillator(), f = ac.createBiquadFilter();
+  a.type = 'square'; a.frequency.value = mtof(m); f.type = 'lowpass'; f.frequency.value = cut; f.Q.value = 4;
+  a.connect(f); f.connect(g); env(ac, g, when, 0.045 * vel, 0.003, 0.16);
+  const sp = panTo(ac, g, o.bus, pan); sp.connect(o.rev);
+  a.start(when); a.stop(when + 0.22);
+};
+INS.pad = function (ac, o, when, notes, dur, vel = 1, cut = 900) {
+  const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut;
+  f.connect(g); g.connect(o.bus); g.connect(o.rev);
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.05 * vel, when + Math.min(1.2, dur * 0.4));
+  g.gain.setValueAtTime(0.05 * vel, when + dur * 0.8); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  for (const m of notes) for (const d of [-7, 7]) {
+    const a = ac.createOscillator(); a.type = 'sawtooth'; a.frequency.value = mtof(m); a.detune.value = d;
+    a.connect(f); a.start(when); a.stop(when + dur + 0.05);
+  }
+};
+INS.sub = function (ac, o, when, f0, f1, dur, peak = 0.5) {
+  const g = ac.createGain(), a = ac.createOscillator(); a.type = 'sine';
+  a.frequency.setValueAtTime(f0, when); a.frequency.exponentialRampToValueAtTime(f1, when + dur);
+  a.connect(g); g.connect(o.bus); env(ac, g, when, peak, 0.005, dur);
+  a.start(when); a.stop(when + dur + 0.05);
+};
+INS.buzz = function (ac, o, when, dur) {   // error tone, bypasses the gate
+  const g = ac.createGain(), a = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain();
+  a.type = 'sawtooth'; a.frequency.value = 98; lfo.frequency.value = 18; lg.gain.value = 0.5;
+  const tg = ac.createGain(); tg.gain.value = 0.5; lfo.connect(lg); lg.connect(tg.gain);
+  a.connect(tg); tg.connect(g); g.connect(o.post);
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.12, when + 0.02);
+  g.gain.setValueAtTime(0.12, when + dur - 0.05); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  a.start(when); lfo.start(when); a.stop(when + dur + 0.05); lfo.stop(when + dur + 0.05);
+};
+INS.gate = function (ac, o, when, to, ramp = 0.03) { o.gate.gain.setTargetAtTime(Math.max(0.0001, to), when, ramp / 3); };
+INS.rush = function (ac, o, when, dur, peak, f0, f1) {
+  const src = ac.createBufferSource(); src.buffer = noiseBuf(ac); src.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.7;
+  f.frequency.setValueAtTime(f0, when); f.frequency.exponentialRampToValueAtTime(f1, when + dur);
+  const g = ac.createGain(); g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + 0.6);
+  g.gain.setValueAtTime(peak, when + dur - 0.4); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  src.connect(f); f.connect(g); g.connect(o.bus);
+  src.start(when); src.stop(when + dur + 0.05);
+};
+
+// 120 BPM; one bar = 2 s. A minor, then it resolves to C for the title.
+const BEAT = 0.5;
+const PROG = [[57, [69, 72, 76]], [53, [65, 69, 72]], [48, [64, 67, 72]], [55, [67, 71, 74]]];   // Am F C G: [bass, chord]
+const chordAt = (t) => PROG[Math.floor(t / 2) % 4];
+function buildScore() {
+  const ev = [];
+  const E = (t, fn) => ev.push({ t, fn });
+  const P = T.pipe;
+  // 01 SOURCE: a dark pad, the REC beep, the mic tap, bits starting to chatter
+  E(0, (ac, o, w) => INS.pad(ac, o, w, [57, 64, 69], 9.2, 1, 700));
+  E(0.4, (ac, o, w) => INS.blip(ac, o, w, 1000, 1000, 0.12, 0.08, 'sine'));
+  E(1.0, (ac, o, w) => INS.kick(ac, o, w, 0.5));
+  for (let k = 0; k < 40; k++) {
+    const t = 2.0 + Math.pow(k / 40, 0.7) * 2.45;
+    E(t, (ac, o, w) => INS.blip(ac, o, w, 600 + hash(k) * 2400, 400 + hash(k + 1) * 3000, 0.04, 0.05 + k * 0.0015, 'square', hash(k + 2) - 0.5));
+  }
+  E(4.5, (ac, o, w) => INS.sub(ac, o, w, 120, 40, 0.5, 0.45));
+  // 02 ENCODE: the arpeggio starts; bits tick
+  for (let t = T.encode; t < T.mile + 4; t += BEAT / 4) {
+    const [, ch] = chordAt(t), step = Math.round((t - T.encode) / (BEAT / 4));
+    const m = ch[step % 3] + (Math.floor(step / 3) % 2) * 12;
+    const vel = t >= T.mile ? 0.7 * (1 - (t - T.mile) / 4) : (t < T.encode + 1 ? (t - T.encode) : 1);
+    const cut = t < P ? 1600 : t < T.mile ? 3200 : 2000;
+    if (vel > 0.05) E(t, (ac, o, w) => INS.arp(ac, o, w, m, vel, (step % 4) / 2 - 0.75, cut));
+  }
+  for (let t = T.encode + 1.5; t < P; t += BEAT / 2) E(t, (ac, o, w) => INS.hat(ac, o, w, 0.5));
+  for (let t = T.encode; t < P; t += BEAT * 2) E(t, (ac, o, w) => INS.bass(ac, o, w, chordAt(t)[0] - 12, 0.8));
+  E(P - 0.9, (ac, o, w) => INS.whoosh(ac, o, w, 0.95, 0.22, 200, 5000));
+  // 03 THE PIPE: four on the floor, bass in eighths, the fiber rushing past
+  E(P, (ac, o, w) => INS.crash(ac, o, w));
+  E(P, (ac, o, w) => INS.rush(ac, o, w, 7.0, 0.07, 400, 2600));
+  for (let t = P; t < T.mile - 0.25; t += BEAT) {
+    E(t, (ac, o, w) => INS.kick(ac, o, w, 0.8));
+    E(t + BEAT / 2, (ac, o, w) => INS.hat(ac, o, w, 0.8));
+    if (Math.round((t - P) / BEAT) % 2) E(t, (ac, o, w) => INS.snap(ac, o, w, 0.6));
+  }
+  for (let t = P; t < T.mile; t += BEAT / 2) E(t, (ac, o, w) => INS.bass(ac, o, w, chordAt(t)[0] - 12 + (Math.round(t / (BEAT / 2)) % 2 ? 12 : 0), 0.22));
+  E(P, (ac, o, w) => INS.pad(ac, o, w, [69, 72, 76], 7, 0.8, 1400));
+  for (const h of HOPS) {
+    E(P + h.u - 0.02, (ac, o, w) => { INS.blip(ac, o, w, 1760, 1760, 0.18, 0.07, 'sine', 0.2); INS.blip(ac, o, w + 0.07, 2637, 2637, 0.22, 0.05, 'sine', -0.2); });
+  }
+  // packet loss: everything drops out, an error buzz, then the retransmit brings it all back
+  E(P + LOSS.at, (ac, o, w) => INS.gate(ac, o, w, 0.0001, 0.04));
+  E(P + LOSS.at, (ac, o, w) => INS.buzz(ac, o, w, 0.42));
+  E(P + LOSS.back - 0.02, (ac, o, w) => INS.gate(ac, o, w, 1, 0.02));
+  E(P + LOSS.back, (ac, o, w) => [84, 88, 91].forEach((m, k) => INS.glock(ac, o, w + k * 0.05, m, 0.8, 0.2)));
+  E(T.mile - 0.8, (ac, o, w) => INS.whoosh(ac, o, w, 0.85, 0.24, 300, 7000));
+  // 04 THE LAST MILE: drums out, air, Wi-Fi shimmer
+  E(T.mile, (ac, o, w) => INS.pad(ac, o, w, [64, 69, 72, 76], 4.4, 1, 2400));
+  for (let k = 0; k < 16; k++) E(T.mile + 0.2 + k * 0.24, (ac, o, w) => INS.glock(ac, o, w, [88, 91, 93, 96][k % 4] + (k % 8 > 3 ? -12 : 0), 0.9, (k % 3) - 1));
+  E(T.mile + 2.6, (ac, o, w) => INS.whoosh(ac, o, w, 1.3, 0.18, 300, 3000));
+  // 05 THE VIEWER: room hush, buffering ticks, the arrival
+  E(T.viewer, (ac, o, w) => INS.rush(ac, o, w, 4.0, 0.035, 250, 300));
+  for (let t = T.viewer + 0.5; t < T.arrive - 0.05; t += 0.25) E(t, (ac, o, w) => INS.noise(ac, o, w, 'bandpass', 2600, 3, 0.08, 0.02, 0.1));
+  E(T.arrive, (ac, o, w) => { INS.sub(ac, o, w, 90, 34, 0.9, 0.5); [76, 81, 84, 88].forEach((m, k) => INS.glock(ac, o, w + k * 0.06, m, 1, -0.3 + k * 0.2)); });
+  E(T.arrive + 0.2, (ac, o, w) => INS.blip(ac, o, w, 900, 1400, 0.08, 0.05, 'sine', 0.4));
+  E(T.arrive + 0.5, (ac, o, w) => INS.pad(ac, o, w, [60, 64, 67], 1.6, 1.4, 1600));
+  E(T.arrive + 0.6, (ac, o, w) => INS.whoosh(ac, o, w, 1.4, 0.2, 200, 8000));
+  for (let k = 0; k < 24; k++) E(T.presents - 1.9 + k * 0.08, (ac, o, w) => INS.blip(ac, o, w, 2000 + hash(k + 40) * 3000, 3000 + hash(k + 41) * 3000, 0.03, 0.025, 'square', hash(k + 42) - 0.5));
+  // 06 PRESENTS: the hit, the title, a dot per beat, the hour begins
+  E(T.presents, (ac, o, w) => {
+    INS.kick(ac, o, w, 0.7); INS.crash(ac, o, w); INS.sub(ac, o, w, 70, 36, 1.4, 0.28);
+    for (const m of [48, 60, 64, 67, 71, 76]) INS.pluck(ac, o, w, m, 0.75, (m % 5) / 5 - 0.4);
+  });
+  E(T.presents, (ac, o, w) => INS.pad(ac, o, w, [60, 64, 67, 71], 5.2, 1.2, 2200));
+  const sub = WORDS.sub, base = sub.replace(/\.+$/, ''), dots = sub.length - base.length;
+  for (let k = 0; k < base.length; k++) if (base[k] !== ' ') E(T.presents + 0.9 + k * 0.06, (ac, o, w) => INS.noise(ac, o, w, 'bandpass', 3400, 2, 0.035, 0.02, 0.2));
+  for (let d = 0; d < dots; d++) E(T.presents + 0.9 + base.length * 0.06 + d * 0.5, (ac, o, w) => INS.blip(ac, o, w, [880, 1109, 1319][d % 3], [880, 1109, 1319][d % 3], 0.15, 0.08, 'square', 0));
+  for (let t = T.presents + 3.0; t < 28.8; t += BEAT / 4) {
+    const step = Math.round((t - T.presents) / (BEAT / 4)), ch = [72, 76, 79, 83];
+    E(t, (ac, o, w) => INS.arp(ac, o, w, ch[step % 4], 0.5 * (1 - (t - 27) / 2.5 * 0.5), (step % 4) / 2 - 0.75, 2200));
+  }
+  for (let t = T.presents + 3.0; t < 28.8; t += BEAT) E(t, (ac, o, w) => INS.kick(ac, o, w, 0.55));
+  for (let k = 0; k < 6; k++) E(28.8 + k * 0.05, (ac, o, w) => INS.blip(ac, o, w, 200 + k * 300, 100, 0.04, 0.06, 'square'));
+  E(29.1, (ac, o, w) => INS.sub(ac, o, w, 60, 30, 0.8, 0.3));
+  return ev.sort((a, b) => a.t - b.t);
+}
+let SCORE = buildScore();
+
+/* ---------- audio playback ---------- */
+let ac = null, master = null, comp = null, rev = null, streamDest = null, session = null;
+function ensureAudio() {
+  if (ac) return;
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  master = ac.createGain(); comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+  rev = makeReverb(ac); const rg = ac.createGain(); rg.gain.value = 0.35; rev.connect(rg); rg.connect(master);
+  master.connect(comp); comp.connect(ac.destination);
+  streamDest = ac.createMediaStreamDestination(); comp.connect(streamDest);
+  master.gain.value = muted ? 0 : MASTER;
+}
+function startSession(fromT) {
+  stopSession();
+  const out = ac.createGain(), bus = ac.createGain(), gate = ac.createGain(), rs = ac.createGain(); rs.gain.value = 0.25;
+  bus.connect(gate); gate.connect(out); out.connect(master); rs.connect(rev);
+  const base = ac.currentTime + 0.06;
+  // a seek into the packet-loss dropout starts with the gate already shut
+  const up = T.pipe;
+  if (fromT > up + LOSS.at && fromT < up + LOSS.back) gate.gain.value = 0.0001;
+  for (const e of SCORE) if (e.t >= fromT - 0.01) e.fn(ac, { bus, rev: rs, gate, post: out }, base + (e.t - fromT));
+  session = { bus: out, rs, base, fromT };
+}
+function stopSession() {
+  if (!session) return;
+  const { bus, rs } = session; session = null;
+  try { bus.gain.setTargetAtTime(0, ac.currentTime, 0.01); rs.gain.setTargetAtTime(0, ac.currentTime, 0.01); } catch (e) { /* closed */ }
+  setTimeout(() => { bus.disconnect(); rs.disconnect(); }, 120);
+}
+
+/* ---------- player state ---------- */
+let playing = false, tNow = 0, muted = false, clockBase = 0, clockT0 = 0, recorder = null;
+const $ = (id) => document.getElementById(id);
+function clockNow() { return ac ? ac.currentTime : performance.now() / 1000; }
+function play(from = tNow) {
+  if (from >= DUR - 0.01) from = 0;
+  tNow = from; playing = true;
+  if (ac) { ac.resume(); startSession(from); clockBase = session.base; } else clockBase = clockNow();
+  clockT0 = from; $('bPlay').innerHTML = '&#10074;&#10074;';
+}
+function pause() { playing = false; stopSession(); $('bPlay').innerHTML = '&#9654;'; }
+function seek(t) { tNow = clamp(t, 0, DUR); if (playing) play(tNow); else render(tNow); }
+function frame() {
+  if (playing) {
+    tNow = clockT0 + Math.max(0, clockNow() - clockBase);
+    if (tNow >= DUR) { tNow = DUR; pause(); if (recorder) setTimeout(() => recorder && recorder.stop(), 250); }
+  }
+  render(tNow);
+  $('seek').value = String(Math.round(tNow / DUR * 1000));
+  $('time').textContent = `${tNow.toFixed(1)} / ${DUR.toFixed(1)}`;
+  requestAnimationFrame(frame);
+}
+
+function setQuality(q) {
+  const h = { 1080: 1080, 720: 720, 540: 540 }[q] || 1080;
+  H = h; W = Math.round(h * 16 / 9); U = H / 2;
+  canvas.width = W; canvas.height = H; FX.width = W; FX.height = H;
+  ctx = canvas.getContext('2d'); fctx = FX.getContext('2d');
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+
+/* ---------- WAV export (offline, sample-accurate) ---------- */
+async function exportWav() {
+  const btn = $('bWav'); btn.textContent = '…';
+  const sr = 48000, oc = new OfflineAudioContext(2, Math.ceil(sr * DUR), sr);
+  const m = oc.createGain(); m.gain.value = MASTER; const cp = oc.createDynamicsCompressor();
+  cp.threshold.value = -10; cp.ratio.value = 4; cp.attack.value = 0.004; cp.release.value = 0.2;
+  const rv = makeReverb(oc), rg = oc.createGain(); rg.gain.value = 0.35; rv.connect(rg); rg.connect(m);
+  m.connect(cp); cp.connect(oc.destination);
+  const rs = oc.createGain(); rs.gain.value = 0.25; rs.connect(rv);
+  const bus = oc.createGain(), gate = oc.createGain(); bus.connect(gate); gate.connect(m);
+  for (const e of SCORE) e.fn(oc, { bus, rev: rs, gate, post: m }, Math.max(0, e.t) + 0.002);
+  const buf = await oc.startRendering();
+  const n = buf.length, data = new DataView(new ArrayBuffer(44 + n * 4));
+  const wr = (o, s) => { for (let i = 0; i < s.length; i++) data.setUint8(o + i, s.charCodeAt(i)); };
+  wr(0, 'RIFF'); data.setUint32(4, 36 + n * 4, true); wr(8, 'WAVE'); wr(12, 'fmt '); data.setUint32(16, 16, true);
+  data.setUint16(20, 1, true); data.setUint16(22, 2, true); data.setUint32(24, sr, true); data.setUint32(28, sr * 4, true);
+  data.setUint16(32, 4, true); data.setUint16(34, 16, true); wr(36, 'data'); data.setUint32(40, n * 4, true);
+  const L = buf.getChannelData(0), R = buf.getChannelData(1);
+  for (let i = 0; i < n; i++) { data.setInt16(44 + i * 4, clamp(L[i], -1, 1) * 32767, true); data.setInt16(46 + i * 4, clamp(R[i], -1, 1) * 32767, true); }
+  download(new Blob([data], { type: 'audio/wav' }), 'stoopid-packet-soundtrack.wav');
+  btn.textContent = 'WAV';
+  return buf;
+}
+
+/* ---------- REC (real time: picture + sound) ---------- */
+function toggleRec() {
+  if (recorder) { recorder.stop(); return; }
+  const types = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  const mime = types.find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  if (!mime) { alert('This browser cannot record the canvas. Try Chrome, Edge or Firefox.'); return; }
+  const stream = canvas.captureStream(60);
+  if (ac && streamDest) streamDest.stream.getAudioTracks().forEach((tr) => stream.addTrack(tr));
+  const chunks = [];
+  recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 16e6 });
+  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => {
+    download(new Blob(chunks, { type: mime.split(';')[0] }), 'stoopid-packet.' + (mime.includes('mp4') ? 'mp4' : 'webm'));
+    recorder = null; $('bRec').classList.remove('on'); $('bRec').textContent = 'REC';
+  };
+  recorder.start(250); $('bRec').classList.add('on'); $('bRec').textContent = 'STOP';
+  play(0);
+}
+
+/* ---------- UI ---------- */
+function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : MASTER; $('bMute').textContent = m ? 'MUTED' : 'SND'; }
+function setClean(on) { document.body.classList.toggle('clean', on); }
+let idleTimer = 0;
+function poke() { $('bar').classList.remove('idle'); clearTimeout(idleTimer); idleTimer = setTimeout(() => playing && $('bar').classList.add('idle'), 2200); }
+document.addEventListener('mousemove', poke); document.addEventListener('touchstart', poke, { passive: true });
+
+$('go').addEventListener('click', () => {
+  WORDS.title = $('f1').value.trim().toUpperCase() || 'STOOPID TV';
+  WORDS.sub = $('f2').value.trim().toUpperCase() || ' ';
+  WORDS.runtime = /^\d{1,2}(:\d{2}){0,2}$/.test($('f3').value.trim()) ? $('f3').value.trim() : '1:00:00';
+  SCORE = buildScore();
+  setQuality($('fq').value);
+  setMuted(!$('fs').checked);
+  ensureAudio();
+  $('intro').hidden = true; $('bar').hidden = false;
+  setClean($('fc').checked);
+  play(0); poke();
+});
+$('bPlay').onclick = () => (playing ? pause() : play());
+$('bRe').onclick = () => play(0);
+$('seek').oninput = (e) => seek(e.target.value / 1000 * DUR);
+$('bMute').onclick = () => setMuted(!muted);
+$('bRec').onclick = toggleRec;
+$('bWav').onclick = exportWav;
+$('bPng').onclick = () => canvas.toBlob((b) => download(b, `stoopid-packet-${tNow.toFixed(2)}s.png`), 'image/png');
+$('bFs').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+document.addEventListener('keydown', (e) => {
+  if (!$('intro').hidden || e.target.tagName === 'INPUT') return;
+  const k = e.key;
+  if (k === ' ') { e.preventDefault(); playing ? pause() : play(); }
+  else if (k === 'r' || k === 'R') play(0);
+  else if (k === 'ArrowRight') seek(tNow + (e.shiftKey ? 1 : 5));
+  else if (k === 'ArrowLeft') seek(tNow - (e.shiftKey ? 1 : 5));
+  else if (k === ',') { pause(); seek(tNow - 1 / 30); }
+  else if (k === '.') { pause(); seek(tNow + 1 / 30); }
+  else if (k === 'm' || k === 'M') setMuted(!muted);
+  else if (k === 'f' || k === 'F') $('bFs').click();
+  else if (k === 'h' || k === 'H' || k === 'Escape') setClean(!document.body.classList.contains('clean'));
+});
+for (const [id, key] of [['f1', 'title'], ['f2', 'sub'], ['f3', 'runtime']]) if (Q.get(key)) $(id).value = Q.get(key);
+if (Q.get('quality')) $('fq').value = { high: '1080', medium: '720', low: '540' }[Q.get('quality')] || Q.get('quality');
+
+// Frame-exact rendering for scripted capture: window.INTRO.renderAt(t)
+window.INTRO = { renderAt: (t) => { tNow = t; render(t); }, duration: DUR, exportWav, setQuality, score: () => SCORE };
+
+if (Q.get('frames') === '1') { setQuality($('fq').value); $('intro').hidden = true; setClean(true); render(Number(Q.get('t') || 0)); }
+else { setQuality($('fq').value); render(11.0); requestAnimationFrame(frame); }
+</script>
+</body>
+</html>

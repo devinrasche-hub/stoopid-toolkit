@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 42 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 43 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
 <style>
@@ -200,7 +200,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="42">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="43">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -211,7 +211,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">42 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">43 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -476,6 +476,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>THE ZOOM</h3>
       <p>The show&rsquo;s opening titles. One continuous cartoon zoom: outer space, a planet, a house on a hill, through the window, into the TV, onto the stage, into the logo. Original jingle. Change the words, press REC.</p></div>
       <div class="foot"><span class="st">STATUS: <em>ZOOMING</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_packet.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 043</span><span class="cls">OPENING TITLES</span></div>
+      <canvas class="viz" data-viz="packet"></canvas>
+      <div class="body"><h3>THE PACKET</h3>
+      <p>STOOPID TV&rsquo;s opening, from the data&rsquo;s side. One packet leaves the studio mic, rides the fiber through the router hops, survives packet loss, crosses the Wi-Fi and lands in a viewer&rsquo;s TV just in time for the hour. 30 seconds. Press REC.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>31 ms</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -1373,6 +1382,22 @@ VIZ.zoom = function(x,w,h,t){
   }
   x.textAlign='left'; x.font=F(9); x.fillStyle='#FF40CD';
   x.fillText('ZOOM \u25B8 '+names[Math.min(5,i+(f>.6?1:0))], 10, h-6);
+};
+
+/* 043 — the packet: studio to couch, one hop at a time */
+VIZ.packet = function(x,w,h,t){
+  var p=(t%6000)/6000, y=h/2-6, x0=18, x1=w-46, hops=4;
+  x.strokeStyle='#123'; x.lineWidth=2; x.beginPath(); x.moveTo(x0,y); x.lineTo(x1,y); x.stroke();
+  for(var k=1;k<=hops;k++){ var hx=x0+(x1-x0)*k/(hops+1), lit=p*(hops+1)*0.85>k;
+    x.strokeStyle=lit?'#CC5500':'#333'; x.beginPath(); x.arc(hx,y,6,0,Math.PI*2); x.stroke(); }
+  x.fillStyle='#00FFC6'; x.fillRect(x0-4,y-4,8,8);
+  var done=p>0.85;
+  x.strokeStyle=done?'#00FFC6':'#444'; x.strokeRect(x1+4,y-14,34,24);
+  if(done){ x.fillStyle='#fff'; x.font=F(7,true); x.textAlign='center'; x.fillText('STOOPID',x1+21,y-2); x.fillText('TV',x1+21,y+6); }
+  if(!done){ var px=x0+(x1-x0+20)*Math.min(1,p/0.85); x.fillStyle='#FF40CD'; x.fillRect(px-4,y-4,8,8);
+    x.globalAlpha=.35; x.fillRect(px-16,y-2,10,4); x.globalAlpha=1; }
+  x.textAlign='left'; x.font=F(9); x.fillStyle='#00FFC6';
+  x.fillText(done?'DELIVERED \u00B7 31 ms':'PKT 000001 \u25B8 IN TRANSIT', 10, h-6);
 };
 
 /* ==================== RENDER LOOP ==================== */
