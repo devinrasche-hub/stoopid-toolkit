@@ -1,0 +1,11 @@
+# Cloudflare Pages config for stoopidtv.com. The deploy workflow copies this folder next to the
+# public files (as dist/) and runs `wrangler pages deploy` from there.
+name = "stoopidtv"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stoopidtv_signups"
+# Filled in by .github/workflows/deploy-site.yml at deploy time.
+database_id = "00000000-0000-0000-0000-000000000000"

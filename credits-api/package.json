@@ -1,0 +1,15 @@
+{
+  "name": "stoopid-credits-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
+    "dev": "wrangler dev",
+    "db:local": "wrangler d1 migrations apply stoopid_credits --local",
+    "seed:local": "wrangler d1 execute stoopid_credits --local --file seed/dev-sample.sql",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.140.0"
+  }
+}

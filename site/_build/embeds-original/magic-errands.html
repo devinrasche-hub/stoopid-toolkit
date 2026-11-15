@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Errands - Get It Done</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --lime: #E8191A;
+    --black: #0A0A0A;
+    --offwhite: #F5F5F0;
+    --grey: #1a1a1a;
+    --text-muted: #888;
+    --red: #E8191A;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { overflow-x: hidden; }
+  body {
+    background: var(--black);
+    color: var(--offwhite);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(10px);
+    padding: 18px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+  }
+  .logo span { color: var(--red); }
+  .nav-cta {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 2px;
+    text-decoration: none;
+    display: inline-block;
+  }
+  /* HERO */
+  .hero {
+    padding: 80px 48px 60px;
+    position: relative;
+    background: radial-gradient(ellipse at 20% 50%, rgba(232,25,26,0.08) 0%, transparent 60%);
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(232,25,26,0.12);
+    border: 1px solid rgba(232,25,26,0.3);
+    color: var(--red);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-bottom: 32px;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3.5rem, 10vw, 8rem);
+    line-height: 0.95;
+    letter-spacing: -1px;
+    margin-bottom: 28px;
+  }
+  .hero-title .highlight { color: var(--red); }
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    max-width: 420px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+  .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 16px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--offwhite);
+    border: 1px solid #333;
+    padding: 16px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 2px;
+    text-decoration: none;
+  }
+  /* STATS */
+  .stats-bar {
+    border-top: 1px solid #1a1a1a;
+    border-bottom: 1px solid #1a1a1a;
+    padding: 32px 48px;
+    display: flex;
+    gap: 60px;
+  }
+  .stat-item .number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--red);
+    line-height: 1;
+  }
+  .stat-item .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  /* TICKER */
+  .ticker-wrap {
+    overflow: hidden;
+    background: var(--red);
+    padding: 14px 0;
+    white-space: nowrap;
+  }
+  .ticker {
+    display: inline-block;
+    animation: ticker 20s linear infinite;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    color: #fff;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  /* SERVICES */
+  .services { padding: 80px 48px; }
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: 48px;
+    line-height: 1;
+  }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2px;
+  }
+  .service-card {
+    background: var(--grey);
+    padding: 32px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+  }
+  .service-card:hover, .service-card.active {
+    background: #222;
+    border-color: var(--red);
+  }
+  .service-icon { font-size: 2rem; margin-bottom: 16px; }
+  .service-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .service-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+  .service-price {
+    font-size: 0.8rem;
+    color: var(--red);
+    font-weight: 700;
+    margin-top: 12px;
+  }
+  /* ESTIMATOR */
+  .estimator { padding: 80px 48px; background: #0d0d0d; }
+  .estimator-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  @media (max-width: 768px) {
+    .estimator-grid { grid-template-columns: 1fr; }
+  }
+  .est-form { display: flex; flex-direction: column; gap: 20px; }
+  .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .form-group select,
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    color: var(--offwhite);
+    padding: 14px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group select:focus,
+  .form-group input:focus,
+  .form-group textarea:focus {
+    border-color: var(--red);
+  }
+  .form-group textarea { resize: vertical; min-height: 100px; }
+  .est-result {
+    background: var(--grey);
+    padding: 40px;
+    position: sticky;
+    top: 100px;
+  }
+  .est-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .est-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .est-price span { font-size: 2rem; }
+  .est-note { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 32px; }
+  .est-breakdown { border-top: 1px solid #2a2a2a; padding-top: 24px; }
+  .breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .breakdown-item.total {
+    color: var(--offwhite);
+    font-weight: 700;
+    font-size: 1rem;
+    border-top: 1px solid #2a2a2a;
+    padding-top: 16px;
+    margin-top: 8px;
+  }
+  /* PAYMENT */
+  .payment { padding: 80px 48px; }
+  .payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+  @media (max-width: 768px) { .payment-grid { grid-template-columns: 1fr; } }
+  .payment-card {
+    background: var(--grey);
+    padding: 40px;
+    text-align: center;
+    border: 1px solid #2a2a2a;
+  }
+  .payment-icon { font-size: 2.5rem; margin-bottom: 16px; }
+  .payment-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .payment-handle { font-size: 1.1rem; color: var(--red); font-weight: 700; }
+  .payment-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; }
+  /* BOOKING */
+  .booking { padding: 80px 48px; background: #0d0d0d; }
+  .booking-chips { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 32px; }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--grey);
+    border: 1px solid #2a2a2a;
+    padding: 16px 24px;
+    border-radius: 2px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--offwhite);
+    transition: border-color 0.2s;
+  }
+  .chip:hover { border-color: var(--red); }
+  .chip-icon { font-size: 1.2rem; }
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 40px;
+    border-top: 1px solid #1a1a1a;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  footer strong {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    color: var(--offwhite);
+    letter-spacing: 2px;
+  }
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: #111;
+    border: 1px solid var(--red);
+    color: var(--offwhite);
+    padding: 16px 24px;
+    font-size: 0.9rem;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span>MAGIC</span>ERRANDS</div>
+  <a href="#book" class="nav-cta">Book Now &rarr;</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-tag">&#10010; AVAILABLE NOW IN YOUR AREA</div>
+  <h1 class="hero-title">YOUR TO-DO LIST<br><span class="highlight">DONE.</span></h1>
+  <p class="hero-sub">Errands, pickups, deliveries, odd jobs &mdash; send it over and I'll handle it. Fast, reliable, and real.</p>
+  <div class="hero-btns">
+    <a href="#book" class="btn-primary">&#9993; Request a Task</a>
+    <a href="#services" class="btn-secondary">See What I Do &darr;</a>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat-item"><div class="number">$15</div><div class="label">Starting rate</div></div>
+  <div class="stat-item"><div class="number">SAME</div><div class="label">Day availability</div></div>
+  <div class="stat-item"><div class="number">100%</div><div class="label">Real human, no BS</div></div>
+</div>
+
+<div class="ticker-wrap">
+  <div class="ticker">GROCERY RUNS &nbsp;&bull;&nbsp; PICKUPS &amp; DROPOFFS &nbsp;&bull;&nbsp; RETURNS &amp; EXCHANGES &nbsp;&bull;&nbsp; WAIT IN LINE &nbsp;&bull;&nbsp; MOVING HELP &nbsp;&bull;&nbsp; FURNITURE ASSEMBLY &nbsp;&bull;&nbsp; CLEANING HELP &nbsp;&bull;&nbsp; CUSTOM TASKS &nbsp;&bull;&nbsp; GROCERY RUNS &nbsp;&bull;&nbsp; PICKUPS &amp; DROPOFFS &nbsp;&bull;&nbsp; RETURNS &amp; EXCHANGES &nbsp;&bull;&nbsp; WAIT IN LINE &nbsp;&bull;&nbsp; MOVING HELP &nbsp;&bull;&nbsp; FURNITURE ASSEMBLY &nbsp;&bull;&nbsp; CLEANING HELP &nbsp;&bull;&nbsp; CUSTOM TASKS &nbsp;&bull;&nbsp;</div>
+</div>
+
+<section class="services" id="services">
+  <div class="section-label">What I Do</div>
+  <h2 class="section-title">SERVICES</h2>
+  <div class="services-grid">
+    <div class="service-card active" onclick="selectService(this,'Grocery Run')">
+      <div class="service-icon">&#128717;</div>
+      <div class="service-name">GROCERY RUN</div>
+      <div class="service-desc">Give me your list, I'll shop and deliver. Fresh, accurate, and on time.</div>
+      <div class="service-price">From $20</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Pickup / Dropoff')">
+      <div class="service-icon">&#128663;</div>
+      <div class="service-name">PICKUP / DROPOFF</div>
+      <div class="service-desc">Need something picked up or dropped somewhere? Done.</div>
+      <div class="service-price">From $15</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Return / Exchange')">
+      <div class="service-icon">&#128260;</div>
+      <div class="service-name">RETURN / EXCHANGE</div>
+      <div class="service-desc">Hate doing returns? Me too. I'll handle it so you don't have to.</div>
+      <div class="service-price">From $15</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Wait in Line')">
+      <div class="service-icon">&#9201;</div>
+      <div class="service-name">WAIT IN LINE</div>
+      <div class="service-desc">DMV, post office, restaurants. Your time is worth more.</div>
+      <div class="service-price">From $25/hr</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Moving Help')">
+      <div class="service-icon">&#128230;</div>
+      <div class="service-name">MOVING HELP</div>
+      <div class="service-desc">Boxes, furniture, loading/unloading. Let's get it done.</div>
+      <div class="service-price">From $35/hr</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Furniture Assembly')">
+      <div class="service-icon">&#128295;</div>
+      <div class="service-name">FURNITURE ASSEMBLY</div>
+      <div class="service-desc">IKEA nightmares? I've built 'em all. Flat-pack is no problem.</div>
+      <div class="service-price">From $30</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Cleaning Help')">
+      <div class="service-icon">&#129529;</div>
+      <div class="service-name">CLEANING HELP</div>
+      <div class="service-desc">Need an extra pair of hands? I'll help tackle that mess.</div>
+      <div class="service-price">From $25/hr</div>
+    </div>
+    <div class="service-card" onclick="selectService(this,'Custom Task')">
+      <div class="service-icon">&#10024;</div>
+      <div class="service-name">CUSTOM TASK</div>
+      <div class="service-desc">Got something weird or specific? Send it over. I'm resourceful.</div>
+      <div class="service-price">Price varies</div>
+    </div>
+  </div>
+</section>
+
+<section class="estimator" id="estimate">
+  <div class="section-label">Pricing Tool</div>
+  <h2 class="section-title">GET AN ESTIMATE</h2>
+  <div class="estimator-grid">
+    <div class="est-form">
+      <div class="form-group">
+        <label>Service Type</label>
+        <select id="svcType" onchange="calcEstimate()">
+          <option value="15">Pickup / Dropoff &mdash; $15 base</option>
+          <option value="20">Grocery Run &mdash; $20 base</option>
+          <option value="25">Wait in Line &mdash; $25/hr</option>
+          <option value="35">Moving Help &mdash; $35/hr</option>
+          <option value="30">Furniture Assembly &mdash; $30 base</option>
+          <option value="25">Cleaning Help &mdash; $25/hr</option>
+          <option value="15">Return / Exchange &mdash; $15 base</option>
+          <option value="20">Custom Task &mdash; TBD</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Estimated Hours</label>
+        <select id="hours" onchange="calcEstimate()">
+          <option value="1">Under 1 hour</option>
+          <option value="2">1&ndash;2 hours</option>
+          <option value="3">2&ndash;3 hours</option>
+          <option value="4">3+ hours</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Distance (approx)</label>
+        <select id="distance" onchange="calcEstimate()">
+          <option value="0">Under 5 miles &mdash; included</option>
+          <option value="5">5&ndash;10 miles (+$5)</option>
+          <option value="10">10&ndash;20 miles (+$10)</option>
+          <option value="20">20+ miles (+$20)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Rush Fee (same day &lt;2hrs)</label>
+        <select id="rush" onchange="calcEstimate()">
+          <option value="0">No rush</option>
+          <option value="15">Yes, add rush fee (+$15)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="nameInput" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label>Phone / WhatsApp</label>
+        <input type="tel" id="phoneInput" placeholder="+1 (000) 000-0000">
+      </div>
+      <div class="form-group">
+        <label>Service Needed</label>
+        <select id="svcSelect">
+          <option>Grocery Run</option>
+          <option>Pickup / Dropoff</option>
+          <option>Return / Exchange</option>
+          <option>Wait in Line</option>
+          <option>Moving Help</option>
+          <option>Furniture Assembly</option>
+          <option>Cleaning Help</option>
+          <option>Custom Task</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Task Description</label>
+        <textarea id="taskDesc" placeholder="Tell me what needs to be done, where, and any special notes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>When do you need it?</label>
+        <input type="datetime-local" id="timing">
+      </div>
+      <button class="btn-primary" onclick="submitBooking()" style="width:100%;justify-content:center;">Send Request &rarr;</button>
+    </div>
+    <div class="est-result">
+      <div class="est-label">Estimated Total</div>
+      <div class="est-price"><span>$</span><span id="totalPrice">15</span></div>
+      <div class="est-note">Final price confirmed before work starts.</div>
+      <div class="est-breakdown">
+        <div class="breakdown-item"><span>Base rate</span><span id="baseRate">$15</span></div>
+        <div class="breakdown-item"><span>Hours</span><span id="hoursAmt">$0</span></div>
+        <div class="breakdown-item"><span>Distance</span><span id="distAmt">$0</span></div>
+        <div class="breakdown-item"><span>Rush fee</span><span id="rushAmt">$0</span></div>
+        <div class="breakdown-item total"><span>TOTAL</span><span id="totalAmt">$15</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="payment" id="pay">
+  <div class="section-label">How to Pay</div>
+  <h2 class="section-title">PAYMENT</h2>
+  <p style="color:var(--text-muted);max-width:500px;">Pay after the task is complete. No upfront payment required &mdash; I work, then you pay.</p>
+  <div class="payment-grid">
+    <div class="payment-card">
+      <div class="payment-icon">&#128178;</div>
+      <div class="payment-name">CASH APP</div>
+      <div class="payment-handle">$MagicErrands</div>
+      <div class="payment-note">Send after task completion</div>
+    </div>
+    <div class="payment-card">
+      <div class="payment-icon">&#128176;</div>
+      <div class="payment-name">VENMO</div>
+      <div class="payment-handle">@MagicErrands</div>
+      <div class="payment-note">Send after task completion</div>
+    </div>
+  </div>
+</section>
+
+<section class="booking" id="book">
+  <div class="section-label">Get Started</div>
+  <h2 class="section-title">BOOK DIRECTLY</h2>
+  <p style="color:var(--text-muted);">Skip the form &mdash; reach out directly and let's sort it out fast.</p>
+  <div class="booking-chips">
+    <a href="sms:+15632790867" class="chip"><span class="chip-icon">&#128172;</span> Text Me</a>
+    <a href="https://wa.me/15632790867" class="chip"><span class="chip-icon">&#128241;</span> WhatsApp</a>
+    <a href="mailto:magicerrands@stoopidtv.com" class="chip"><span class="chip-icon">&#9993;</span> Email</a>
+  </div>
+</section>
+
+<footer>
+  <strong>MAGICERRANDS &#10022;</strong>
+  <p style="margin-top:12px;">&copy; 2025 MagicErrands. All rights reserved.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function calcEstimate() {
+  var base = parseInt(document.getElementById('svcType').value) || 15;
+  var hrs = parseInt(document.getElementById('hours').value) || 1;
+  var dist = parseInt(document.getElementById('distance').value) || 0;
+  var rush = parseInt(document.getElementById('rush').value) || 0;
+  var hoursExtra = hrs > 1 ? (hrs - 1) * base : 0;
+  var total = base + hoursExtra + dist + rush;
+  document.getElementById('totalPrice').textContent = total;
+  document.getElementById('baseRate').textContent = '$' + base;
+  document.getElementById('hoursAmt').textContent = '$' + hoursExtra;
+  document.getElementById('distAmt').textContent = '$' + dist;
+  document.getElementById('rushAmt').textContent = '$' + rush;
+  document.getElementById('totalAmt').textContent = '$' + total;
+}
+function selectService(el, name) {
+  document.querySelectorAll('.service-card').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  var sel = document.getElementById('svcSelect');
+  if (sel) {
+    for (var i=0; i<sel.options.length; i++) {
+      if (sel.options[i].text.indexOf(name) !== -1) { sel.selectedIndex = i; break; }
+    }
+  }
+}
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3500);
+}
+function submitBooking() {
+  var name = document.getElementById('nameInput').value;
+  var phone = document.getElementById('phoneInput').value;
+  var desc = document.getElementById('taskDesc').value;
+  if (!name || !phone || !desc) { showToast('Please fill in name, phone, and task description.'); return; }
+  showToast('Request sent! I will reach out within 30 minutes.');
+}
+// Auto-resize for Wix embed
+function reportHeight() {
+  var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  window.parent.postMessage({ type: 'setHeight', height: h }, '*');
+  window.parent.postMessage({ height: h }, '*');
+}
+window.addEventListener('load', function(){ 
+  setTimeout(reportHeight, 300);
+  setTimeout(reportHeight, 1000);
+  setTimeout(reportHeight, 2000);
+});
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ How **PLEASE REMAIN SEEN** (the 2026 Halloween special, VAULT item 030) was made
 - The film: `../stoopid_please_remain_seen.html`
 - The source: `please-remain-seen/`
 - The exact prompt that produced it: `please-remain-seen/BRIEF.md`
-- The sequels: `please-hold/` (02) and `still-here/` (03), each with its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `still-here/`.** It has the newest engine: caption layers burned into captures, portals, feed atlas, per-world looks, and a master silence gate.
+- The sequels: `please-hold/` (02), `still-here/` (03), `signal-received/` (04) and `overnight-operator/` (05, the first of the creepypasta run) `please-share/` (06), `count-again/` (07) and `pip-and-the-static/` (08). Each has its `BRIEF.md` and a README listing its limits. **Start a new film by copying the latest, `pip-and-the-static/`.** It has the newest engine: caption layers burned into captures, feeds of one scene shown inside another, per-world looks, a bundled image asset, and a master silence gate. Portals live in `still-here/` if you need one.
 
 ---
 
@@ -143,6 +143,52 @@ To start: copy `please-remain-seen/` to `cinematic/<new-slug>/`, rename the publ
 - **Reduced motion can break a shot whose story is the motion.** Damping toward the shot's midpoint turned the sit-down into a hover. Mark those moves `essential`.
 - **A scripted silence gates everything**, voice slots included. Say so wherever the slots are documented.
 
+### Added after SIGNAL RECEIVED (04)
+- **A twist can turn the camera around.** 01–03 trained the audience to fear the watchers. 04 just shows the watchers, from behind, and lets one light source reveal who they are. The flip is a lighting cue, not a caption.
+- **Silhouettes need a long lens.** From inside the crowd, heads filled the frame and read as mushrooms. From the back wall at about 17° FOV, a row of heads against one bright screen reads instantly.
+- **Keep the heads in the dark until the reveal.** Light the floor and lower wall behind them (bodies read, heads don't) and save the light that shows the head shape for the flip.
+- **A previous film's set can play inside the new one.** 04 imports 03's bedside room and renders it into a CRT through a `Feed`. Continuity costs almost nothing.
+- **Formant filters need a low Q.** At Q 4–6 the humming choir all but disappeared, because the sawtooth harmonics missed the narrow bands. Measure it with `audio-levels`.
+- **A dark object on a dark set needs its own key.** The hand on top of the set was invisible until it got a lighter material and a small spotlight.
+- **Bundling an image:** import it (Vite inlines it as a data URL), `await img.decode()` at the top level (build target es2022), then build the world.
+
+### Added after OVERNIGHT OPERATOR (05)
+- **The creepypasta run takes shapes, not stories.** Use a pasta's form (rules for the night shift, the cursed image), never its characters or text. The repo is public. Free-license material (SCP is CC BY-SA) can come in with credit.
+- **A prop can be the script.** The laminated card carries every beat: the camera reads a rule, then the station tests it. Lay the card out in code (`card.js`) and aim the camera at a rule's coordinates, never at guessed positions.
+- **A desk lamp at 30 cm needs almost nothing.** A SpotLight at intensity ≈ 0.55 (decay 2) lights the card. 2.6 blew it out to white. Keep paper albedo off-white (`#cfc9b6`) and clearcoat low, or the hotspot eats the line that matters.
+- **Props between the camera and the subject get huge.** The talkback panel sat in front of the card and filled half the frame in red. Put small props beside or behind the hero prop.
+- **A flat hand reads as a slab when it holds something.** A loose fist of a few soft ellipsoids around the barrel, plus a dark sleeve, reads as a hand at the edge of frame.
+- **LED clocks: no "88:88" ghost.** Under bloom it reads as a real digit ("84:58").
+- **Playwright in a container:** if the pinned version can't find its browser, set `CHROMIUM_PATH` (the scripts in 05 read it).
+
+### Added after PLEASE SHARE (06)
+- **A sequel can reuse the whole set.** 06 is 05's control room the next night. The world barely changed: a trackball, the card's rule 9. Almost all the work went into what the screens show.
+- **Place the reveal where the loading bar gets to it.** The image loads from the top, so the face had to sit low. The eyes are at about 62% and the smile below 93%, so nobody sees the smile until 100%. Check by snapshotting at each load step.
+- **A held object and a hand on something are two different rigs.** The pen grip seen from the side read well. The same rig on a trackball hid the fist behind its own sleeve. Build each pose from the camera's side.
+- **Keep the cursor off the line that matters.** It sat on top of "one more minute?" until it was moved to the end of the row.
+
+### Added after COUNT AGAIN (07)
+- **A window is a feed of the same scene in another state.** `main.js` lets a feed carry `pre()` and `post()`. The fourth monitor sets the room to "real" (warm mug, dry ink, the new operator), renders, then sets it back. That works without a second scene or a portal.
+- **Walking needs only a bob and cuts.** The hall walks are keyed paths with a small step bob. Every "door" is a cut to the same entrance path, and the repetition sells the loop.
+- **Dark on dark disappears in a feed.** The hood's black opening didn't show until the hood was a lighter burnt orange and had its own key light (on only while the window renders).
+- **Check the line of sight before framing through a doorway.** The first microwave shot looked at the hall wall. The camera has to stand in front of the opening.
+
+### Added after PIP AND THE STATIC (08)
+- **A tape inside the film is just a second scene.** It renders into the archive CRT through a `Feed` for the in-room shots, and as the main scene for the close shots, with its own look (heavy grain and colour bleed, no teal). Its camera is a function of *tape time* (`tapeCam`), so pausing the tape freezes both the feed and the puppet.
+- **A texture map darkens its colour.** Pip rendered black because the felt multiplied a dark fabric texture. For a bright, flat material, drop the map.
+- **Keep a puppet uncanny, never predatory.** Pip keeps the names of friends who stopped watching. No secrets, no parents, no meeting. The brief says so, and the dread doesn't need more.
+- **Overlay marks belong on the text layer.** The tape's PLAY mark and rolling tracking band are painted with the captions, so they appear in every capture.
+
+### Finding an anchor
+Dev said he didn't know what his anchors would be. An anchor is one small, real thing the film can build toward. If nothing comes to mind, these questions help:
+- What's something you do every night that nobody else knows about?
+- What object would you grab first if you had to leave the house fast?
+- What's the last message on your phone from someone you love, and what did it say?
+- What job, room or routine do you remember better than you should?
+- What sound means "home" to you?
+
+When there's no answer, borrow one from the series (01's chair, 03's "one more minute"). Or use a small object the film can make physical (07's warm mug).
+
 ## 7. Brand note
 
 The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sickly off-white, a little emergency red/orange). That's darker and dirtier than the SIGNAL palette (`#000 #FFF #00FFC6 #8A2BE2 #FF2D2D #CC5500`). For a special, the brief wins. For on-brand pieces, start from SIGNAL, and keep Burnt Orange `#CC5500` for the moment the flip lands.
@@ -169,4 +215,34 @@ The brief set its own palette (charcoal, dirty teal, restrained ultraviolet, sic
 - Did the knocks and "You forgot our minute." land as the turn without explanation?
 - Did the real room feel more real than the station, or just different?
 - Did the simple hands and the child under the quilt hold up, or distract?
+- What to do more of:
+
+**PIP AND THE STATIC (08)**
+- Did STOO on the board land as the flip, as an origin story, or as a threat?
+- Was Pip creepy enough, or too cute up close?
+- Did "THE STATIC: NOW IN GRAPE!" land as the one joke?
+- What to do more of:
+
+**COUNT AGAIN (07)**
+- Did the copies read as copies (chair, light, bars, wet ink) without being pointed at?
+- Did the fourth monitor read as a window, and the hood as the next operator?
+- Did FISH land as the one joke?
+- What to do more of:
+
+**PLEASE SHARE (06)**
+- Did KIDDO and "night dad. one more minute?" land as the reason to cancel, without 03?
+- Did "0 people felt better." land as the one joke?
+- Was the face at 100% unsettling enough, or too plain?
+- What to do more of:
+
+**OVERNIGHT OPERATOR (05)**
+- Did the microwave land as the one joke, and did it make the next beat worse?
+- Did the rule-1 feed (the room from behind you, no one in the chair) read without explanation?
+- Did the hand writing rule 7 land as the flip?
+- What to do more of:
+
+**SIGNAL RECEIVED (04)**
+- Did the bowl-cut reveal land as a laugh, a chill, or both?
+- Did "THIS PLANET IS NO LONGER AVAILABLE IN YOUR REGION." play as the one joke?
+- Did Earth's ending (white, NO SIGNAL, the empty bracket) feel too heavy after 03, or right?
 - What to do more of:

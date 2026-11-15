@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy · THE HALL OF STOOPID</title>
+<meta name="description" content="What THE STOOPID SHOW credits department keeps about you, why, and how to make it stop.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%23FFB347'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+  .doc{max-width:760px;}
+  .doc h2{font-size:15px; letter-spacing:3px; color:var(--teal); margin:28px 0 8px;}
+  .doc p, .doc li{font-size:14px; line-height:1.7;}
+  .doc ul{margin-left:20px;}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header id="chrome"></header>
+  <main id="main" class="doc">
+    <div class="kick">FORM CD-PRIV · PLAIN LANGUAGE · LAST UPDATED 2026-10-18</div>
+    <h1 class="mast" style="font-size:clamp(28px,6vw,52px)">PRIVACY <b>NOTICE</b></h1>
+    <p class="thesis">The department keeps as little as it can, shows only what you agreed to, and stops when you ask.</p>
+
+    <h2>WHO RUNS THIS</h2>
+    <p>THE STOOPID SHOW, made by Devin Rasche. The credits pages are hosted on GitHub Pages; the records live in a Cloudflare Workers database.</p>
+
+    <h2>WHAT IS KEPT</h2>
+    <ul>
+      <li><b>If you ask to be credited</b> (the GET CREDITED form): the credit name you choose, what kind of contribution you make, optionally a platform handle and a link, whether you want to be named and linked, an optional private note, and a reference plus a hashed key so you can manage your request. No email address, no account, no payment details.</li>
+      <li><b>If you support the show on 𝕏</b>: the show may add your display name and handle by hand. Payment amounts and billing information are never collected.</li>
+      <li><b>If you play the STOOPIDTV arcade</b>: your handle and Beans come from the public arcade leaderboard. The credits system reads it and never changes it.</li>
+      <li><b>For abuse prevention</b>: a salted, one-way hash of your IP address, kept for about two days for rate limiting. The raw IP is never stored.</li>
+    </ul>
+
+    <h2>IF YOU USE “VERIFY WITH YOUTUBE”</h2>
+    <p>This is optional. You sign in with Google and allow read-only access to your YouTube account. The department makes one request: whether that account subscribes to the STOOPID channel. It then revokes the access immediately. It keeps only the answer (subscribed / not subscribed) and the time of the check. It does not keep your Google token, email, channel, or anything else from Google, and it does not use the access for anything else.</p>
+    <p>The use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. You can also remove access any time at <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a>.</p>
+
+    <h2>WHAT IS SHOWN PUBLICLY</h2>
+    <p>Only people who agreed to be named appear by name, in the end credits, the Hall of STOOPID and the episode archive. People who chose anonymity are counted, never named. Links appear only if you allowed them and the department reviewed them. Self-reported subscriptions are labelled as self-reported. Requests are never published before a human reviews them.</p>
+
+    <h2>STOPPING IT</h2>
+    <ul>
+      <li><b>Withdraw</b> at <a href="../join/#withdraw">GET CREDITED → WITHDRAW</a> with your reference and key. It takes effect immediately on every public page and every archived episode.</li>
+      <li><b>Lost your key, want a copy of your data, or want it deleted?</b> Contact the show on 𝕏 at <a href="https://x.com/STOOPIDshow" rel="noopener">@STOOPIDshow</a>. Deletion removes your personal details; the archive keeps only a blank placeholder so past credits stay consistent without your name.</li>
+    </ul>
+
+    <h2>CHILDREN</h2>
+    <p>The form is for people 13 and older and asks you to confirm that. If you’re younger, please ask a parent or guardian to contact the show instead.</p>
+
+    <h2>NOT DONE HERE</h2>
+    <p>No ads, no tracking scripts, no selling or sharing of data, no cookies from the credits pages, no automated ranking of people by likes or views.</p>
+  </main>
+  <footer class="legal" id="legal"></footer>
+</div>
+<script type="module">
+import { chrome } from '../assets/site.js';
+chrome(null, 1);
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex">
+<title>Credits Render Head</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+</head>
+<body>
+<!-- Driven by credits-render/render.mjs. Draws the same frames as the admin preview, one at a time. -->
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="module">
+import { renderFrame } from '../engine/themes.js';
+import { timeline, cardTime } from '../engine/sequence.js';
+import { renderAudio, encodeWav } from '../engine/audio.js';
+
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+let seq = null, tl = null;
+const warnings = new Set();
+
+async function toB64(blob) {
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+const png = () => new Promise((r) => c.toBlob(r, 'image/png'));
+
+window.__credits = {
+  load(s) { seq = s; tl = timeline(s); warnings.clear(); return { duration: s.duration, fps: s.fps, frames: Math.round(s.duration * s.fps), pages: tl.length }; },
+  async frame(i, transparent) {
+    renderFrame(ctx, seq, i / seq.fps, { timeline: tl, transparent, onWarn: (w) => warnings.add(w) });
+    return toB64(await png());
+  },
+  async card(i, transparent) {
+    const e = tl[i];
+    renderFrame(ctx, seq, cardTime(e), { timeline: tl, transparent, onWarn: (w) => warnings.add(w) });
+    return { name: `${String(i + 1).padStart(2, '0')}_${e.seg.id.replace(/[^a-z0-9]+/gi, '-')}_p${e.pi + 1}`, b64: await toB64(await png()) };
+  },
+  async wav() { return toB64(new Blob([encodeWav(await renderAudio(seq))])); },
+  warnings() { return [...warnings]; },
+};
+window.__creditsReady = true;
+</script>
+</body>
+</html>

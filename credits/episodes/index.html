@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episode Credits Archive · THE HALL OF STOOPID</title>
+<meta name="description" content="Every person credited in every published episode of THE STOOPID SHOW. Searchable, permanent, with corrections on the record.">
+<meta property="og:title" content="Episode Credits Archive — THE STOOPID SHOW">
+<meta property="og:description" content="Every person credited in every published episode. Searchable and permanent.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%23FFB347'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+  .credits-sec{margin-top:26px;}
+  .credits-sec h3{font-size:15px; letter-spacing:3px; color:var(--teal); margin-bottom:4px;}
+  .credits-sec .tagl{font-size:12px; color:var(--dim); margin-bottom:10px;}
+  .people{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:6px 18px;}
+  .people li{list-style:none; padding:4px 0; border-bottom:1px dotted #1c1c1c; word-break:break-word;}
+  .people .role{color:var(--dim); font-size:12px; letter-spacing:1px;}
+  .player{position:relative; border:1px solid var(--line); background:#000; margin-top:16px;}
+  .player canvas{display:block; width:100%; height:auto; aspect-ratio:16/9;}
+  .controls{display:flex; gap:10px; align-items:center; padding:10px; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .controls input[type=range]{flex:1; min-width:140px; padding:0;}
+  .revs li{list-style:none; font-size:12px; color:var(--dim); padding:3px 0;}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header id="chrome"></header>
+  <main id="main">
+    <div id="list-view">
+      <div class="kick">ARCHIVE · FINALISED RECORDS ONLY · CORRECTIONS ON FILE</div>
+      <h1 class="mast" style="font-size:clamp(30px,6vw,60px)">EPISODE <b>CREDITS</b></h1>
+      <p class="thesis">Everyone credited in every published episode. Permanently. (Unless they ask us to stop, in which case: immediately.)</p>
+      <form id="search" role="search" style="display:flex;gap:8px;margin:24px 0 18px">
+        <label for="q" class="sr">Search names or episodes</label>
+        <input id="q" name="q" placeholder="Search a name, a title, or an episode number…" autocomplete="off">
+        <button class="btn" type="submit">SEARCH</button>
+      </form>
+      <div id="results" aria-live="polite"></div>
+    </div>
+    <div id="detail-view" hidden>
+      <p><a href="./">◂ ALL EPISODES</a></p>
+      <div class="kick" id="d-kick"></div>
+      <h1 class="mast" style="font-size:clamp(28px,5.5vw,56px)" id="d-title"></h1>
+      <p class="sub" id="d-meta"></p>
+      <div class="player" id="player" hidden>
+        <canvas id="cv" role="img" aria-label="End-credits replay"></canvas>
+        <div class="controls">
+          <button class="btn" id="play" type="button" aria-pressed="false">▶ PLAY THE CREDITS</button>
+          <label for="scrub" class="sr">Position</label>
+          <input type="range" id="scrub" min="0" max="1000" value="0">
+          <span id="time" class="hint">00:00.0</span>
+        </div>
+      </div>
+      <div id="d-body"></div>
+      <section class="panel"><div class="sechead"><h2 style="font-size:15px">REVISION HISTORY</h2><span class="rule"></span></div><ul class="revs" id="revs"></ul></section>
+    </div>
+  </main>
+  <footer class="legal" id="legal"></footer>
+</div>
+<script type="module">
+import { h, ext, api, offline, loading, chrome, fmtDate } from '../assets/site.js';
+import { CreditsPlayer, fmtTime } from '../engine/player.js';
+chrome('episodes', 1);
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+
+async function list(q) {
+  loading($('results'));
+  try {
+    const r = await api('/public/episodes' + (q ? '?q=' + encodeURIComponent(q) : ''));
+    if (r.hidden) return $('results').replaceChildren(h('div', { class: 'empty' }, 'THE ARCHIVE IS CLOSED FOR FILING.'));
+    if (!r.episodes.length) return $('results').replaceChildren(h('div', { class: 'empty' }, q ? `NO RECORD OF "${q.toUpperCase()}". THE DEPARTMENT CHECKED TWICE.` : 'NO EPISODE CREDITS HAVE BEEN FILED YET.'));
+    $('results').replaceChildren(h('table', { class: 'term' },
+      h('thead', {}, h('tr', {}, h('th', {}, 'EP'), h('th', {}, 'TITLE'), h('th', {}, q ? 'MATCHES' : 'DATE'), h('th', {}, 'REV'))),
+      h('tbody', {}, r.episodes.map((e) => h('tr', {},
+        h('td', {}, String(e.number).padStart(3, '0')), h('td', {}, h('a', { href: `?ep=${e.number}` }, e.label || e.title)),
+        h('td', {}, q ? (e.matches || []).join(', ') : fmtDate(e.publishedOn || e.finalizedAt)), h('td', {}, 'R' + e.revision))))));
+  } catch { offline($('results'), 'the archive'); }
+}
+
+async function detail(n, rev) {
+  $('list-view').hidden = true; $('detail-view').hidden = false;
+  loading($('d-body'));
+  try {
+    const d = await api(`/public/episodes/${n}${rev ? '?rev=' + rev : ''}`);
+    document.title = `${d.episode.label || d.episode.title} · Credits · THE HALL OF STOOPID`;
+    $('d-kick').textContent = `EPISODE ${String(d.episode.number).padStart(3, '0')} · SEASON ${d.episode.season} · REVISION ${d.revision}`;
+    $('d-title').textContent = d.episode.title;
+    $('d-meta').replaceChildren(`Finalised ${fmtDate(d.finalizedAt)}${d.episode.publishedOn ? ' · aired ' + d.episode.publishedOn : ''}. `, d.episode.url ? ext(d.episode.url, 'Watch the episode ▸') : '');
+    $('d-body').replaceChildren(...d.sections.map((s) => h('section', { class: 'credits-sec' },
+      h('h3', {}, s.title), s.subtitle ? h('div', { class: 'tagl' }, s.subtitle) : null,
+      s.kind === 'leaderboard' ? h('table', { class: 'term' }, h('thead', {}, h('tr', {}, h('th', {}, 'POS'), h('th', {}, 'PLAYER'), h('th', { style: 'text-align:right' }, 'BEANS'))),
+        h('tbody', {}, s.people.map((p) => h('tr', {}, h('td', {}, String(p.rank ?? p.pos).padStart(2, '0')), h('td', {}, p.name), h('td', { class: 'num' }, p.beans)))))
+        : h('ul', { class: 'people' }, s.people.map((p) => h('li', {}, p.name, p.role ? h('div', { class: 'role' }, p.role.toUpperCase()) : null,
+          s.kind === 'creators' && p.handle ? h('div', { class: 'role' }, ext('https://x.com/' + encodeURIComponent(p.handle), '@' + p.handle)) : null))),
+      s.kind === 'leaderboard' && (s.asof || s.note) ? h('p', { class: 'hint' }, [s.asof ? `Snapshot of ${s.asof}.` : '', s.note].filter(Boolean).join(' ')) : null)));
+    $('revs').replaceChildren(...d.revisions.map((r) => h('li', {}, h('a', { href: `?ep=${n}&rev=${r.revision}` }, `R${r.revision}`), ` · ${fmtDate(r.at)} · ${r.reason}`)));
+    const sq = await api(`/public/episodes/${n}/sequence${rev ? '?rev=' + rev : ''}`);
+    const player = new CreditsPlayer($('cv'), {
+      onTime: (t) => { $('time').textContent = `${fmtTime(t)} / ${fmtTime(sq.sequence.duration)}`; $('scrub').value = String(Math.round(t / sq.sequence.duration * 1000)); },
+      onState: (p) => { $('play').textContent = p ? '❚❚ PAUSE' : '▶ PLAY THE CREDITS'; $('play').setAttribute('aria-pressed', String(p)); },
+    });
+    player.load(sq.sequence);
+    player.seek(sq.sequence.duration * 0.06);
+    $('player').hidden = false;
+    $('play').onclick = () => player.toggle();
+    $('scrub').oninput = (e) => player.seek(e.target.value / 1000 * sq.sequence.duration);
+  } catch (e) {
+    $('d-title').textContent = e.status === 404 ? 'NOT ON FILE' : 'ARCHIVE OFFLINE';
+    $('d-body').replaceChildren(h('div', { class: 'empty' }, e.status === 404 ? 'No finalised credits for that episode (yet).' : 'Try again shortly.'));
+  }
+}
+
+if (params.get('ep')) detail(parseInt(params.get('ep'), 10), parseInt(params.get('rev'), 10) || null);
+else {
+  const q = params.get('q') || '';
+  $('q').value = q;
+  list(q);
+  $('search').addEventListener('submit', (e) => { e.preventDefault(); const v = $('q').value.trim(); history.replaceState(null, '', v ? '?q=' + encodeURIComponent(v) : './'); list(v); });
+}
+</script>
+</body>
+</html>

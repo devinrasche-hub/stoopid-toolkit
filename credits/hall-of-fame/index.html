@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hall of Fame · THE HALL OF STOOPID</title>
+<meta name="description" content="Permanent recognition for historic achievements, longtime contributors and season-defining moments of THE STOOPID SHOW.">
+<meta property="og:title" content="HALL OF FAME — THE STOOPID SHOW">
+<meta property="og:description" content="Historic achievements, longtime contributors, season-defining moments.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='11' ry='8' fill='%23FFB347'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header id="chrome"></header>
+  <main id="main">
+    <div class="kick">PERMANENT RECORD · NO EXPIRY DATE</div>
+    <h1 class="mast" style="font-size:clamp(30px,6vw,60px)">HALL OF <b>FAME</b></h1>
+    <p class="thesis">Historic achievements, longtime contributors, and moments that defined a season.</p>
+    <section class="panel"><div class="sechead"><span class="no">[ 01 ]</span><h2>INDUCTEES</h2><span class="rule"></span></div><div id="fame"></div></section>
+    <section class="panel"><div class="sechead"><span class="no">[ 02 ]</span><h2>BEAN CHAMPIONS</h2><span class="rule"></span><span class="tag">#1 AT EACH EPISODE’S FROZEN SNAPSHOT</span></div><div id="champs"></div></section>
+  </main>
+  <footer class="legal" id="legal"></footer>
+</div>
+<script type="module">
+import { h, api, offline, loading, chrome } from '../assets/site.js';
+chrome('fame', 1);
+const $ = (id) => document.getElementById(id);
+loading($('fame')); loading($('champs'));
+try {
+  const d = await api('/public/hall-of-fame');
+  const seasons = [...new Set(d.entries.map((e) => e.season ?? 0))];
+  $('fame').replaceChildren(...(d.entries.length ? seasons.map((s) => h('div', { style: 'margin-bottom:22px' },
+    h('div', { class: 'kick' }, s ? `SEASON ${s}` : 'ALL-TIME'),
+    h('div', { class: 'grid' }, d.entries.filter((e) => (e.season ?? 0) === s).map((f) => h('div', { class: 'name-card' },
+      h('div', { class: 'nm', style: 'color:var(--gold)' }, f.title), h('div', {}, f.honoree),
+      f.description ? h('div', { class: 'meta' }, f.description) : null, f.achievedOn ? h('div', { class: 'meta' }, f.achievedOn) : null)))))
+    : [h('div', { class: 'empty' }, 'THE HALL OF FAME IS EMPTY. HISTORY IS STILL BEING MADE.')]));
+  $('champs').replaceChildren(d.beanChampions.length ? h('table', { class: 'term' },
+    h('thead', {}, h('tr', {}, h('th', {}, 'EP'), h('th', {}, 'CHAMPION'), h('th', {}, 'SNAPSHOT'), h('th', { style: 'text-align:right' }, 'BEANS'))),
+    h('tbody', {}, d.beanChampions.map((c) => h('tr', {}, h('td', {}, h('a', { href: `../episodes/?ep=${c.episode}` }, String(c.episode).padStart(3, '0'))),
+      h('td', {}, c.name), h('td', {}, c.asof || ''), h('td', { class: 'num' }, c.beans)))))
+    : h('div', { class: 'empty' }, 'CHAMPIONS ARE CROWNED WHEN AN EPISODE’S CREDITS ARE FINALISED. NONE YET.'));
+} catch { offline($('fame')); offline($('champs')); }
+</script>
+</body>
+</html>
