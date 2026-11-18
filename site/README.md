@@ -37,3 +37,7 @@ Reading requests (Cloudflare dashboard → D1 → `stoopidtv_signups` → Consol
 ```sql
 SELECT created_at, slot, name, email, promote, link FROM billboard_requests ORDER BY created_at DESC;
 ```
+
+## The Unmade Museum
+
+`museum/` is the game, served as-is (it isn't built by `build.py`). To ship a new build, replace `museum/index.html`, then re-add the link-preview block (`og:` / `twitter:` tags, marked with a comment near the top of `<head>`). `exhibits/` rarely changes. `_headers` stops other sites from framing it. The homepage section and trailer (`assets/museum-trailer.mp4`, `assets/museum-poster.jpg`) live outside `museum/` so a new build can't break them.
