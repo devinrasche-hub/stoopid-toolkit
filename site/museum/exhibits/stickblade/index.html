@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stickblade</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: #14161c; color: #e8eaf0;
+    font: 14px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  #app {
+    height: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; padding: 16px;
+  }
+  #bar {
+    width: 960px; max-width: 100%;
+    display: flex; align-items: center; gap: 8px;
+    background: #1d212b; border: 1px solid #2c313d; border-radius: 8px;
+    padding: 8px 10px;
+  }
+  #bar .role {
+    font-weight: 700; letter-spacing: .5px;
+    padding: 2px 8px; border-radius: 4px; background: #2c313d;
+  }
+  #bar .role.host { background: #3a2f12; color: #f2c14e; }
+  #bar .role.client { background: #12303a; color: #4ec5f2; }
+  #url {
+    flex: 1; min-width: 0;
+    background: #14161c; border: 1px solid #2c313d; border-radius: 4px;
+    color: #9aa3b2; padding: 6px 8px; font: inherit;
+  }
+  button {
+    background: #2c313d; color: #e8eaf0; border: 1px solid #3a4150;
+    border-radius: 4px; padding: 6px 12px; font: inherit; cursor: pointer;
+  }
+  button:hover { background: #3a4150; }
+  #stage { border: 1px solid #2c313d; border-radius: 8px; background: #0e1015; }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div id="bar">
+      <span id="role" class="role">…</span>
+      <input id="url" readonly value="" />
+      <button id="copy">Copy invite</button>
+      <button id="newroom" style="display:none">Create Room</button>
+    </div>
+    <canvas id="stage" width="960" height="540"></canvas>
+  </div>
+
+  <!-- Decided stack: PeerJS via CDN, no build step. -->
+  <!-- museum copy: PeerJS swapped for an offline stand-in. The room opens; nobody else can join. -->
+  <script src="museum-offline-peer.js"></script>
+  <script src="net.js"></script>
+  <script src="sim.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
