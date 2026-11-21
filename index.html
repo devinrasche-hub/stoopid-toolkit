@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 41 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 42 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <title>THE STOOPID STUDIO</title>
 <!-- link preview -->
 <meta property="og:site_name" content="THE STOOPID SHOW">
 <meta property="og:type" content="website">
 <meta property="og:title" content="THE STOOPID STUDIO">
-<meta property="og:description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 41 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta property="og:description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 42 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <meta property="og:url" content="https://devinrasche-hub.github.io/stoopid-toolkit/">
 <meta property="og:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/og/index.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="THE STOOPID STUDIO">
-<meta name="twitter:description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 41 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
+<meta name="twitter:description" content="THE STOOPID STUDIO — free brand machines for THE STOOPID SHOW. 42 artifacts in the vault. No ads, no accounts, nothing leaves the page.">
 <meta name="twitter:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/og/index.jpg">
 <!-- /link preview -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z' fill='none' stroke='%2300FFC6' stroke-width='3'/%3E%3C/svg%3E">
@@ -214,7 +214,7 @@ STUDIO">THE STOOPID
   <div class="ticker" aria-hidden="true"><div class="track" id="ticktrack"></div></div>
 
   <div class="stats">
-    <div class="stat"><div class="n" data-count="41">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
+    <div class="stat"><div class="n" data-count="42">0</div><div class="l">ARTIFACTS IN THE VAULT</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">ADS, EVER</div></div>
     <div class="stat"><div class="n" data-count="0">0</div><div class="l">THINGS TRACKED</div></div>
     <div class="stat"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">STOOPID BUT TRUE</div></div>
@@ -225,7 +225,7 @@ STUDIO">THE STOOPID
     <div>
       <div class="vkick">SUB-BASEMENT 01</div>
       <h2>THE <span>VAULT</span></h2>
-      <div class="vsub">41 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
+      <div class="vsub">42 ARTIFACTS &middot; NO LOCKS &middot; <b>THE DOOR WAS OPEN THE WHOLE TIME</b></div>
     </div>
     <div class="wheel" aria-hidden="true"></div>
   </section>
@@ -321,6 +321,15 @@ STUDIO">THE STOOPID
       <div class="body"><h3>THE STOOPID MINE</h3>
       <p>Eat the coin. Re-mint the coin. Generate value from belief. Proof of Work is out; Proof of Stoopid is in. Blockchain not included.</p></div>
       <div class="foot"><span class="st">STATUS: <em>MINTING</em></span><span class="go">ENTER &#9656;</span></div>
+    </a>
+
+    <a class="item" href="stoopid_smart_blocks.html" style="--ac:var(--teal)">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+      <div class="meta"><span>ITEM No. 042</span><span class="cls">GAME</span></div>
+      <canvas class="viz" data-viz="blocks"></canvas>
+      <div class="body"><h3>STOOPID SMART BLOCKS</h3>
+      <p>Fill the shape, learn the thing. Every board is a hidden letter, number or shape, and solving it says what it was out loud. Counting, adding, spelling. The blocks are not mindless.</p></div>
+      <div class="foot"><span class="st">STATUS: <em>GROWING BRAINS</em></span><span class="go">ENTER &#9656;</span></div>
     </a>
 
   </div>
@@ -932,6 +941,42 @@ VIZ.cube = function(x,w,h,t){
   if(Math.floor(t/700)%2){
     x.fillStyle='#555'; x.font=F(9); x.textAlign='center'; x.fillText('PRESS ME', cx, h-8);
   }
+};
+
+/* 042 — smart blocks: pieces fill a hidden letter, then it lights up */
+VIZ.blocks = function(x,w,h,t,S){
+  if(!S.g){
+    S.g=[['.XXX.','XX.XX','X...X','XXXXX','X...X','X...X','X...X'],
+         ['XXXX.','X..XX','X...X','XXXXX','X...X','X..XX','XXXX.'],
+         ['.XXXX','XX...','X....','X....','X....','XX...','.XXXX']];
+    S.cut=S.g.map(function(rows){ var own={}, cells=[], ps=[];
+      rows.forEach(function(r,y){ for(var i=0;i<r.length;i++) if(r[i]==='X') cells.push([i,y]); });
+      cells.forEach(function(c){ var k=c[0]+','+c[1]; if(own[k]!==undefined) return;
+        var p=[c], id=ps.length; own[k]=id;
+        for(var q=0;q<p.length && p.length<4;q++){ [[1,0],[0,1],[-1,0],[0,-1]].forEach(function(d){
+          var nx=p[q][0]+d[0], ny=p[q][1]+d[1], nk=nx+','+ny;
+          if(p.length<4 && own[nk]===undefined && cells.some(function(e){return e[0]===nx&&e[1]===ny;})){ own[nk]=id; p.push([nx,ny]); } }); }
+        ps.push(p); });
+      return ps; });
+  }
+  var cols=['#FF4D5E','#FF9A2E','#FFD93D','#4BD964','#3D9BFF','#A85CFF','#FF6EC7','#B9774A'];
+  var cyc=5200, n=Math.floor(t/cyc)%3, p=(t%cyc)/cyc, ps=S.cut[n];
+  var cs=Math.floor(Math.min(h/8.4, w/9)), ox=Math.round(w*0.5-2.5*cs), oy=Math.round(h*0.5-3.5*cs);
+  S.g[n].forEach(function(r,y){ for(var i=0;i<r.length;i++) if(r[i]==='X'){ x.fillStyle='#161a30'; x.fillRect(ox+i*cs+1,oy+y*cs+1,cs-2,cs-2); } });
+  ps.forEach(function(pc,i){
+    var st=0.05+i*0.62/ps.length, k=Math.max(0,Math.min(1,(p-st)/0.09)); if(k<=0) return;
+    var e=1-Math.pow(1-k,3), dx=(1-e)*w*0.55, dy=-(1-e)*cs*1.5;
+    pc.forEach(function(c){ var bx=ox+c[0]*cs+dx, by=oy+c[1]*cs+dy;
+      x.fillStyle=cols[(i*3+n)%cols.length]; x.fillRect(bx+1,by+1,cs-2,cs-2);
+      x.fillStyle='rgba(255,255,255,.3)'; x.fillRect(bx+cs*0.2,by+cs*0.15,cs*0.35,cs*0.13); });
+  });
+  if(p>0.78){ var a=Math.min(1,(p-0.78)/0.06)*(p>0.95?Math.max(0,1-(p-0.95)/0.05):1);
+    var lab=['A is for APPLE','B is for BUS','C is for CAT'][n];
+    x.globalAlpha=a; x.font=F(13,true); x.textAlign='center';
+    var tw=x.measureText(lab).width+18; x.fillStyle='#000'; x.fillRect(w*0.5-tw/2, h*0.5-12, tw, 24);
+    x.strokeStyle='#FFD23D'; x.strokeRect(w*0.5-tw/2+.5, h*0.5-11.5, tw-1, 23);
+    x.fillStyle='#FFD23D'; x.fillText(lab, w*0.5, h*0.5+5);
+    x.globalAlpha=1; }
 };
 
 /* 009 — the coin: eat it, re-mint it */

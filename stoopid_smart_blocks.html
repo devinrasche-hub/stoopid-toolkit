@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>STOOPID SMART BLOCKS — THE STOOPID SHOW</title>
+<!-- link preview -->
+<meta name="description" content="Fill the shape, learn the thing. Every board is a hidden letter, number or shape, and solving it teaches what it is. — THE STOOPID SHOW">
+<meta property="og:site_name" content="THE STOOPID SHOW">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://devinrasche-hub.github.io/stoopid-toolkit/stoopid_smart_blocks.html">
+<meta property="og:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/og/stoopid_smart_blocks.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="STOOPID SMART BLOCKS">
+<meta name="twitter:description" content="Fill the shape, learn the thing. Every board is a hidden letter, number or shape, and solving it teaches what it is. — THE STOOPID SHOW">
+<meta name="twitter:image" content="https://devinrasche-hub.github.io/stoopid-toolkit/og/stoopid_smart_blocks.jpg">
+<!-- /link preview -->
+<meta property="og:title" content="STOOPID SMART BLOCKS">
+<meta property="og:description" content="Fill the shape, learn the thing. Every board is a hidden letter, number or shape, and solving it teaches what it is. — THE STOOPID SHOW">
+<meta name="theme-color" content="#07080f">
+<style>
+  :root{ --teal:#00FFC6; --purple:#8A2BE2; --red:#FF2D2D; --orange:#CC5500;
+    --bg:#07080f; --panel:#11142a; --ink:#fff; --dim:#8b90b8; --gold:#FFD23D;
+    --kid:"Trebuchet MS","Segoe UI","Roboto","Helvetica Neue",Arial,sans-serif; }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; background:var(--bg); color:var(--ink); overflow:hidden;
+    font-family:var(--kid); user-select:none; -webkit-user-select:none;}
+  button{font-family:inherit; cursor:pointer; border:none; color:inherit; background:none;}
+
+  #cv{position:fixed; inset:0; width:100%; height:100%; touch-action:none; display:block;}
+
+  /* ---------- top bar (in game) ---------- */
+  #top{position:fixed; left:0; right:0; top:0; height:68px; display:flex; align-items:center;
+    gap:10px; padding:8px 12px; z-index:5; pointer-events:none;}
+  #top > *{pointer-events:auto;}
+  .tb{width:52px; height:52px; border-radius:16px; background:var(--panel); border:2px solid #262b52;
+    font-size:24px; display:flex; align-items:center; justify-content:center; flex:none;}
+  .tb:active{transform:scale(.92);}
+  .tb.on{border-color:var(--teal);}
+  #ask{flex:1; text-align:center; font-size:clamp(17px,3.4vw,26px); font-weight:bold; letter-spacing:.5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  #ask .cur{color:var(--gold); text-decoration:underline; text-underline-offset:5px;}
+  #ask .done{color:var(--teal);}
+  #ask .todo{color:#4a4f78;}
+  @media(max-width:480px){ #bNew{display:none;} .tb{width:48px;height:48px;font-size:22px;} #top{gap:8px;} }
+
+  /* ---------- screens ---------- */
+  .screen{position:fixed; inset:0; z-index:10; background:var(--bg); overflow-y:auto;
+    padding:22px 16px 60px; display:none; -webkit-overflow-scrolling:touch;}
+  .screen.show{display:block;}
+  .wrap{max-width:860px; margin:0 auto;}
+  .brand{text-align:center; font-family:'Courier New',monospace; margin:4px 0 18px;}
+  .brand .show{font-size:11px; letter-spacing:4px; color:var(--purple);}
+  .brackets{display:inline-block; position:relative; padding:10px 24px; margin-top:8px;}
+  .brackets::before,.brackets::after{content:""; position:absolute; width:14px; height:14px;}
+  .brackets::before{top:0; left:0; border-top:2px solid var(--teal); border-left:2px solid var(--teal);}
+  .brackets::after{bottom:0; right:0; border-bottom:2px solid var(--teal); border-right:2px solid var(--teal);}
+  .brand h1{font-size:clamp(24px,6vw,40px); letter-spacing:4px; font-weight:bold; line-height:1.1;}
+  .brand h1 .s{color:var(--teal);} .brand h1 .b{color:var(--gold);}
+  .brand .tag{font-size:12px; letter-spacing:2px; color:var(--dim); margin-top:10px; text-transform:uppercase;}
+  .logo{display:flex; justify-content:center; gap:5px; margin-bottom:6px;}
+  .logo i{width:22px; height:22px; border-radius:6px; display:block;
+    box-shadow:inset 0 -4px 0 rgba(0,0,0,.25), inset 0 3px 0 rgba(255,255,255,.3);}
+
+  .sect{font-family:'Courier New',monospace; font-size:12px; letter-spacing:3px; color:var(--dim);
+    margin:22px 2px 10px; text-transform:uppercase;}
+  .chips{display:flex; gap:10px; flex-wrap:wrap;}
+  .chip{flex:1 1 150px; padding:14px 12px; border-radius:18px; background:var(--panel);
+    border:3px solid #262b52; text-align:left; min-height:76px;}
+  .chip b{display:block; font-size:20px;}
+  .chip span{display:block; font-size:13px; color:var(--dim); margin-top:3px;}
+  .chip.sel{border-color:var(--teal); background:#0d2a2a;}
+
+  .worlds{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px;}
+  .world{border-radius:22px; padding:18px 16px; text-align:left; min-height:150px; position:relative;
+    background:var(--panel); border:3px solid #262b52; overflow:hidden;}
+  .world:active{transform:scale(.97);}
+  .world .ic{font-size:44px; line-height:1;}
+  .world b{display:block; font-size:26px; margin-top:10px; letter-spacing:1px;}
+  .world span{display:block; font-size:14px; color:var(--dim); margin-top:4px; line-height:1.35;}
+  .world .prog{position:absolute; top:14px; right:14px; font-size:14px; font-weight:bold; color:var(--gold);}
+  .world .bar{position:absolute; left:0; bottom:0; height:6px; background:var(--gold);}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:10px;}
+  .lvl{aspect-ratio:1; border-radius:18px; background:var(--panel); border:3px solid #262b52;
+    font-size:34px; font-weight:bold; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#4a4f78; position:relative;}
+  .lvl:active{transform:scale(.94);}
+  .lvl.solved{color:var(--ink); border-color:var(--gold); background:#2a2410;}
+  .lvl .st{font-size:12px; color:var(--gold); letter-spacing:1px; margin-top:2px; min-height:14px;}
+  .lvl .num{position:absolute; top:5px; left:8px; font-size:11px; color:#4a4f78;}
+  .bigbtn{display:block; width:100%; padding:18px; border-radius:20px; font-size:22px; font-weight:bold;
+    background:var(--teal); color:#002a20; margin-top:14px; letter-spacing:1px;}
+  .bigbtn.alt{background:var(--panel); color:var(--ink); border:3px solid #262b52;}
+  .bigbtn:active{transform:scale(.97);}
+  .row{display:flex; gap:10px; align-items:center;}
+  .back{font-size:16px; padding:12px 16px; border-radius:14px; background:var(--panel); border:2px solid #262b52;}
+  .stitle{font-size:28px; font-weight:bold; flex:1;}
+
+  #word{width:100%; font-family:var(--kid); font-size:34px; font-weight:bold; letter-spacing:8px; text-align:center;
+    text-transform:uppercase; padding:14px; border-radius:18px; border:3px solid var(--teal); background:#000; color:var(--gold);
+    user-select:text; -webkit-user-select:text;}
+  .presets{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+  .preset{padding:10px 16px; border-radius:14px; background:var(--panel); border:2px solid #262b52; font-size:18px; font-weight:bold; letter-spacing:2px;}
+  .note{font-size:14px; color:var(--dim); line-height:1.5; margin-top:12px;}
+  .foot{font-family:'Courier New',monospace; font-size:11px; letter-spacing:2px; color:#3c4066; text-align:center; margin-top:34px; line-height:1.8;}
+
+  /* ---------- win card ---------- */
+  #win{position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center;
+    background:rgba(4,5,12,.72); padding:14px;}
+  #win.show{display:flex;}
+  .card{width:min(94vw,560px); max-height:96vh; overflow-y:auto; border-radius:28px; background:var(--panel); border:4px solid var(--gold);
+    padding:18px 18px 16px; text-align:center; animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes pop{from{transform:scale(.6); opacity:0} to{transform:scale(1); opacity:1}}
+  .card .big{font-size:clamp(70px,16vh,130px); font-weight:bold; line-height:1; color:var(--gold);
+    text-shadow:0 6px 0 rgba(0,0,0,.35);}
+  .card .big.word{letter-spacing:10px; font-size:clamp(50px,12vh,96px);}
+  .card .em{font-size:clamp(40px,9vh,64px); line-height:1.15; margin-top:6px; min-height:1.15em; word-break:break-all;}
+  .card .em i{font-style:normal; display:inline-block; animation:pop .35s cubic-bezier(.2,1.6,.4,1);}
+  .card .em i.c{position:relative;}
+  .card .em i.c::after{content:attr(data-n); position:absolute; left:50%; top:-6px; transform:translateX(-50%);
+    font-size:15px; font-weight:bold; color:var(--gold); text-shadow:0 1px 2px #000;}
+  .card .line{font-size:clamp(22px,4.4vh,32px); font-weight:bold; margin-top:8px;}
+  .card .fact{font-size:17px; color:var(--dim); margin-top:6px; line-height:1.4;}
+  .card .eq{font-size:20px; margin-top:12px; padding:10px; border-radius:14px; background:#0a0c1c; color:var(--teal); font-weight:bold; letter-spacing:1px;}
+  .card .eq small{display:block; font-size:12px; color:var(--dim); letter-spacing:2px; font-weight:normal; margin-bottom:4px; font-family:'Courier New',monospace;}
+  .card .stars{font-size:38px; color:var(--gold); margin-top:8px; letter-spacing:6px;}
+  .card .stars .off{color:#33375e;}
+  .card .btns{display:flex; gap:10px; margin-top:12px;}
+  .card .btns button{flex:1; padding:16px 8px; border-radius:18px; font-size:19px; font-weight:bold; background:#1c2045; border:3px solid #2e3366;}
+  .card .btns button.go{background:var(--teal); color:#002a20; border-color:var(--teal); flex:1.4;}
+  .card .btns button:active{transform:scale(.95);}
+  .card .say{margin-top:10px; font-size:15px; color:var(--dim); padding:8px 14px; border-radius:12px; border:2px solid #2e3366;}
+
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:30; background:#1c2045; border:2px solid var(--teal);
+    padding:10px 18px; border-radius:14px; font-size:17px; font-weight:bold; display:none; white-space:nowrap;}
+
+  body.ingame .vault-return{display:none;}
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<div id="top">
+  <button class="tb" id="bBack" aria-label="Back to menu">&#9664;</button>
+  <div id="ask">What&rsquo;s hiding in here?</div>
+  <button class="tb" id="bNew" aria-label="New pieces">&#8635;</button>
+  <button class="tb" id="bHint" aria-label="Hint">&#128161;</button>
+  <button class="tb on" id="bTalk" aria-label="Talking on or off">&#128266;</button>
+</div>
+
+<!-- HOME -->
+<div class="screen show" id="sHome"><div class="wrap">
+  <div class="brand">
+    <div class="show">THE STOOPID SHOW PRESENTS</div>
+    <div class="brackets">
+      <div class="logo" id="logo"></div>
+      <h1><span class="s">STOOPID</span> SMART <span class="b">BLOCKS</span></h1>
+    </div>
+    <div class="tag">Fill the shape &middot; find out what it was &middot; grow the brain</div>
+  </div>
+
+  <div class="sect">How hard?</div>
+  <div class="chips" id="diffs"></div>
+
+  <div class="sect">Pick a game</div>
+  <div class="worlds" id="worlds"></div>
+
+  <div class="foot">DRAG THE BLOCKS INTO THE GREY SHAPE &middot; FILL EVERY SQUARE<br>
+  BRAINY MODE: TAP A BLOCK TO TURN IT<br>
+  NO ADS &middot; NO ACCOUNTS &middot; NOTHING LEAVES THE PAGE</div>
+</div></div>
+
+<!-- LEVEL GRID -->
+<div class="screen" id="sWorld"><div class="wrap">
+  <div class="row"><button class="back" id="wBack">&#9664; Back</button><div class="stitle" id="wTitle"></div></div>
+  <button class="bigbtn" id="wPlay">&#9654; PLAY</button>
+  <div class="sect" id="wSub"></div>
+  <div class="grid" id="lvls"></div>
+</div></div>
+
+<!-- SPELL -->
+<div class="screen" id="sSpell"><div class="wrap">
+  <div class="row"><button class="back" id="spBack">&#9664; Back</button><div class="stitle">&#9999;&#65039; SPELL IT</div></div>
+  <div class="sect">Type a word (letters only, up to 8)</div>
+  <input id="word" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="CAT">
+  <div class="presets" id="presets"></div>
+  <button class="bigbtn" id="spGo">&#9654; BUILD IT</button>
+  <div class="note">Every letter of the word becomes its own puzzle, in order. Put in a name, this week&rsquo;s spelling words, or the dog. When the last letter is done, the game spells the whole word back out loud.</div>
+</div></div>
+
+<!-- WIN -->
+<div id="win"><div class="card" id="card">
+  <div class="big" id="cBig"></div>
+  <div class="em" id="cEm"></div>
+  <div class="line" id="cLine"></div>
+  <div class="fact" id="cFact"></div>
+  <div class="eq" id="cEq"></div>
+  <div class="stars" id="cStars"></div>
+  <div class="btns">
+    <button id="cAgain">&#8635; Again</button>
+    <button id="cMenu">&#9638; Menu</button>
+    <button class="go" id="cNext">Next &#9654;</button>
+  </div>
+  <button class="say" id="cSay">&#128266; Say it again</button>
+</div></div>
+
+<div id="toast"></div>
+
+<style>.vault-return{position:fixed;left:56px;bottom:0;z-index:999;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#00FFC6;background:#000;border:1px solid #00FFC6;border-bottom:none;padding:5px 13px;text-decoration:none;opacity:.55;transition:opacity .15s}.vault-return:hover{opacity:1;background:#00FFC6;color:#000}@media(max-width:700px){.vault-return{left:14px}}</style>
+<a class="vault-return" href="index.html">&#9666; THE VAULT</a>
+
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   SHAPES — every glyph is drawn so its squares touch edge-to-edge
+   (no diagonal-only joins), so it can be cut into real block pieces.
+   ===================================================================== */
+var G = {
+ A:['.XXX.','XX.XX','X...X','XXXXX','X...X','X...X','X...X'],
+ B:['XXXX.','X..XX','X...X','XXXXX','X...X','X..XX','XXXX.'],
+ C:['.XXXX','XX...','X....','X....','X....','XX...','.XXXX'],
+ D:['XXXX.','X..XX','X...X','X...X','X...X','X..XX','XXXX.'],
+ E:['XXXXX','X....','X....','XXXX.','X....','X....','XXXXX'],
+ F:['XXXXX','X....','X....','XXXX.','X....','X....','X....'],
+ G:['.XXXX','XX...','X....','X.XXX','X...X','XX..X','.XXXX'],
+ H:['X...X','X...X','X...X','XXXXX','X...X','X...X','X...X'],
+ I:['XXXXX','..X..','..X..','..X..','..X..','..X..','XXXXX'],
+ J:['..XXX','...X.','...X.','...X.','...X.','X..X.','XXXX.'],
+ K:['X...X','X..XX','X.XX.','XXX..','X.XX.','X..XX','X...X'],
+ L:['X....','X....','X....','X....','X....','X....','XXXXX'],
+ M:['X...X','XX.XX','XXXXX','X.X.X','X...X','X...X','X...X'],
+ N:['X...X','XX..X','XXX.X','X.XXX','X..XX','X...X','X...X'],
+ O:['.XXX.','XX.XX','X...X','X...X','X...X','XX.XX','.XXX.'],
+ P:['XXXX.','X..XX','X...X','X..XX','XXXX.','X....','X....'],
+ Q:['.XXX.','XX.XX','X...X','X...X','X.XXX','XX.XX','.XXXX'],
+ R:['XXXX.','X..XX','X...X','X..XX','XXXX.','X..XX','X...X'],
+ S:['.XXXX','XX...','XX...','.XXX.','...XX','...XX','XXXX.'],
+ T:['XXXXX','..X..','..X..','..X..','..X..','..X..','..X..'],
+ U:['X...X','X...X','X...X','X...X','X...X','XX.XX','.XXX.'],
+ V:['X...X','X...X','X...X','XX.XX','.X.X.','.XXX.','..X..'],
+ W:['X...X','X...X','X.X.X','X.X.X','X.X.X','XXXXX','.X.X.'],
+ X:['X...X','XX.XX','.XXX.','..X..','.XXX.','XX.XX','X...X'],
+ Y:['X...X','XX.XX','.XXX.','..X..','..X..','..X..','..X..'],
+ Z:['XXXXX','...XX','..XX.','..X..','.XX..','XX...','XXXXX'],
+ '0':['.XXX.','XX.XX','X...X','X...X','X...X','XX.XX','.XXX.'],
+ '1':['.XX..','XXX..','..X..','..X..','..X..','..X..','XXXXX'],
+ '2':['.XXX.','XX.XX','...XX','..XX.','.XX..','XX...','XXXXX'],
+ '3':['XXXX.','...XX','....X','.XXXX','....X','...XX','XXXX.'],
+ '4':['X..X.','X..X.','X..X.','XXXXX','...X.','...X.','...X.'],
+ '5':['XXXXX','X....','XXXX.','...XX','....X','XX.XX','.XXX.'],
+ '6':['.XXX.','XX...','X....','XXXX.','X..XX','XX.XX','.XXX.'],
+ '7':['XXXXX','...XX','...X.','..XX.','..X..','..X..','..X..'],
+ '8':['.XXX.','XX.XX','XX.XX','.XXX.','XX.XX','XX.XX','.XXX.'],
+ '9':['.XXX.','XX.XX','XX..X','.XXXX','....X','...XX','.XXX.']
+};
+G['10'] = G['1'].map(function(r,i){ return r+'.'+G['0'][i]; });
+
+var SH = {
+ square:   ['XXXX','XXXX','XXXX','XXXX'],
+ rectangle:['XXXXXXX','XXXXXXX','XXXXXXX'],
+ triangle: ['...X...','..XXX..','.XXXXX.','XXXXXXX'],
+ circle:   ['.XXXX.','XXXXXX','XXXXXX','XXXXXX','XXXXXX','.XXXX.'],
+ diamond:  ['...X...','..XXX..','.XXXXX.','XXXXXXX','.XXXXX.','..XXX..','...X...'],
+ heart:    ['.XX.XX.','XXXXXXX','XXXXXXX','.XXXXX.','..XXX..','...X...'],
+ star:     ['...X...','..XXX..','XXXXXXX','.XXXXX.','.XX.XX.','.X...X.'],
+ plus:     ['..XX..','..XX..','XXXXXX','XXXXXX','..XX..','..XX..'],
+ arrow:    ['....X..','....XX.','XXXXXXX','XXXXXXX','....XX.','....X..'],
+ house:    ['...X...','..XXX..','.XXXXX.','XXXXXXX','.XXXXX.','.XX.XX.','.XX.XX.']
+};
+
+var ABC = [
+ ['A','Apple','🍎'],['B','Bus','🚌'],['C','Cat','🐱'],['D','Dog','🐶'],['E','Egg','🥚'],['F','Fish','🐟'],
+ ['G','Goat','🐐'],['H','Hat','🎩'],['I','Ice cream','🍦'],['J','Jack-o-lantern','🎃'],['K','Key','🔑'],['L','Lion','🦁'],
+ ['M','Moon','🌙'],['N','Nose','👃'],['O','Octopus','🐙'],['P','Pig','🐷'],['Q','Queen','👑'],['R','Rocket','🚀'],
+ ['S','Sun','☀️'],['T','Tiger','🐯'],['U','Umbrella','☂️'],['V','Volcano','🌋'],['W','Whale','🐳'],['X','Fox','🦊'],
+ ['Y','Yarn','🧶'],['Z','Zebra','🦓']
+];
+var NUMS = [
+ [0,'Zero','nothing at all','🫥',"Zero means none. Not even one!"],
+ [1,'One','sun','☀️',"There is only one sun in our sky."],
+ [2,'Two','eyes','👀',"You have two eyes and two ears."],
+ [3,'Three','cats','🐱',"A triangle has three sides."],
+ [4,'Four','dogs','🐶',"A dog has four legs."],
+ [5,'Five','fingers','🖐️',"One hand has five fingers."],
+ [6,'Six','bugs','🐞',"A bug has six legs."],
+ [7,'Seven','rainbow colors','🌈',"A rainbow has seven colors."],
+ [8,'Eight','octopus arms','🐙',"An octopus has eight arms."],
+ [9,'Nine','balls','⚽',"Nine is one less than ten."],
+ [10,'Ten','stars','⭐',"Two hands have ten fingers."]
+];
+var SHAPES = [
+ ['square','Square','🟦',"A square has 4 sides, and they are all the same size."],
+ ['rectangle','Rectangle','▬',"A rectangle has 4 sides: two long ones and two short ones."],
+ ['triangle','Triangle','🔺',"A triangle has 3 sides and 3 corners."],
+ ['circle','Circle','🔵',"A real circle has no corners at all. It just goes round and round."],
+ ['diamond','Diamond','🔷',"A diamond is a square standing up on one corner!"],
+ ['heart','Heart','❤️',"Your real heart is about as big as your fist."],
+ ['star','Star','⭐',"This star has 5 points. The sun is a star too!"],
+ ['plus','Plus','➕',"Plus means add. 2 plus 2 makes 4."],
+ ['arrow','Arrow','➡️',"An arrow points the way to go."],
+ ['house','House','🏠',"A house is a square with a triangle on top."]
+];
+var ABCFACT = {
+ A:"A is a vowel. Vowels are A, E, I, O and U.", E:"E is a vowel, and the most used letter in English.",
+ I:"I is a vowel.", O:"O is a vowel. It looks like a circle.", U:"U is a vowel.",
+ X:"Fox ends with an X. Not many words start with X!", Q:"Q almost always has a U after it.",
+ Y:"Y is sometimes a vowel, like in the word sky.", Z:"Z is the very last letter."
+};
+
+var COLORS = [
+ ['red','#FF4D5E'],['orange','#FF9A2E'],['yellow','#FFD93D'],['green','#4BD964'],
+ ['blue','#3D9BFF'],['purple','#A85CFF'],['pink','#FF6EC7'],['brown','#B9774A']
+];
+
+var DIFFS = {
+ easy:  {name:'🐣 Little', sub:'Small blocks, no turning', min:2, max:3, spin:false},
+ med:   {name:'🦊 Big kid', sub:'Bigger blocks, no turning', min:3, max:5, spin:false},
+ brainy:{name:'🧠 Brainy', sub:'Blocks come turned. Tap to spin.', min:3, max:5, spin:true}
+};
+
+function rows2(rows){ var c=[], w=0; rows.forEach(function(r,y){ w=Math.max(w,r.length);
+  for(var x=0;x<r.length;x++) if(r[x]==='X') c.push([x,y]); }); return {w:w,h:rows.length,cells:c}; }
+
+var WORLDS = [
+ {id:'abc', icon:'🔤', name:'ABC', sub:'26 hidden letters. Fill one in, hear what it says.',
+  ask:'Which letter? 🤔',
+  levels:ABC.map(function(a){ return {id:'abc-'+a[0], label:a[0], rows:G[a[0]], big:a[0], em:a[2],
+    line:a[0]+' is for '+a[1], fact:ABCFACT[a[0]]||'',
+    say:[a[0]+'!', a[0]+' is for '+a[1].toLowerCase()+'.']}; })},
+ {id:'num', icon:'🔢', name:'123', sub:'Find the number, then count it out loud.',
+  ask:'Which number? 🤔',
+  levels:NUMS.map(function(n){ return {id:'num-'+n[0], label:String(n[0]), rows:G[String(n[0])], big:String(n[0]),
+    count:n[0], em:n[3], line:n[0]===0?'Zero. Nothing at all!':n[1]+' '+n[2], fact:n[4],
+    say:[n[1]+'!']}; })},
+ {id:'shape', icon:'🔺', name:'SHAPES', sub:'Square, triangle, heart, star, and what makes them.',
+  ask:'Which shape? 🤔',
+  levels:SHAPES.map(function(s){ return {id:'shape-'+s[0], label:s[2], rows:SH[s[0]], big:s[2], emojiBig:true,
+    line:'A '+s[1].toLowerCase()+'!', fact:s[3], say:['A '+s[1].toLowerCase()+'!', s[3]]}; })},
+ {id:'spell', icon:'✏️', name:'SPELL IT', sub:'Type any word. Build it one letter at a time.', spell:true}
+];
+
+/* =====================================================================
+   SAVE (per browser only)
+   ===================================================================== */
+var SAVE = {solved:{}, diff:'med', talk:true};
+try{ var raw = localStorage.getItem('stoopidSmartBlocks.v1'); if(raw){ var o=JSON.parse(raw);
+  if(o && typeof o==='object'){ SAVE.solved=o.solved||{}; if(DIFFS[o.diff]) SAVE.diff=o.diff; if(o.talk===false) SAVE.talk=false; } } }catch(e){}
+function save(){ try{ localStorage.setItem('stoopidSmartBlocks.v1', JSON.stringify(SAVE)); }catch(e){} }
+
+/* =====================================================================
+   SOUND + VOICE
+   ===================================================================== */
+var AC=null;
+function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } }
+  if(AC && AC.state==='suspended') AC.resume(); return AC; }
+function tone(f, dur, type, vol, when, slide){
+  var a=ac(); if(!a) return; var t=a.currentTime+(when||0);
+  var o=a.createOscillator(), g=a.createGain(); o.type=type||'sine';
+  o.frequency.setValueAtTime(f,t); if(slide) o.frequency.exponentialRampToValueAtTime(slide,t+dur);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.2,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.02);
+}
+var SND = {
+ lift:function(){ tone(420,0.09,'triangle',0.16,0,640); },
+ drop:function(){ tone(300,0.12,'sine',0.25,0,180); tone(900,0.05,'triangle',0.08,0.01); },
+ nope:function(){ tone(220,0.16,'square',0.06,0,150); },
+ spin:function(){ tone(600,0.07,'triangle',0.12,0,900); },
+ tick:function(i,when){ var s=[523,587,659,698,784,880,988,1047]; tone(s[Math.min(i,7)],0.09,'sine',0.14,when); },
+ win:function(){ [523,659,784,1047,1319].forEach(function(f,i){ tone(f,0.22,'triangle',0.16,i*0.09); }); tone(1568,0.5,'sine',0.1,0.5); }
+};
+
+var VOICE=null, hasTTS = 'speechSynthesis' in window;
+function pickVoice(){ if(!hasTTS) return; var v=speechSynthesis.getVoices()||[];
+  VOICE = v.filter(function(x){return /^en[-_]US/i.test(x.lang);})[0] || v.filter(function(x){return /^en/i.test(x.lang);})[0] || null; }
+if(hasTTS){ pickVoice(); try{ speechSynthesis.addEventListener('voiceschanged', pickVoice); }catch(e){} }
+function hush(){ if(hasTTS) try{ speechSynthesis.cancel(); }catch(e){} }
+/* say a list of lines in order; each item may be {text, start} where start fires as it begins
+   (with a timer fallback, because some tablets never fire onstart) */
+function sayList(items, gap){
+  hush(); gap = gap||850;
+  items.forEach(function(it, i){
+    if(typeof it==='string') it={text:it};
+    var fired=false; function go(){ if(!fired){ fired=true; if(it.start) it.start(); } }
+    if(SAVE.talk && hasTTS && speechSynthesis.getVoices().length){
+      var u=new SpeechSynthesisUtterance(it.text); if(VOICE) u.voice=VOICE; u.rate=0.92; u.pitch=1.15;
+      u.onstart=go; try{ speechSynthesis.speak(u); }catch(e){}
+      if(it.start) setTimeout(go, i*gap + 2500);
+    } else if(it.start) setTimeout(go, i*gap);
+  });
+}
+function say(t){ sayList([t]); }
+
+/* =====================================================================
+   PUZZLE — cut a shape into random block pieces (always solvable,
+   because the pieces come from the shape itself)
+   ===================================================================== */
+function K(x,y){ return x+','+y; }
+var N4=[[1,0],[-1,0],[0,1],[0,-1]];
+function cutShape(cells, minS, maxS){
+  var inShape={}; cells.forEach(function(c){ inShape[K(c[0],c[1])]=1; });
+  var best=null, bestScore=1e9;
+  for(var att=0; att<260; att++){
+    var own={}, pieces=[];
+    var free=function(x,y){ return inShape[K(x,y)] && own[K(x,y)]===undefined; };
+    var deg=function(x,y){ var n=0; N4.forEach(function(d){ if(free(x+d[0],y+d[1])) n++; }); return n; };
+    while(true){
+      var cand=[], md=9;
+      cells.forEach(function(c){ if(!free(c[0],c[1])) return; var d=deg(c[0],c[1]);
+        if(d<md){ md=d; cand=[c]; } else if(d===md) cand.push(c); });
+      if(!cand.length) break;
+      var s=cand[(Math.random()*cand.length)|0], target=minS+((Math.random()*(maxS-minS+1))|0);
+      var p=[s], id=pieces.length; own[K(s[0],s[1])]=id;
+      while(p.length<target){
+        var fr=[], seen={};
+        p.forEach(function(c){ N4.forEach(function(d){ var x=c[0]+d[0], y=c[1]+d[1];
+          if(free(x,y) && !seen[K(x,y)]){ seen[K(x,y)]=1; fr.push([x,y, deg(x,y)+Math.random()*1.6]); } }); });
+        if(!fr.length) break;
+        fr.sort(function(a,b){ return a[2]-b[2]; });
+        var n=fr[0]; p.push([n[0],n[1]]); own[K(n[0],n[1])]=id;
+      }
+      pieces.push(p);
+    }
+    // fold leftover tiny pieces into a neighbour
+    for(var i=0;i<pieces.length;i++){
+      if(!pieces[i].length || pieces[i].length>=minS) continue;
+      var nb={};
+      pieces[i].forEach(function(c){ N4.forEach(function(d){ var o=own[K(c[0]+d[0],c[1]+d[1])];
+        if(o!==undefined && o!==i && pieces[o].length) nb[o]=1; }); });
+      var bj=-1; Object.keys(nb).forEach(function(j){ j=+j; if(pieces[j].length+pieces[i].length<=maxS+1 &&
+        (bj<0 || pieces[j].length<pieces[bj].length)) bj=j; });
+      if(bj>=0){ pieces[i].forEach(function(c){ own[K(c[0],c[1])]=bj; pieces[bj].push(c); }); pieces[i]=[]; }
+    }
+    pieces=pieces.filter(function(p){ return p.length; });
+    var score=0;
+    pieces.forEach(function(p){ var L=p.length; if(L<minS) score+=(L===1?30:10)*(minS-L); if(L>maxS) score+=5*(L-maxS); });
+    if(score<bestScore){ bestScore=score; best=pieces; }
+    if(score===0 && att>12) break;
+  }
+  return best;
+}
+function norm(cells){ var mx=1e9,my=1e9; cells.forEach(function(c){ mx=Math.min(mx,c[0]); my=Math.min(my,c[1]); });
+  return {cells:cells.map(function(c){ return [c[0]-mx,c[1]-my]; }), x:mx, y:my}; }
+function rot90(cells){ return norm(cells.map(function(c){ return [-c[1], c[0]]; })).cells; }
+function dims(cells){ var w=0,h=0; cells.forEach(function(c){ w=Math.max(w,c[0]+1); h=Math.max(h,c[1]+1); }); return {w:w,h:h}; }
+function shapeKey(cells){ return cells.map(function(c){return K(c[0],c[1]);}).sort().join('|'); }
+
+/* =====================================================================
+   GAME STATE
+   ===================================================================== */
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), DPR=1, W=0, H=0;
+var S = null;   // current level state
+var world=null, levelIdx=0, spellWord='', spellIdx=0;
+
+function startLevel(w, idx){
+  world=w; levelIdx=idx;
+  var L = w.spell ? spellLevel(spellWord[idx]) : w.levels[idx];
+  var shape = rows2(L.rows), D = DIFFS[SAVE.diff];
+  var parts = cutShape(shape.cells, D.min, D.max);
+  var target = {}; shape.cells.forEach(function(c){ target[K(c[0],c[1])]=null; });
+  // colour so neighbours differ
+  var ownerOf={}; parts.forEach(function(p,i){ p.forEach(function(c){ ownerOf[K(c[0],c[1])]=i; }); });
+  var pal=COLORS.map(function(c,i){return i;}).sort(function(){return Math.random()-.5;});
+  var col=[];
+  parts.forEach(function(p,i){
+    var bad={}; p.forEach(function(c){ N4.forEach(function(d){ var o=ownerOf[K(c[0]+d[0],c[1]+d[1])]; if(o!==undefined && o<i) bad[col[o]]=1; }); });
+    // unused colours first (so every block has its own colour name), never the same as a neighbour
+    var pick=pal.filter(function(c){ return !bad[c] && col.indexOf(c)<0; });
+    if(!pick.length) pick=pal.filter(function(c){ return !bad[c]; });
+    col[i]=(pick.length?pick:pal)[0];
+  });
+  var pieces = parts.map(function(p,i){
+    var n=norm(p), cells=n.cells, r=0;
+    if(D.spin){ r=(Math.random()*4)|0; if(i===0 && r===0) r=1; for(var k=0;k<r;k++) cells=rot90(cells); }
+    return {id:i, sol:n.cells, solX:n.x, solY:n.y, cells:cells, color:col[i], at:null,
+            ax:null, ay:null, as:null, wig:0, lastSay:0};
+  });
+  // tray order: shuffled, so the pieces aren't laid out in reading order
+  pieces.sort(function(){ return Math.random()-.5; }).forEach(function(p,i){ p.slot=i; });
+  S = {L:L, w:shape.w, h:shape.h, target:target, pieces:pieces, drag:null, won:false, hints:0,
+       ghost:null, floats:[], conf:[], winT:0, flash:null};
+  document.getElementById('ask').innerHTML = w.spell ? spellAsk() : esc(w.ask);
+  showScreen(null);
+  layout();
+}
+function spellLevel(ch){
+  var a = ABC.filter(function(x){return x[0]===ch;})[0];
+  return {id:'spell', label:ch, rows:G[ch], big:ch, em:a[2], line:ch+' is for '+a[1], fact:'', say:[ch+'!']};
+}
+function spellAsk(){
+  return spellWord.split('').map(function(c,i){
+    return '<span class="'+(i<spellIdx?'done':i===spellIdx?'cur':'todo')+'">'+c+'</span>'; }).join(' ');
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+/* ---------- layout ---------- */
+var BD={x:0,y:0,c:40}, TR={x:0,y:0,w:0,h:0,c:30};
+function layout(){
+  DPR=Math.min(window.devicePixelRatio||1, 2.5); W=window.innerWidth; H=window.innerHeight;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  if(!S) return;
+  var top=76, pad=14, land = W > H*1.08;
+  var b, t;
+  if(land){ b={x:pad,y:top,w:W*0.56-pad,h:H-top-pad}; t={x:W*0.56+pad,y:top,w:W*0.44-pad*2,h:H-top-pad}; }
+  else    { b={x:pad,y:top,w:W-pad*2,h:(H-top)*0.52-pad}; t={x:pad,y:top+(H-top)*0.52,w:W-pad*2,h:(H-top)*0.48-pad}; }
+  var c=Math.floor(Math.min(b.w/S.w, b.h/S.h, 96));
+  BD={c:c, x:Math.round(b.x+(b.w-S.w*c)/2), y:Math.round(b.y+(b.h-S.h*c)/2)};
+  TR={x:t.x,y:t.y,w:t.w,h:t.h,c:Math.min(c*0.8, 64)};
+  flowTray();
+}
+// lay out every piece's slot in the tray (placed pieces keep a slot so nothing jumps)
+function flowTray(){
+  var ps=S.pieces.slice().sort(function(a,b){return a.slot-b.slot;});
+  var c=TR.c;
+  for(var tries=0; tries<40; tries++){
+    var g=Math.max(10,c*0.55), rows=[], row=[], rw=0, ok=true;
+    ps.forEach(function(p){ var d=dims(p.cells), pw=d.w*c, ph=d.h*c;
+      if(row.length && rw+g+pw>TR.w){ rows.push(row); row=[]; rw=0; }
+      row.push({p:p,w:pw,h:ph}); rw+=(row.length>1?g:0)+pw; if(pw>TR.w) ok=false; });
+    if(row.length) rows.push(row);
+    var th=0; rows.forEach(function(r){ th+=Math.max.apply(null,r.map(function(q){return q.h;})); }); th+=g*(rows.length-1);
+    if(ok && th<=TR.h){
+      var y=TR.y+(TR.h-th)/2;
+      rows.forEach(function(r){
+        var rh=Math.max.apply(null,r.map(function(q){return q.h;}));
+        var tw=r.reduce(function(s,q){return s+q.w;},0)+g*(r.length-1), x=TR.x+(TR.w-tw)/2;
+        r.forEach(function(q){ q.p.tx=x; q.p.ty=y+(rh-q.h)/2; q.p.tc=c; x+=q.w+g; });
+        y+=rh+g;
+      });
+      return;
+    }
+    c*=0.92;
+  }
+}
+
+/* ---------- board helpers ---------- */
+function fits(p, cells, gx, gy){
+  for(var i=0;i<cells.length;i++){ var k=K(cells[i][0]+gx, cells[i][1]+gy);
+    if(!(k in S.target)) return false; var o=S.target[k]; if(o!==null && o!==p.id) return false; }
+  return true;
+}
+function setPlaced(p, gx, gy){
+  unplace(p); p.at={x:gx,y:gy};
+  p.cells.forEach(function(c){ S.target[K(c[0]+gx,c[1]+gy)]=p.id; });
+}
+function unplace(p){ if(!p.at) return; p.cells.forEach(function(c){ S.target[K(c[0]+p.at.x,c[1]+p.at.y)]=null; }); p.at=null; }
+function allFull(){ for(var k in S.target) if(S.target[k]===null) return false; return true; }
+
+/* ---------- input ---------- */
+function ptr(e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function pieceAt(x,y){
+  // board first (top-most), then tray
+  var gx=Math.floor((x-BD.x)/BD.c), gy=Math.floor((y-BD.y)/BD.c), k=K(gx,gy);
+  if(k in S.target && S.target[k]!==null){ var p=S.pieces[S.target[k]];
+    return {p:p, dx:(x-BD.x)/BD.c-p.at.x, dy:(y-BD.y)/BD.c-p.at.y, from:'board'}; }
+  var best=null, bd=1e9;
+  S.pieces.forEach(function(p){ if(p.at) return; var c=p.tc;
+    p.cells.forEach(function(cc){ var cx=p.tx+(cc[0]+.5)*c, cy=p.ty+(cc[1]+.5)*c, d=Math.hypot(x-cx,y-cy);
+      if(d<bd){ bd=d; best=p; } }); });
+  if(best && bd < Math.max(best.tc*0.95, 34)) return {p:best, dx:(x-best.tx)/best.tc, dy:(y-best.ty)/best.tc, from:'tray'};
+  return null;
+}
+cv.addEventListener('pointerdown', function(e){
+  ac(); if(!S || S.won || S.drag) return;
+  var q=ptr(e), hit=pieceAt(q.x,q.y); if(!hit) return;
+  e.preventDefault(); try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+  var p=hit.p;
+  S.drag={p:p, id:e.pointerId, dx:hit.dx, dy:hit.dy, sx:q.x, sy:q.y, x:q.x, y:q.y, moved:false, from:hit.from,
+          lift: e.pointerType==='touch' ? BD.c*0.35 : 0};
+  S.ghost=null;
+  SND.lift();
+  var now=performance.now();
+  if(now-p.lastSay>2500){ p.lastSay=now; if(SAVE.talk) say(COLORS[p.color][0]); }
+});
+cv.addEventListener('pointermove', function(e){
+  if(!S || !S.drag || e.pointerId!==S.drag.id) return;
+  var q=ptr(e), d=S.drag; d.x=q.x; d.y=q.y;
+  if(!d.moved && Math.hypot(q.x-d.sx,q.y-d.sy)>10){ d.moved=true; if(d.from==='board') unplace(d.p); }
+});
+function endDrag(e){
+  if(!S || !S.drag || e.pointerId!==S.drag.id) return;
+  var d=S.drag, p=d.p; S.drag=null;
+  if(!d.moved){
+    if(d.from==='tray'){
+      if(DIFFS[SAVE.diff].spin){ p.cells=rot90(p.cells); SND.spin(); flowTray(); p.ax=null; }
+      else { p.wig=1; }
+    }
+    return;
+  }
+  var snap=snapFor(p, d);
+  if(snap){
+    setPlaced(p, snap.x, snap.y);
+    // animate from where the finger let go
+    p.ax=d.x-d.dx*BD.c; p.ay=d.y-d.dy*BD.c-d.lift; p.as=BD.c;
+    SND.drop(); countUp(p);
+    if(allFull()) win();
+  } else {
+    p.ax=d.x-d.dx*BD.c; p.ay=d.y-d.dy*BD.c-d.lift; p.as=BD.c;
+    SND.nope();
+  }
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+
+// nearest legal spot within reach of where the piece is hovering
+function snapFor(p, d){
+  var fx=(d.x-d.dx*BD.c-BD.x)/BD.c, fy=(d.y-d.dy*BD.c-d.lift-BD.y)/BD.c;
+  var bx=Math.round(fx), by=Math.round(fy), opts=[];
+  for(var ox=-1;ox<=1;ox++) for(var oy=-1;oy<=1;oy++){ var gx=bx+ox, gy=by+oy, dist=Math.hypot(gx-fx,gy-fy);
+    if(dist<0.85 && fits(p,p.cells,gx,gy)) opts.push({x:gx,y:gy,d:dist}); }
+  opts.sort(function(a,b){return a.d-b.d;});
+  return opts[0]||null;
+}
+
+// little floating 1, 2, 3… over each square of a placed piece
+function countUp(p){
+  var now=performance.now();
+  var cs=p.cells.slice().sort(function(a,b){ return a[1]-b[1] || a[0]-b[0]; });
+  cs.forEach(function(c,i){ S.floats.push({gx:c[0]+p.at.x, gy:c[1]+p.at.y, n:i+1, t0:now+i*140, last:i===cs.length-1});
+    SND.tick(i, i*0.14); });
+}
+
+/* ---------- hint ---------- */
+function hint(){
+  if(!S || S.won) return; ac();
+  S.hints++;
+  var free=S.pieces.filter(function(p){ return !p.at; });
+  if(!free.length) return;
+  // a piece whose own home is empty
+  var good=free.filter(function(p){ return p.sol.every(function(c){ return S.target[K(c[0]+p.solX,c[1]+p.solY)]===null; }); });
+  if(good.length){
+    var p=good[0];
+    if(shapeKey(p.cells)!==shapeKey(p.sol)){ p.cells=p.sol.slice(); flowTray(); p.ax=null; }
+    S.ghost={p:p, x:p.solX, y:p.solY, until:performance.now()+2200}; p.wig=1;
+    if(SAVE.talk) say('Try the '+COLORS[p.color][0]+' one here!');
+  } else {
+    // some placed piece is in the way of the solution: shake it
+    var p2=free[0], blockers={};
+    p2.sol.forEach(function(c){ var o=S.target[K(c[0]+p2.solX,c[1]+p2.solY)]; if(o!==null) blockers[o]=1; });
+    S.flash={ids:blockers, until:performance.now()+1600};
+    if(SAVE.talk) say('Hmm. Try moving the shaking block.');
+  }
+}
+
+/* ---------- win ---------- */
+function win(){
+  S.won=true; S.winT=performance.now();
+  SND.win();
+  for(var i=0;i<90;i++){ S.conf.push({x:BD.x+S.w*BD.c/2, y:BD.y+S.h*BD.c/2, vx:(Math.random()-.5)*14, vy:-Math.random()*13-3,
+    c:COLORS[(Math.random()*COLORS.length)|0][1], r:Math.random()*6, s:5+Math.random()*7}); }
+  var stars = S.hints===0?3:S.hints===1?2:1;
+  if(!world.spell){ var id=S.L.id, prev=SAVE.solved[id]||0; if(stars>prev){ SAVE.solved[id]=stars; save(); } }
+  setTimeout(function(){ showCard(stars); }, 950);
+}
+function showCard(stars){
+  var L=S.L, last = world.spell ? spellIdx===spellWord.length-1 : false;
+  var big=document.getElementById('cBig'), em=document.getElementById('cEm');
+  big.className='big'+(last?' word':'');
+  big.textContent = last ? spellWord : L.big;
+  document.getElementById('cLine').textContent = last ? 'You spelled '+spellWord+'!' : L.line;
+  document.getElementById('cFact').textContent = last ? '' : (L.fact||'');
+  var sizes=S.pieces.map(function(p){return p.cells.length;}), total=sizes.reduce(function(a,b){return a+b;},0);
+  var eq=document.getElementById('cEq'); eq.style.display = last ? 'none' : '';
+  eq.innerHTML = '<small>THE BLOCKS ADD UP</small>'+sizes.join(' + ')+' = '+total+' squares';
+  document.getElementById('cStars').innerHTML = world.spell ? '' :
+    [0,1,2].map(function(i){ return '<span class="'+(i<stars?'':'off')+'">★</span>'; }).join('');
+  document.getElementById('cNext').innerHTML = world.spell ? (last?'Menu &#9654;':'Next letter &#9654;') : 'Next &#9654;';
+  em.innerHTML='';
+  document.getElementById('win').classList.add('show');
+  speakCard(last);
+}
+function speakCard(last){
+  var L=S.L, em=document.getElementById('cEm');
+  if(last){
+    em.textContent='🎉';
+    var parts=spellWord.split('').map(function(c){ return c+','; });
+    sayList([parts.join(' '), spellWord.toLowerCase()+'!', 'You spelled '+spellWord.toLowerCase()+'!'], 1400);
+    return;
+  }
+  if(typeof L.count==='number' && L.count>0){
+    em.innerHTML='';
+    var items=[{text:L.say[0]}];
+    for(var i=1;i<=L.count;i++){ (function(n){ items.push({text:String(n), start:function(){
+      var s=document.createElement('i'); s.className='c'; s.setAttribute('data-n',n); s.textContent=L.em; em.appendChild(s); SND.tick(n-1); }}); })(i); }
+    items.push({text:L.line+'!'});
+    sayList(items, 800);
+    return;
+  }
+  em.textContent = L.emojiBig ? '' : L.em;
+  var lines=L.say.slice(); if(L.fact && !L.emojiBig) lines.push(L.fact);
+  sayList(lines);
+}
+function hideCard(){ document.getElementById('win').classList.remove('show'); hush(); }
+
+document.getElementById('cSay').onclick=function(){ ac(); if(S) speakCard(world.spell && spellIdx===spellWord.length-1); };
+document.getElementById('cAgain').onclick=function(){ hideCard(); startLevel(world, levelIdx); };
+document.getElementById('cMenu').onclick=function(){ hideCard(); goWorld(); };
+document.getElementById('cNext').onclick=function(){
+  hideCard();
+  if(world.spell){ if(spellIdx<spellWord.length-1){ spellIdx++; startLevel(world, spellIdx); } else goWorld(); return; }
+  if(levelIdx<world.levels.length-1) startLevel(world, levelIdx+1); else goWorld();
+};
+
+/* =====================================================================
+   DRAW
+   ===================================================================== */
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function block(x,y,s,col,alpha){
+  var g=Math.max(1.2,s*0.05), r=s*0.2;
+  ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.fillStyle=col; rr(x+g,y+g,s-2*g,s-2*g,r); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.22)'; rr(x+g,y+s*0.62,s-2*g,s*0.38-g,r); ctx.fill();
+  ctx.fillStyle=col; rr(x+g,y+g,s-2*g,s*0.78,r); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.35)'; rr(x+s*0.2,y+s*0.14,s*0.34,s*0.14,s*0.07); ctx.fill();
+  ctx.globalAlpha=1;
+}
+function drawPiece(p, ox, oy, s, alpha, shake){
+  var col=COLORS[p.color][1];
+  p.cells.forEach(function(c){ block(ox+c[0]*s+(shake||0), oy+c[1]*s, s, col, alpha); });
+}
+
+function frame(now){
+  requestAnimationFrame(frame);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle='#07080f'; ctx.fillRect(0,0,W,H);
+  if(!S) return;
+  var c=BD.c;
+
+  // the hidden shape
+  var winGlow = S.won ? Math.min(1,(now-S.winT)/600) : 0;
+  for(var k in S.target){ var xy=k.split(','), x=BD.x+(+xy[0])*c, y=BD.y+(+xy[1])*c;
+    ctx.fillStyle='#1c2140'; rr(x+1.5,y+1.5,c-3,c-3,c*0.16); ctx.fill();
+    ctx.strokeStyle='#2c3363'; ctx.lineWidth=1.5; rr(x+3,y+3,c-6,c-6,c*0.13); ctx.stroke(); }
+
+  // hint ghost
+  if(S.ghost && now<S.ghost.until && !S.ghost.p.at){
+    var a=0.25+0.25*Math.sin(now/120);
+    S.ghost.p.sol.forEach(function(cc){ block(BD.x+(cc[0]+S.ghost.x)*c, BD.y+(cc[1]+S.ghost.y)*c, c, COLORS[S.ghost.p.color][1], a); });
+  }
+  // drop preview
+  var d=S.drag, snap=null;
+  if(d && d.moved){ snap=snapFor(d.p,d);
+    if(snap) d.p.cells.forEach(function(cc){ var x=BD.x+(cc[0]+snap.x)*c, y=BD.y+(cc[1]+snap.y)*c;
+      ctx.fillStyle='rgba(255,255,255,.16)'; rr(x+2,y+2,c-4,c-4,c*0.16); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); rr(x+3,y+3,c-6,c-6,c*0.14); ctx.stroke(); ctx.setLineDash([]); }); }
+
+  // pieces: board, then tray, then the one in hand
+  var order=S.pieces.slice().sort(function(a,b){ return (a.at?0:1)-(b.at?0:1); });
+  order.forEach(function(p){
+    if(d && d.p===p && d.moved) return;
+    var tx,ty,ts;
+    if(p.at){ tx=BD.x+p.at.x*c; ty=BD.y+p.at.y*c; ts=c; }
+    else    { tx=p.tx; ty=p.ty; ts=p.tc; if(d && d.p===p){ ts*=1.08; tx-=p.tc*0.04*dims(p.cells).w; ty-=p.tc*0.04*dims(p.cells).h; } }
+    if(p.ax===null){ p.ax=tx; p.ay=ty; p.as=ts; }
+    p.ax+=(tx-p.ax)*0.3; p.ay+=(ty-p.ay)*0.3; p.as+=(ts-p.as)*0.3;
+    var sh=0;
+    if(p.wig>0){ sh=Math.sin(p.wig*30)*p.wig*6; p.wig=Math.max(0,p.wig-0.03); }
+    if(S.flash && now<S.flash.until && S.flash.ids[p.id]) sh=Math.sin(now/40)*4;
+    var bright = S.won && p.at ? 1 : 1;
+    drawPiece(p, p.ax, p.ay, p.as, bright, sh);
+  });
+  if(d && d.moved){
+    var ox=d.x-d.dx*c, oy=d.y-d.dy*c-d.lift;
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=18; ctx.shadowOffsetY=10;
+    drawPiece(d.p, ox, oy, c, 1); ctx.restore();
+    d.p.ax=ox; d.p.ay=oy; d.p.as=c;
+  }
+
+  // win shimmer across the finished shape
+  if(winGlow>0){
+    for(var k2 in S.target){ var q=k2.split(','), gx=+q[0], gy=+q[1];
+      var wave=Math.max(0, Math.sin((now-S.winT)/160 - (gx+gy)*0.55));
+      ctx.fillStyle='rgba(255,255,255,'+(0.35*wave*winGlow)+')'; rr(BD.x+gx*c+2,BD.y+gy*c+2,c-4,c-4,c*0.16); ctx.fill(); }
+  }
+
+  // floating counts
+  S.floats=S.floats.filter(function(f){ return now<f.t0+900; });
+  S.floats.forEach(function(f){ if(now<f.t0) return; var t=(now-f.t0)/900;
+    ctx.globalAlpha=1-t; ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=4;
+    ctx.font='bold '+Math.round(c*(f.last?0.62:0.5))+'px "Trebuchet MS",Arial,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    var x=BD.x+(f.gx+.5)*c, y=BD.y+(f.gy+.5)*c - t*c*0.6;
+    ctx.strokeText(f.n,x,y); ctx.fillText(f.n,x,y); ctx.globalAlpha=1; });
+
+  // confetti
+  S.conf=S.conf.filter(function(p){ return p.y<H+20; });
+  S.conf.forEach(function(p){ p.vy+=0.38; p.vx*=0.99; p.x+=p.vx; p.y+=p.vy; p.r+=0.15;
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.c; ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); ctx.restore(); });
+}
+requestAnimationFrame(frame);
+window.addEventListener('resize', function(){ layout(); if(S) S.pieces.forEach(function(p){ p.ax=null; }); });
+
+/* =====================================================================
+   MENUS
+   ===================================================================== */
+function showScreen(id){
+  ['sHome','sWorld','sSpell'].forEach(function(s){ document.getElementById(s).classList.toggle('show', s===id); });
+  document.body.classList.toggle('ingame', !id);
+  document.getElementById('top').style.display = id ? 'none' : 'flex';
+  if(id){ S=null; hush(); }
+}
+function solvedIn(w){ return w.levels ? w.levels.filter(function(l){ return SAVE.solved[l.id]; }).length : 0; }
+
+function renderHome(){
+  var lg=document.getElementById('logo'); lg.innerHTML='';
+  [6,2,3,5,4].forEach(function(i){ var b=document.createElement('i'); b.style.background=COLORS[i][1]; lg.appendChild(b); });
+  var dv=document.getElementById('diffs'); dv.innerHTML='';
+  Object.keys(DIFFS).forEach(function(k){ var D=DIFFS[k], b=document.createElement('button');
+    b.className='chip'+(SAVE.diff===k?' sel':''); b.innerHTML='<b>'+D.name+'</b><span>'+D.sub+'</span>';
+    b.onclick=function(){ ac(); SAVE.diff=k; save(); renderHome(); SND.spin(); }; dv.appendChild(b); });
+  var wv=document.getElementById('worlds'); wv.innerHTML='';
+  WORLDS.forEach(function(w){ var b=document.createElement('button'); b.className='world';
+    var n=solvedIn(w), tot=w.levels?w.levels.length:0;
+    b.innerHTML='<div class="ic">'+w.icon+'</div><b>'+w.name+'</b><span>'+w.sub+'</span>'+
+      (tot?'<div class="prog">'+n+' / '+tot+'</div><div class="bar" style="width:'+(100*n/tot)+'%"></div>':'');
+    b.onclick=function(){ ac(); SND.lift(); world=w; goWorld(); }; wv.appendChild(b); });
+}
+function goWorld(){
+  if(!world || world.spell){ if(world && world.spell){ showScreen('sSpell'); renderSpell(); return; } }
+  if(!world){ showScreen('sHome'); renderHome(); return; }
+  showScreen('sWorld');
+  document.getElementById('wTitle').textContent=world.icon+' '+world.name;
+  var n=solvedIn(world);
+  document.getElementById('wSub').textContent = n+' of '+world.levels.length+' found. Solve one to see what it was.';
+  var lv=document.getElementById('lvls'); lv.innerHTML='';
+  world.levels.forEach(function(l,i){ var b=document.createElement('button'), st=SAVE.solved[l.id]||0;
+    b.className='lvl'+(st?' solved':'');
+    b.innerHTML='<span class="num">'+(i+1)+'</span>'+(st?esc(l.label):'?')+'<span class="st">'+(st?'★★★'.slice(0,st):'')+'</span>';
+    b.onclick=function(){ ac(); startLevel(world,i); }; lv.appendChild(b); });
+  // PLAY goes to the first one not found yet
+  var nxt=0; for(var i=0;i<world.levels.length;i++){ if(!SAVE.solved[world.levels[i].id]){ nxt=i; break; } }
+  document.getElementById('wPlay').onclick=function(){ ac(); startLevel(world,nxt); };
+}
+document.getElementById('wBack').onclick=function(){ world=null; showScreen('sHome'); renderHome(); };
+
+var PRESETS=['CAT','DOG','SUN','MOM','DAD','BUS','STOOPID'];
+function renderSpell(){
+  var pv=document.getElementById('presets'); pv.innerHTML='';
+  PRESETS.forEach(function(wd){ var b=document.createElement('button'); b.className='preset'; b.textContent=wd;
+    b.onclick=function(){ document.getElementById('word').value=wd; }; pv.appendChild(b); });
+}
+document.getElementById('word').addEventListener('input', function(){
+  this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,8); });
+document.getElementById('spGo').onclick=function(){
+  ac(); var v=document.getElementById('word').value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,8);
+  if(!v){ toast('Type a word first!'); return; }
+  spellWord=v; spellIdx=0; document.getElementById('word').blur();
+  if(SAVE.talk) say("Let's spell "+v.toLowerCase()+'!');
+  startLevel(world, 0);
+};
+document.getElementById('spBack').onclick=function(){ world=null; showScreen('sHome'); renderHome(); };
+
+document.getElementById('bBack').onclick=function(){ hush(); goWorld(); };
+document.getElementById('bHint').onclick=hint;
+document.getElementById('bNew').onclick=function(){ if(S && !S.won){ ac(); SND.spin(); startLevel(world, levelIdx); } };
+var bTalk=document.getElementById('bTalk');
+function talkBtn(){ bTalk.innerHTML=SAVE.talk?'&#128266;':'&#128263;'; bTalk.classList.toggle('on',SAVE.talk); }
+bTalk.onclick=function(){ ac(); SAVE.talk=!SAVE.talk; save(); talkBtn(); if(SAVE.talk) say('Talking is on!'); else hush(); };
+talkBtn();
+
+var toastT=0;
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block';
+  clearTimeout(toastT); toastT=setTimeout(function(){ t.style.display='none'; },1800); }
+
+renderHome(); showScreen('sHome'); layout();
+
+// test hook: fill the board with the cut it came from
+window.__smartBlocks = { solve:function(){ if(!S) return; S.pieces.forEach(function(p){ p.cells=p.sol.slice(); setPlaced(p,p.solX,p.solY); p.ax=null; }); flowTray(); win(); },
+  state:function(){ return S; }, board:function(){ return BD; }, worlds:WORLDS, glyphs:G, shapes:SH, cut:cutShape };
+})();
+</script>
+</body>
+</html>
