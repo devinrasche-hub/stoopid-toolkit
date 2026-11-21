@@ -556,7 +556,7 @@ function ptr(e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y
 function pieceAt(x,y){
   // board first (top-most), then tray
   var gx=Math.floor((x-BD.x)/BD.c), gy=Math.floor((y-BD.y)/BD.c), k=K(gx,gy);
-  if(k in S.target && S.target[k]!==null){ var p=S.pieces[S.target[k]];
+  if(k in S.target && S.target[k]!==null){ var tid=S.target[k], p=S.pieces.filter(function(q){ return q.id===tid; })[0];
     return {p:p, dx:(x-BD.x)/BD.c-p.at.x, dy:(y-BD.y)/BD.c-p.at.y, from:'board'}; }
   var best=null, bd=1e9;
   S.pieces.forEach(function(p){ if(p.at) return; var c=p.tc;
