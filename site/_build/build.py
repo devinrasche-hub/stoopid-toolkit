@@ -308,9 +308,7 @@ SHELL = """<!DOCTYPE html>
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0F0B1E">
 <link rel="icon" href="{root}assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{root}assets/fonts/fonts.css">
 <link rel="stylesheet" href="{root}assets/site.css">
 </head>
 <body>

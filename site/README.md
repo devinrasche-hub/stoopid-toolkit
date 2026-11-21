@@ -8,7 +8,7 @@ The public site, rebuilt from the Wix snapshot of 2026-11-11 (see `docs/stoopidt
 - Donate goes to Buy Me a Coffee. Hire Dev "Book Now" goes to Ask Dev.
 - The footer newsletter box and the Earn form post to `/api/signup`, a Cloudflare Pages Function in `_cloudflare/` that writes to the D1 database `stoopidtv_signups`. It only writes; nothing reads sign-ups back out. They only work on the Cloudflare deployment, not on the GitHub Pages preview.
 - Not carried over from Wix: online booking/checkout, the store.
-- Fonts (Anton, Poppins) still load from Google Fonts, as the original pages did.
+- Fonts are self-hosted in `assets/fonts/` (woff2 + `fonts.css`, latin and latin-ext), so no page talks to Google. The shell and every embed link `fonts.css`. Stoopid Boy's cartridges are compressed text, so its loader swaps their Google font link for `fonts.css` as each game opens (don't edit the compressed `<script type=text/plain>` blocks by hand). To add a family or weight, add it to `REQUESTS` in `_build/fetch_fonts.py` and run `python3 site/_build/fetch_fonts.py`.
 
 ## Deploying
 
