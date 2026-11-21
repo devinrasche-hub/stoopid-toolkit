@@ -4,6 +4,7 @@ Public brand tools for THE STOOPID SHOW, served by GitHub Pages from `main`.
 
 - Every tool is one self-contained `stoopid_*.html` at the repo root. Nothing loads from a CDN at runtime. No keys, no tracking.
 - New tool: add it to THE VAULT grid in `index.html` (item number, wing, `data-viz` preview), update the artifact counts there, and add a row to `README.md`.
+- Every page carries link-preview tags right after `<title>`, between `<!-- link preview -->` markers (og:/twitter: tags, card name + vault blurb + " — THE STOOPID SHOW", absolute URLs). The image is a 1200×630 screenshot in `og/<page-name>.jpg`. New tools get the same block. For vault tools, put it in the `C:\STOOPID_VAULT` copy too, and for cinematics in `cinematic/<slug>/index.html`, so a re-copy or rebuild keeps it.
 - This repo is public. No secrets, no vault database, no unreleased Season 2 material.
 
 ## Cinematics
