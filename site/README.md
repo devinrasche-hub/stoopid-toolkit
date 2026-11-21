@@ -3,6 +3,7 @@
 The public site, rebuilt from the Wix snapshot of 2026-11-11 (see `docs/stoopidtv-wix-snapshot/`). Plain static files; every link is relative, so this folder works at a domain root or in a subfolder.
 
 - Edit page bodies in `_build/embeds-original/*.html` (the original embeds) or the hand-written pages, nav and footer in `_build/build.py`, then run `python3 site/_build/build.py`. Don't edit the generated `index.html` files or `embeds/` directly.
+- `build.py` finishes with a link check (`_build/check_links.py`, also runnable on its own) and exits with an error if any link is root-absolute, points back at stoopidtv.com instead of being relative, or leads to a missing page, file, `#anchor` or `api/` function. `404.html`, `rel="canonical"` and the `og:`/`twitter:` tags are allowed full URLs. It also covers `museum/`, which `build.py` doesn't generate. The deploy workflow runs `build.py`, so a broken link stops the deploy.
 - `assets/site.js` sizes each framed page to its content.
 - Donate goes to Buy Me a Coffee. Hire Dev "Book Now" goes to Ask Dev.
 - The footer newsletter box and the Earn form post to `/api/signup`, a Cloudflare Pages Function in `_cloudflare/` that writes to the D1 database `stoopidtv_signups`. It only writes; nothing reads sign-ups back out. They only work on the Cloudflare deployment, not on the GitHub Pages preview.
