@@ -91,7 +91,7 @@
   .floater{position:absolute; pointer-events:none; color:var(--teal); font-weight:bold;
     font-size:16px; letter-spacing:1px; z-index:6; animation:floatup .9s ease-out forwards; text-shadow:0 0 8px rgba(0,255,198,.6);}
   @keyframes floatup{from{opacity:1; transform:translateY(0) scale(1);} to{opacity:0; transform:translateY(-70px) scale(1.4);}}
-  .stamp{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%) rotate(-14deg) scale(3); z-index:7;
+  .stamp{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%) rotate(-14deg) scale(1); z-index:7;
     border:3px solid var(--red); color:var(--red); font-size:22px; font-weight:bold; letter-spacing:4px;
     padding:8px 18px; opacity:0; pointer-events:none; text-transform:uppercase; white-space:nowrap;}
   .stamp.show{animation:stampin .9s ease-out forwards;}
@@ -207,6 +207,7 @@
     body{padding:16px 12px 34px;}
     .stats{grid-template-columns:repeat(2,1fr);}
     .flip{padding:20px 16px;}
+    .stage-col{overflow-x:clip;}   /* the BITE VERIFIED stamp slams in from 3x; keep it from widening the page */
   }
 </style>
 </head>
