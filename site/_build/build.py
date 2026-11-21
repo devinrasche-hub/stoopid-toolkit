@@ -402,3 +402,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Enforce "every link relative" and catch dead internal links (see check_links.py).
+    import sys
+    sys.dont_write_bytecode = True      # no __pycache__ in site/_build
+    sys.path.insert(0, str(BUILD))
+    import check_links
+    sys.exit(check_links.main())
